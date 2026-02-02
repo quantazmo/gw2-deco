@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>GW2 API Tests</title>
+    <link rel="stylesheet" href="https://code.jquery.com/qunit/qunit-2.20.0.css">
+</head>
+
+<body>
+    <div id="qunit"></div>
+    <div id="qunit-fixture"></div>
+    <script src="https://code.jquery.com/qunit/qunit-2.20.0.js"></script>
+    <script type="module">
+        import { calculateTilesForMap, createCoordinateConverter } from './gw2.js';
+
+        QUnit.module('gw2.js');
+
+        QUnit.test('should return tiles in the correct range for test case', function (assert) {
+            const continent_dims = { width: 32768, height: 32768 };
+            const map_rect = [
+                [33432, 20007],
+                [35096, 21415]
+            ];
+
+            const zoom = 7;
+
+            const tiles = Array.from(calculateTilesForMap(continent_dims, map_rect, zoom));
+
+            console.log('Calculated tiles:', tiles);
+
+            tiles.forEach(tile => {
+                assert.ok(tile.x >= 130 && tile.x <= 137, `Tile x coordinate ${tile.x} is within range 130-137`);
+                assert.ok(tile.y >= 78 && tile.y <= 84, `Tile y coordinate ${tile.y} is within range 78-84`);
+            });
+
+        });
+
+        QUnit.test('should translate bounds correctly', function (assert) {
+            const continent_rect = [
+                [33432, 20007],
+                [35096, 21415]
+            ];
+            const map_rect = [
+                [33432, 20007],
+                [35096, 21415]
+            ];
+
+            const bounds = [34565.2, 19987.3];
+
+            const converter = createCoordinateConverter(continent_rect, map_rect);
+            const results = converter(bounds);
+
+
+            assert.equal(results.x, 34565.2, 'X coordinate matches expected');
+            assert.equal(results.y, 19987.3, 'Y coordinate matches expected');
+        });
+    </script>
+</body>
+
+</html>

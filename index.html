@@ -1,0 +1,82 @@
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>GW2 Decoration Layout Editor</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Load d3.js -->
+  <script src="https://d3js.org/d3.v4.js"></script>
+</head>
+
+<body>
+  <!-- Create a div where the circle will take place -->
+  <div id="chart-container">
+    <button id="load-file-overlay-btn" onclick="openFileDialog()" class="load-file-overlay-btn">
+      <svg class="button-icon" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M1 2h5.5L8 4h6v10H1V2z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round" />
+      </svg>
+      Load File
+    </button>
+  </div>
+
+  <!-- Tool panel -->
+  <div id="tool-panel">
+    <h4>Guild Wars 2<br />Decoration Template Manager</h4>
+
+    <!-- Controls Group -->
+    <div class="tool-group">
+      <div class="tool-group-header" onclick="toggleGroup(this)">
+        <span class="group-arrow">▶</span>
+        <span class="group-title">Controls</span>
+      </div>
+      <div class="tool-group-content">
+        <button id="reset-zoom-btn" onclick="resetZoom()">Reset Zoom & Pan</button>
+      </div>
+    </div>
+
+    <!-- Layers Group -->
+    <div class="tool-group">
+      <div class="tool-group-header" onclick="toggleGroup(this)">
+        <span class="group-arrow">▶</span>
+        <span class="group-title">Layers</span>
+      </div>
+      <div class="tool-group-content">
+        <div id="layers-list">
+
+        </div>
+        <div id="button-container">
+          <button id="add-layer-btn" onclick="addLayer()" class="add-layer-btn">
+            <svg class="button-icon" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+            </svg>
+            Add Layer
+          </button>
+          <button id="load-file-btn" onclick="openFileDialog()" class="add-layer-btn">
+            <svg class="button-icon" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M1 2h5.5L8 4h6v10H1V2z" stroke="currentColor" stroke-width="1.2" fill="none"
+                stroke-linejoin="round" />
+            </svg>
+            Load File
+          </button>
+        </div>
+        <input type="file" id="file-input" accept=".xml" style="display:none;">
+      </div>
+    </div>
+
+    <!-- Export Group -->
+    <div class="tool-group">
+      <div class="tool-group-header" onclick="toggleGroup(this)">
+        <span class="group-arrow">▶</span>
+        <span class="group-title">Export</span>
+      </div>
+      <div class="tool-group-content">
+        <p>Export options will go here</p>
+      </div>
+    </div>
+
+    <div id="panel-resizer"></div>
+  </div>
+  <script type="module" src="script.js"></script>
+</body>
+
+</html>
