@@ -1,0 +1,18 @@
+{
+    "id": 1,
+    "name": "Tyria",
+    "continent_dims": [
+        32768,
+        32768
+    ],
+    "min_zoom": 0,
+    "max_zoom": 7,
+    "floors": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        81
+    ]
+}

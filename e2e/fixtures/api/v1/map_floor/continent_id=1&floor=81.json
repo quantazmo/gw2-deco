@@ -1,0 +1,574 @@
+{
+    "texture_dims": [
+        81920,
+        114688
+    ],
+    "clamped_view": [
+        [
+            32300,
+            19416
+        ],
+        [
+            36153,
+            21634
+        ]
+    ],
+    "regions": {
+        "18": {
+            "name": "Janthir",
+            "label_coord": [
+                34000,
+                20011
+            ],
+            "continent_rect": [
+                [
+                    41377,
+                    21842
+                ],
+                [
+                    41377,
+                    21842
+                ]
+            ],
+            "maps": {
+                "1542": {
+                    "name": "Finding Balance: Hearth's Glow",
+                    "min_level": 80,
+                    "max_level": 80,
+                    "default_floor": 81,
+                    "label_coord": [
+                        34000,
+                        20011
+                    ],
+                    "map_rect": [
+                        [
+                            -18432,
+                            -15360
+                        ],
+                        [
+                            21504,
+                            18432
+                        ]
+                    ],
+                    "continent_rect": [
+                        [
+                            33432,
+                            20007
+                        ],
+                        [
+                            35096,
+                            21415
+                        ]
+                    ],
+                    "points_of_interest": [],
+                    "god_shrines": [],
+                    "tasks": [],
+                    "skill_challenges": [],
+                    "sectors": [
+                        {
+                            "sector_id": 2026,
+                            "name": "",
+                            "level": 80,
+                            "coord": [
+                                34340.1,
+                                20622.9
+                            ],
+                            "bounds": [
+                                [
+                                    34565.2,
+                                    19987.3
+                                ],
+                                [
+                                    35021.6,
+                                    20084.7
+                                ],
+                                [
+                                    35154.4,
+                                    20918.4
+                                ],
+                                [
+                                    34778.6,
+                                    21286.9
+                                ],
+                                [
+                                    33825.7,
+                                    21245.8
+                                ],
+                                [
+                                    33449.7,
+                                    20714.2
+                                ],
+                                [
+                                    33585.5,
+                                    20123.1
+                                ],
+                                [
+                                    34565.2,
+                                    19987.3
+                                ]
+                            ]
+                        }
+                    ],
+                    "training_points": [],
+                    "adventures": []
+                },
+                "1544": {
+                    "name": "Twice Stricken: Hearth's Glow",
+                    "min_level": 80,
+                    "max_level": 80,
+                    "default_floor": 81,
+                    "label_coord": [
+                        34000,
+                        20011
+                    ],
+                    "map_rect": [
+                        [
+                            -18432,
+                            -15360
+                        ],
+                        [
+                            21504,
+                            18432
+                        ]
+                    ],
+                    "continent_rect": [
+                        [
+                            33432,
+                            20007
+                        ],
+                        [
+                            35096,
+                            21415
+                        ]
+                    ],
+                    "points_of_interest": [],
+                    "god_shrines": [],
+                    "tasks": [],
+                    "skill_challenges": [],
+                    "sectors": [
+                        {
+                            "sector_id": 2026,
+                            "name": "",
+                            "level": 80,
+                            "coord": [
+                                34340.1,
+                                20622.9
+                            ],
+                            "bounds": [
+                                [
+                                    34565.2,
+                                    19987.3
+                                ],
+                                [
+                                    35021.6,
+                                    20084.7
+                                ],
+                                [
+                                    35154.4,
+                                    20918.4
+                                ],
+                                [
+                                    34778.6,
+                                    21286.9
+                                ],
+                                [
+                                    33825.7,
+                                    21245.8
+                                ],
+                                [
+                                    33449.7,
+                                    20714.2
+                                ],
+                                [
+                                    33585.5,
+                                    20123.1
+                                ],
+                                [
+                                    34565.2,
+                                    19987.3
+                                ]
+                            ]
+                        }
+                    ],
+                    "training_points": [],
+                    "adventures": []
+                },
+                "1546": {
+                    "name": "Home Sweet Home: Hearth's Glow",
+                    "min_level": 80,
+                    "max_level": 80,
+                    "default_floor": 81,
+                    "label_coord": [
+                        34000,
+                        20011
+                    ],
+                    "map_rect": [
+                        [
+                            -18432,
+                            -15360
+                        ],
+                        [
+                            21504,
+                            18432
+                        ]
+                    ],
+                    "continent_rect": [
+                        [
+                            33432,
+                            20007
+                        ],
+                        [
+                            35096,
+                            21415
+                        ]
+                    ],
+                    "points_of_interest": [],
+                    "god_shrines": [],
+                    "tasks": [],
+                    "skill_challenges": [],
+                    "sectors": [
+                        {
+                            "sector_id": 2026,
+                            "name": "",
+                            "level": 80,
+                            "coord": [
+                                34340.1,
+                                20622.9
+                            ],
+                            "bounds": [
+                                [
+                                    34565.2,
+                                    19987.3
+                                ],
+                                [
+                                    35021.6,
+                                    20084.7
+                                ],
+                                [
+                                    35154.4,
+                                    20918.4
+                                ],
+                                [
+                                    34778.6,
+                                    21286.9
+                                ],
+                                [
+                                    33825.7,
+                                    21245.8
+                                ],
+                                [
+                                    33449.7,
+                                    20714.2
+                                ],
+                                [
+                                    33585.5,
+                                    20123.1
+                                ],
+                                [
+                                    34565.2,
+                                    19987.3
+                                ]
+                            ]
+                        }
+                    ],
+                    "training_points": [],
+                    "adventures": []
+                },
+                "1557": {
+                    "name": "Home Sweet Home: Abandoned Homestead",
+                    "min_level": 80,
+                    "max_level": 80,
+                    "default_floor": 81,
+                    "label_coord": [
+                        34000,
+                        20011
+                    ],
+                    "map_rect": [
+                        [
+                            -18432,
+                            -15360
+                        ],
+                        [
+                            21504,
+                            18432
+                        ]
+                    ],
+                    "continent_rect": [
+                        [
+                            33432,
+                            20007
+                        ],
+                        [
+                            35096,
+                            21415
+                        ]
+                    ],
+                    "points_of_interest": [],
+                    "god_shrines": [],
+                    "tasks": [],
+                    "skill_challenges": [],
+                    "sectors": [
+                        {
+                            "sector_id": 2026,
+                            "name": "",
+                            "level": 80,
+                            "coord": [
+                                34340.1,
+                                20622.9
+                            ],
+                            "bounds": [
+                                [
+                                    34565.2,
+                                    19987.3
+                                ],
+                                [
+                                    35021.6,
+                                    20084.7
+                                ],
+                                [
+                                    35154.4,
+                                    20918.4
+                                ],
+                                [
+                                    34778.6,
+                                    21286.9
+                                ],
+                                [
+                                    33825.7,
+                                    21245.8
+                                ],
+                                [
+                                    33449.7,
+                                    20714.2
+                                ],
+                                [
+                                    33585.5,
+                                    20123.1
+                                ],
+                                [
+                                    34565.2,
+                                    19987.3
+                                ]
+                            ]
+                        }
+                    ],
+                    "training_points": [],
+                    "adventures": []
+                },
+                "1558": {
+                    "name": "Hearth's Glow",
+                    "min_level": 0,
+                    "max_level": 80,
+                    "default_floor": 81,
+                    "label_coord": [
+                        34000,
+                        20011
+                    ],
+                    "map_rect": [
+                        [
+                            -18432,
+                            -15360
+                        ],
+                        [
+                            21504,
+                            18432
+                        ]
+                    ],
+                    "continent_rect": [
+                        [
+                            33432,
+                            20007
+                        ],
+                        [
+                            35096,
+                            21415
+                        ]
+                    ],
+                    "points_of_interest": [
+                        {
+                            "poi_id": 3891,
+                            "name": "Farm",
+                            "type": "landmark",
+                            "floor": 1,
+                            "coord": [
+                                34558.5,
+                                21000.2
+                            ]
+                        },
+                        {
+                            "poi_id": 3861,
+                            "name": "Lumber Mill",
+                            "type": "landmark",
+                            "floor": 1,
+                            "coord": [
+                                34501.7,
+                                21109.5
+                            ]
+                        },
+                        {
+                            "poi_id": 3791,
+                            "name": "Mine",
+                            "type": "landmark",
+                            "floor": 1,
+                            "coord": [
+                                34657.8,
+                                21127.8
+                            ]
+                        },
+                        {
+                            "poi_id": 3875,
+                            "name": "The Workshop",
+                            "type": "landmark",
+                            "floor": 1,
+                            "coord": [
+                                34490,
+                                20863.2
+                            ]
+                        },
+                        {
+                            "poi_id": 3781,
+                            "name": "Homestead Waypoint",
+                            "type": "waypoint",
+                            "floor": 81,
+                            "coord": [
+                                34392.8,
+                                20856.2
+                            ]
+                        }
+                    ],
+                    "god_shrines": [],
+                    "tasks": [],
+                    "skill_challenges": [],
+                    "sectors": [
+                        {
+                            "sector_id": 2026,
+                            "name": "",
+                            "level": 80,
+                            "coord": [
+                                34340.1,
+                                20622.9
+                            ],
+                            "bounds": [
+                                [
+                                    34565.2,
+                                    19987.3
+                                ],
+                                [
+                                    35021.6,
+                                    20084.7
+                                ],
+                                [
+                                    35154.4,
+                                    20918.4
+                                ],
+                                [
+                                    34778.6,
+                                    21286.9
+                                ],
+                                [
+                                    33825.7,
+                                    21245.8
+                                ],
+                                [
+                                    33449.7,
+                                    20714.2
+                                ],
+                                [
+                                    33585.5,
+                                    20123.1
+                                ],
+                                [
+                                    34565.2,
+                                    19987.3
+                                ]
+                            ]
+                        }
+                    ],
+                    "training_points": [],
+                    "adventures": []
+                },
+                "1559": {
+                    "name": "Against the Wall: Hearth's Glow",
+                    "min_level": 80,
+                    "max_level": 80,
+                    "default_floor": 81,
+                    "label_coord": [
+                        34000,
+                        20011
+                    ],
+                    "map_rect": [
+                        [
+                            -18432,
+                            -15360
+                        ],
+                        [
+                            21504,
+                            18432
+                        ]
+                    ],
+                    "continent_rect": [
+                        [
+                            33432,
+                            20007
+                        ],
+                        [
+                            35096,
+                            21415
+                        ]
+                    ],
+                    "points_of_interest": [],
+                    "god_shrines": [],
+                    "tasks": [],
+                    "skill_challenges": [],
+                    "sectors": [
+                        {
+                            "sector_id": 2026,
+                            "name": "",
+                            "level": 80,
+                            "coord": [
+                                34340.1,
+                                20622.9
+                            ],
+                            "bounds": [
+                                [
+                                    34565.2,
+                                    19987.3
+                                ],
+                                [
+                                    35021.6,
+                                    20084.7
+                                ],
+                                [
+                                    35154.4,
+                                    20918.4
+                                ],
+                                [
+                                    34778.6,
+                                    21286.9
+                                ],
+                                [
+                                    33825.7,
+                                    21245.8
+                                ],
+                                [
+                                    33449.7,
+                                    20714.2
+                                ],
+                                [
+                                    33585.5,
+                                    20123.1
+                                ],
+                                [
+                                    34565.2,
+                                    19987.3
+                                ]
+                            ]
+                        }
+                    ],
+                    "training_points": [],
+                    "adventures": []
+                }
+            }
+        }
+    }
+}

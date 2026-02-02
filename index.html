@@ -2,81 +2,90 @@
 
 <head>
   <meta charset="utf-8">
-  <title>GW2 Decoration Layout Editor</title>
+  <title>GW2 Decoration Editor</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Load d3.js -->
-  <script src="https://d3js.org/d3.v4.js"></script>
 </head>
 
 <body>
-  <!-- Create a div where the circle will take place -->
-  <div id="chart-container">
-    <button id="load-file-overlay-btn" onclick="openFileDialog()" class="load-file-overlay-btn">
-      <svg class="button-icon" viewBox="0 0 16 16" fill="currentColor">
-        <path d="M1 2h5.5L8 4h6v10H1V2z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round" />
-      </svg>
-      Load File
-    </button>
-  </div>
+  <!-- DockManager renders the entire panel layout into this root -->
+  <div id="dock-manager-root"></div>
 
-  <!-- Tool panel -->
-  <div id="tool-panel">
-    <h4>Guild Wars 2<br />Decoration Template Manager</h4>
+  <!-- Panel content sources — hidden here at load time, moved into DockRegion
+       wrappers at runtime by DockManager. Existing IDs are preserved so that
+       script.js component initialization continues to work unchanged. -->
 
-    <!-- Controls Group -->
-    <div class="tool-group">
-      <div class="tool-group-header" onclick="toggleGroup(this)">
-        <span class="group-arrow">▶</span>
-        <span class="group-title">Controls</span>
+  <!-- Map panel content -->
+  <div id="chart-container" style="display:none">
+    <div id="welcome-dialog" class="welcome-dialog">
+      <div class="welcome-dialog-header">
+        <h1 class="welcome-dialog-title">Guild Wars 2 Decoration Editor</h1>
       </div>
-      <div class="tool-group-content">
-        <button id="reset-zoom-btn" onclick="resetZoom()">Reset Zoom & Pan</button>
-      </div>
-    </div>
-
-    <!-- Layers Group -->
-    <div class="tool-group">
-      <div class="tool-group-header" onclick="toggleGroup(this)">
-        <span class="group-arrow">▶</span>
-        <span class="group-title">Layers</span>
-      </div>
-      <div class="tool-group-content">
-        <div id="layers-list">
-
-        </div>
-        <div id="button-container">
-          <button id="add-layer-btn" onclick="addLayer()" class="add-layer-btn">
-            <svg class="button-icon" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
-            </svg>
-            Add Layer
-          </button>
-          <button id="load-file-btn" onclick="openFileDialog()" class="add-layer-btn">
-            <svg class="button-icon" viewBox="0 0 16 16" fill="currentColor">
+      <ul class="welcome-dialog-features">
+        <li>Load homestead or guild hall layout file(s)</li>
+        <li>Search, sort, edit, and remove decorations</li>
+        <li>Export selected layers back to XML files</li>
+      </ul>
+      <div class="welcome-dialog-actions">
+        <div class="welcome-dialog-btn-row">
+          <button id="load-file-overlay-btn" class="load-file-overlay-btn">
+            <svg class="button-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
               <path d="M1 2h5.5L8 4h6v10H1V2z" stroke="currentColor" stroke-width="1.2" fill="none"
                 stroke-linejoin="round" />
             </svg>
-            Load File
+            Load from File
+          </button>
+          <button id="load-url-overlay-btn" class="load-file-overlay-btn load-file-overlay-btn--secondary">
+            <svg class="button-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M6.5 8.5a3.5 3.5 0 0 0 5.29.38l2-2a3.5 3.5 0 0 0-4.95-4.95l-1.2 1.2" stroke="currentColor"
+                stroke-width="1.3" stroke-linecap="round" />
+              <path d="M9.5 7.5a3.5 3.5 0 0 0-5.29-.38l-2 2a3.5 3.5 0 0 0 4.95 4.95l1.2-1.2" stroke="currentColor"
+                stroke-width="1.3" stroke-linecap="round" />
+            </svg>
+            Load from URL
           </button>
         </div>
-        <input type="file" id="file-input" accept=".xml" style="display:none;">
+        <p class="welcome-dialog-hint">or drag &amp; drop a Guild Wars 2 layout XML file onto this panel</p>
       </div>
+      <hr class="welcome-dialog-divider">
+      <p class="welcome-dialog-unofficial">This is an unofficial fan project, not affiliated with or endorsed by
+        ArenaNet or NCSOFT.</p>
+      <p class="welcome-dialog-copyright">&copy; ArenaNet LLC. All rights reserved. NCSOFT, ArenaNet, Guild Wars, Guild
+        Wars 2, GW2, Heart of Thorns, Path of Fire, End of Dragons, Secrets of the Obscure, Janthir Wilds, Visions of
+        Eternity, and all associated logos, designs, and composite marks are trademarks or registered trademarks of
+        NCSOFT Corporation. All other trademarks are the property of their respective owners.</p>
     </div>
-
-    <!-- Export Group -->
-    <div class="tool-group">
-      <div class="tool-group-header" onclick="toggleGroup(this)">
-        <span class="group-arrow">▶</span>
-        <span class="group-title">Export</span>
-      </div>
-      <div class="tool-group-content">
-        <p>Export options will go here</p>
-      </div>
-    </div>
-
-    <div id="panel-resizer"></div>
   </div>
-  <script type="module" src="script.js"></script>
+
+  <!-- Layers panel content -->
+  <div id="panel-content-layers" style="display:none">
+    <div id="layers-list"></div>
+    <div id="button-container">
+      <button id="add-layer-btn" class="add-layer-btn">
+        <svg class="button-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+        </svg>
+        Add Layer
+      </button>
+      <button id="export-btn" class="export-btn" disabled>
+        <svg class="button-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 1v9m0 0L5 7m3 3l3-3M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" fill="none" />
+        </svg>
+        Export
+      </button>
+    </div>
+  </div>
+
+  <!-- Decoration list panel content (populated at runtime) -->
+  <div id="panel-content-decoration-list" style="display:none"></div>
+
+  <!-- Global file input — not part of any panel -->
+  <input type="file" id="file-input" accept=".xml" style="display:none">
+
+  <!-- Screen reader live region for selection announcements -->
+  <div id="selection-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <script type="module" src="script.ts"></script>
 </body>
 
 </html>

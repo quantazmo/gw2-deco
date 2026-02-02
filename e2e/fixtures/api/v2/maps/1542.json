@@ -1,0 +1,35 @@
+{
+    "id": 1542,
+    "name": "Finding Balance: Hearth's Glow",
+    "min_level": 80,
+    "max_level": 80,
+    "default_floor": 81,
+    "type": "Instance",
+    "floors": [
+        81
+    ],
+    "region_id": 18,
+    "region_name": "Janthir",
+    "continent_id": 1,
+    "continent_name": "Tyria",
+    "map_rect": [
+        [
+            -18432,
+            -15360
+        ],
+        [
+            21504,
+            18432
+        ]
+    ],
+    "continent_rect": [
+        [
+            33432,
+            20007
+        ],
+        [
+            35096,
+            21415
+        ]
+    ]
+}
