@@ -1,23 +1,19 @@
-# GW2 Decoration Editor
+# Guild Wars 2 Decoration Editor
 
-GW2 Decoration Editor is a browser-based tool for loading, editing, and exporting Guild Wars 2 homestead decoration layouts.
+[![Deploy to GitHub Pages](https://github.com/quantazmo/gw2-deco/actions/workflows/publish.yaml/badge.svg)](https://github.com/quantazmo/gw2-deco/actions/workflows/publish.yaml)
 
-The project uses a clean architecture split into UI, application, domain, and infrastructure layers to keep business logic testable and independent from browser concerns.
+This website is a browser-based tool for loading, editing, and exporting homestead and guild hall decoration layouts for the Guild Wars 2 video game.
 
 ## Project Summary
 
-- Load homestead layouts from XML
-- Organize decorations into layers
-- Create, move, and remove decorations
-- Navigate maps with pan and zoom
-- Undo and redo editing actions
-- Export updated layouts back to XML
+- Load homestead or guild hall layout file(s)
+- Search, sort, edit, and remove decorations
+- Export selected layers back to XML files
 
 ## Tech Stack
 
-- JavaScript (ES modules)
-- Browser UI with static assets
-- Jest for unit/integration testing
+- TypeScript (ES modules)
+- Vitest for unit/integration testing
 - Playwright for end-to-end testing
 
 ## Repository Layout
@@ -52,23 +48,10 @@ npm install
 
 Serve the repository root as a static site, then open it in a browser.
 
-Option A (Python):
-
 ```bash
-python -m http.server 8000
+npm run build
+npm run preview
 ```
-
-Then open:
-
-```text
-http://localhost:8000
-```
-
-Option B (VS Code):
-
-- Open the project in VS Code
-- Use a static server extension such as Live Server
-- Launch from the workspace root
 
 ## Running Tests
 
@@ -99,7 +82,6 @@ npx playwright test
 - [Architecture](docs/architecture.md)
 - [Domain Model](docs/domain-model.md)
 - [Coordinate Systems](docs/coordinate-systems.md)
-- [API Guide](docs/api-guide.md)
 - [Adding Features](docs/adding-features.md)
 
 ## License
