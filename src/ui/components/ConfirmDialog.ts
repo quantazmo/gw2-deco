@@ -94,8 +94,8 @@ export class ConfirmDialog {
         this._confirmBtn.classList.add('confirm-dialog__confirm');
         this._confirmBtn.addEventListener('click', () => this._close(true));
 
-        actions.appendChild(this._cancelBtn);
         actions.appendChild(this._confirmBtn);
+        actions.appendChild(this._cancelBtn);
 
         dialog.appendChild(this._titleEl);
         dialog.appendChild(this._messageEl);

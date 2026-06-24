@@ -34,7 +34,7 @@ test.describe('Load-from-URL: switch-map confirmation (ribbon)', () => {
 
         // Open the Load-from-URL dialog and submit a URL pointing to a different map
         await page.locator('[data-action="ribbon-load-url"]').click();
-        await page.locator('.load-url-dialog__input').fill('/e2e/data/different-map.xml');
+        await page.locator('.load-url-dialog__input').fill('/samples/cat hall.xml');
         await page.locator('.load-url-dialog__load').click();
 
         // The switch-map confirmation dialog must appear
@@ -43,7 +43,7 @@ test.describe('Load-from-URL: switch-map confirmation (ribbon)', () => {
 
         // Dialog mentions the map names
         const message = await dialog.locator('.confirm-dialog__message').textContent();
-        expect(message).toContain('Finding Balance');
+        expect(message).toContain('Lost Precipice');
     });
 
     test('cancelling the confirmation keeps existing layers intact', async ({ page }) => {
@@ -51,7 +51,7 @@ test.describe('Load-from-URL: switch-map confirmation (ribbon)', () => {
         const layerCountBefore = await page.locator('#layers-list .layer-item').count();
 
         await page.locator('[data-action="ribbon-load-url"]').click();
-        await page.locator('.load-url-dialog__input').fill('/e2e/data/different-map.xml');
+        await page.locator('.load-url-dialog__input').fill('/samples/cat hall.xml');
         await page.locator('.load-url-dialog__load').click();
 
         const dialog = page.locator('dialog.confirm-dialog[data-dialog-type="mapSwitch"]');
@@ -69,7 +69,7 @@ test.describe('Load-from-URL: switch-map confirmation (ribbon)', () => {
         await loadFirstLayout(page);
 
         await page.locator('[data-action="ribbon-load-url"]').click();
-        await page.locator('.load-url-dialog__input').fill('/e2e/data/different-map.xml');
+        await page.locator('.load-url-dialog__input').fill('/samples/cat hall.xml');
         await page.locator('.load-url-dialog__load').click();
 
         const dialog = page.locator('dialog.confirm-dialog[data-dialog-type="mapSwitch"]');
@@ -81,7 +81,7 @@ test.describe('Load-from-URL: switch-map confirmation (ribbon)', () => {
 
         // One new layer for the new map, named after the file
         await expect(page.locator('#layers-list .layer-item')).toHaveCount(1, { timeout: 10_000 });
-        await expect(page.locator('#layers-list .layer-item .layer-name').first()).toContainText('different-map', { timeout: 10_000 });
+        await expect(page.locator('#layers-list .layer-item .layer-name').first()).toContainText('cat hall', { timeout: 10_000 });
     });
 
     test('adds a layer without confirmation when URL layout is for the same map', async ({ page }) => {
