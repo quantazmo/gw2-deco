@@ -8,13 +8,10 @@
  */
 
 import { DockRegion } from './DockRegion.js';
-import { PanelDragManager } from './PanelDragManager.js';
-import { DropZoneOverlay } from './DropZoneOverlay.js';
 import { TabbedContainer } from './TabbedContainer.js';
 import { StackedContainer } from './StackedContainer.js';
 import { RibbonToolbar } from './RibbonToolbar.js';
 import { DockLayoutConfiguration, replaceNode, createTabGroupNode, createSplitNode, findNode } from '../../domain/DockLayoutConfiguration.js';
-import { ReorderPanelCommand } from '../../application/commands/ReorderPanelCommand.js';
 import { ResizeDockCommand } from '../../application/commands/ResizeDockCommand.js';
 import { LAYOUT, PANEL_IDS } from '../../config/constants.js';
 import type { DockLayoutNode, DockNodePath, PanelNode, SplitNode, TabGroupNode } from '../../domain/DockLayoutConfiguration.js';
@@ -46,8 +43,6 @@ export class DockManager {
     private _undoRedoManager: UndoRedoManager | null;
     private _toolModeStore: ToolModeStore | null;
     private _unsubscribe: (() => void) | null;
-    private _panelDragManager: PanelDragManager | null;
-    private _dropZoneOverlay: DropZoneOverlay | null;
     private _treeContainer: HTMLDivElement | null;
     private _ribbon: RibbonToolbar | null;
     private _resizeHandler: (() => void) | null;
@@ -60,7 +55,7 @@ export class DockManager {
      * @param {Object} panelContentMap      Map of panelId → HTMLElement content sources
      *   e.g. { map: el, layers: el, decorationList: el }
      * @param {object} [appService]         AppService for dispatching commands (optional)
-     * @param {object} [eventBus]           EventBus for drag events (optional)
+    * @param {object} [eventBus]           EventBus for tab activation events (optional)
      * @param {object} [appStore]           AppStore for ribbon toolbar state (optional)
      * @param {object} [zoomStore]          ZoomStore for ribbon zoom actions (optional)
      * @param {object} [undoRedoManager]    UndoRedoManager for ribbon undo/redo (optional)
@@ -87,8 +82,6 @@ export class DockManager {
         this._undoRedoManager = undoRedoManager;
         this._toolModeStore = toolModeStore;
         this._unsubscribe = null;
-        this._panelDragManager = null;
-        this._dropZoneOverlay = null;
         this._treeContainer = null;
         this._ribbon = null;
         this._resizeHandler = null;
@@ -98,8 +91,7 @@ export class DockManager {
 
     /**
      * Mount DockManager: subscribe to store and render initial layout.
-     * Also initialises PanelDragManager, DropZoneOverlay and RibbonToolbar if the
-     * appropriate dependencies were provided.
+    * Also initialises RibbonToolbar if the appropriate dependencies were provided.
      */
     mount(): void {
         // Create a stable sub-container for the layout tree so that the ribbon
@@ -119,15 +111,6 @@ export class DockManager {
             this._ribbon = ribbon;
             this.rootElement.insertBefore(ribbon.getElement(), this._treeContainer);
             this.rootElement.classList.add('has-ribbon');
-        }
-
-        // Wire drag-and-drop interaction if dependencies are available
-        if (this._appService && this._eventBus) {
-            this._panelDragManager = new PanelDragManager(this._appService, this._eventBus, this.layoutStore);
-            this._panelDragManager.attach(this.rootElement);
-
-            this._dropZoneOverlay = new DropZoneOverlay();
-            this._dropZoneOverlay.attach(this._eventBus);
         }
 
         // Subscribe to tab activation events and update the layout tree activeIndex
@@ -210,7 +193,7 @@ export class DockManager {
             return this._renderSplitNode(node, path);
         }
         if (node.type === 'tabgroup') {
-            return this._renderTabGroupNode(node, path);
+            return this._renderTabGroupNode(node);
         }
 
         // Fallback for unknown node types
@@ -264,21 +247,11 @@ export class DockManager {
     }
 
     /** @private */
-    _renderTabGroupNode(node: TabGroupNode, path: DockNodePath): HTMLElement {
-        const appService = this._appService;
-        const onReorder = appService
-            ? (fromIndex: number, toIndex: number) => {
-                void appService.execute(
-                    new ReorderPanelCommand('tab', path, fromIndex, toIndex)
-                );
-            }
-            : null;
-        const container = new TabbedContainer(node, this.panelContentMap, this._eventBus, onReorder);
+    _renderTabGroupNode(node: TabGroupNode): HTMLElement {
+        const container = new TabbedContainer(node, this.panelContentMap, this._eventBus);
 
         const wrapper = document.createElement('div');
         wrapper.className = 'panel-wrapper tab-group-wrapper';
-        // Expose all panelIds so PanelDragManager can resolve hit-testing
-        node.panels.forEach(pid => wrapper.dataset['panelId_' + pid] = pid);
         wrapper.appendChild(container.getElement());
         return wrapper;
     }

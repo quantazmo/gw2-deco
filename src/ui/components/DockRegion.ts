@@ -1,6 +1,6 @@
 /**
  * DockRegion
- * Renders a single panel wrapper with a title bar (drag handle) and a content area.
+ * Renders a single panel wrapper with a title bar and a content area.
  * Used by DockManager to wrap each panel content element in the layout tree.
  */
 
@@ -37,10 +37,9 @@ export class DockRegion {
         wrapper.className = 'dock-region';
         wrapper.dataset.panelId = this.panelId;
 
-        // Title bar — doubles as drag handle
+        // Title bar
         const titleBar = document.createElement('div');
         titleBar.className = 'dock-region-title';
-        titleBar.dataset.dragHandle = 'true';
         titleBar.dataset.panelId = this.panelId;
 
         const titleText = document.createElement('span');

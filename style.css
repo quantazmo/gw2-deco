@@ -373,14 +373,10 @@ image.tile {
   padding: 0 8px;
   background: var(--header-bg);
   border-bottom: 1px solid var(--border);
-  cursor: grab;
+  cursor: default;
   user-select: none;
   flex-shrink: 0;
   gap: 4px;
-}
-
-.dock-region-title:active {
-  cursor: grabbing;
 }
 
 .dock-region-title-text {
@@ -563,8 +559,6 @@ image.tile {
    DRAG INTERACTION: Panel Drag-and-Drop (US1 — Edge Docking)
    ============================================================ */
 
-/* Title bar grab cursor handled by .dock-region-title / :active above */
-
 /* Panel opacity reduction while being dragged */
 .panel-wrapper.dragging {
   opacity: 0.5;
@@ -683,15 +677,6 @@ image.tile {
   user-select: none;
 }
 
-.tabbed-container .tab-button {
-  cursor: grab;
-}
-
-.tabbed-container .tab-button:active {
-  cursor: grabbing;
-}
-
-/* Active tab indicator overrides inherited grab cursor while not being dragged */
 .tabbed-container .tab-button.active {
   background-color: var(--surface-bg);
   color: #007bff;

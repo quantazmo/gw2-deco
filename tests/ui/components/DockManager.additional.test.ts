@@ -1,7 +1,6 @@
 /**
  * Additional tests for DockManager to cover remaining uncovered lines:
  * Lines 80-85  (RibbonToolbar init when appService+appStore+zoomStore provided)
- * Lines 90-94  (PanelDragManager init when appService+eventBus provided)
  * Lines 118-119 (ribbon.unmount called on unmount)
  * Lines 126-127 (clearTimeout for pending resizeTimer on unmount)
  * Lines 166-168 (fallback for unknown node type)
@@ -98,16 +97,17 @@ describe('DockManager — additional coverage', () => {
     });
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Lines 90-94: PanelDragManager and DropZoneOverlay initialization
+    // Panel dragging is disabled; divider resizing remains available.
     // ─────────────────────────────────────────────────────────────────────────
 
-    test('creates PanelDragManager and DropZoneOverlay when appService and eventBus provided', () => {
+    test('does not initialize panel drag-and-drop when appService and eventBus are provided', () => {
         const fakeAppService = { execute: vi.fn() };
         const dm = new DockManager(rootElement, layoutStore, panelContentMap, fakeAppService, eventBus);
         dm.mount();
 
-        expect(dm._panelDragManager).not.toBeNull();
-        expect(dm._dropZoneOverlay).not.toBeNull();
+        expect(rootElement.querySelector('[data-drag-handle]')).toBeNull();
+        expect(rootElement.querySelector('.drop-zone-overlay')).toBeNull();
+        expect(rootElement.querySelector('.divider-resizer')).not.toBeNull();
 
         dm.unmount();
     });
