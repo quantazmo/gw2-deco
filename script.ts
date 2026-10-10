@@ -1,4 +1,4 @@
-import { scaleLinear } from './scaleFactory.ts';
+import { scaleLinear, type LinearScale, type ZoomTransform } from './src/ui/scaleFactory.ts';
 import { createZoomHandler } from './src/ui/ZoomHandler.js';
 import { UI_LAYOUT, ZOOM } from './src/config/constants.js';
 import { initializeApplication } from './src/initialization/ApplicationInitializer.js';
@@ -8,22 +8,6 @@ import { MapViewer } from './src/ui/components/MapViewer.js';
 import { LayerPanel } from './src/ui/components/LayerPanel.js';
 import { ToolPanel } from './src/ui/components/ToolPanel.js';
 import { FileDropZone } from './src/ui/components/FileDropZone.js';
-
-type LinearScale = ((value: number) => number) & {
-    domain: {
-        (): [number, number];
-        (values: [number, number]): LinearScale;
-    };
-    range: {
-        (): [number, number];
-        (values: [number, number]): LinearScale;
-    };
-    copy: () => LinearScale;
-    rescaleX: (transform: { k: number; x: number; y: number }) => LinearScale;
-    rescaleY: (transform: { k: number; x: number; y: number }) => LinearScale;
-};
-
-type ZoomTransform = { k: number; x: number; y: number };
 
 type AppContextLike = {
     appStore: { getState: () => any; subscribe: (listener: (state: any) => void) => void; dispatch: (action: string, payload?: any) => void };

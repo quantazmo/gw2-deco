@@ -9,7 +9,7 @@ export class BoundaryCalculationService {
      * @param {MapBoundary} boundary - The boundary to calculate bounds for
      * @returns {Object} - {min: {x, y}, max: {x, y}, width, height}
      */
-    static calculateBoundsFromBoundary(boundary: { getBounds(): unknown }) {
+    static calculateBoundsFromBoundary(boundary: { getBounds(): Bounds }): Bounds {
         if (!boundary || typeof boundary.getBounds !== 'function') {
             throw new Error('BoundaryCalculationService.calculateBoundsFromBoundary: boundary must be a MapBoundary instance');
         }
