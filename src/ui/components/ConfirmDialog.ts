@@ -109,6 +109,9 @@ export class ConfirmDialog {
         // Confirm button
         this._confirmBtn = createElement('button', {
             className: 'confirm-dialog__confirm',
+            attributes: {
+                type: 'button'
+            },
             parent: actions,
             events: {
                 click: () => this._close(true)
@@ -118,6 +121,9 @@ export class ConfirmDialog {
         // Cancel button
         this._cancelBtn = createElement('button', {
             className: 'confirm-dialog__cancel',
+            attributes: {
+                type: 'button'
+            },
             parent: actions,
             events: {
                 click: () => this._close(false)

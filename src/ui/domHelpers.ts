@@ -67,22 +67,22 @@ function createElement<K1 extends keyof HTMLElementTagNameMap, K2 extends keyof 
  * Add one or more classes to an element
  */
 function addClass(element: HTMLElement, classNames: string | string[]): void {
-    if (Array.isArray(classNames)) {
-        element.classList.add(...classNames.filter(str => str.trim() !== ''));
-    } else {
-        element.classList.add(classNames);
-    }
+    const tokens = Array.isArray(classNames)
+        ? classNames.flatMap(name => name.split(/\s+/))
+        : classNames.split(/\s+/);
+
+    element.classList.add(...tokens.filter(token => token.trim() !== ''));
 }
 
 /**
  * Remove one or more classes from an element
  */
 function removeClass(element: HTMLElement, classNames: string | string[]): void {
-    if (Array.isArray(classNames)) {
-        element.classList.remove(...classNames);
-    } else {
-        element.classList.remove(classNames);
-    }
+    const tokens = Array.isArray(classNames)
+        ? classNames.flatMap(name => name.split(/\s+/))
+        : classNames.split(/\s+/);
+
+    element.classList.remove(...tokens.filter(token => token.trim() !== ''));
 }
 
 /**
@@ -92,11 +92,28 @@ function removeClass(element: HTMLElement, classNames: string | string[]): void 
  * @param {boolean} force - Optional: force add (true) or remove (false)
  */
 function toggleClass(element: HTMLElement, className: string, force?: boolean): void {
-    if (force === undefined) {
-        element.classList.toggle(className);
-    } else {
-        element.classList.toggle(className, force);
+    const tokens = className.split(/\s+/).filter(token => token.trim() !== '');
+
+    if (tokens.length === 0) {
+        return;
     }
+
+    if (tokens.length === 1) {
+        if (force === undefined) {
+            element.classList.toggle(tokens[0]);
+        } else {
+            element.classList.toggle(tokens[0], force);
+        }
+        return;
+    }
+
+    tokens.forEach(token => {
+        if (force === undefined) {
+            element.classList.toggle(token);
+        } else {
+            element.classList.toggle(token, force);
+        }
+    });
 }
 
 /**
@@ -106,7 +123,8 @@ function toggleClass(element: HTMLElement, className: string, force?: boolean): 
  * @returns {boolean}
  */
 function hasClass(element: HTMLElement, className: string): boolean {
-    return element.classList.contains(className);
+    const tokens = className.split(/\s+/).filter(token => token.trim() !== '');
+    return tokens.length > 0 && tokens.every(token => element.classList.contains(token));
 }
 
 /**
