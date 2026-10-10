@@ -50,8 +50,7 @@ npm install
 Serve the repository root as a static site, then open it in a browser.
 
 ```bash
-npm run build
-npm run preview
+npm start
 ```
 
 ## Running Tests
