@@ -353,12 +353,12 @@ class HomesteadLayout {
      * @param {string[]} decorationIds - IDs of decorations to remove
      * @returns {{ removed: Map<string, { sourceLayerId: string, decoration: object }> }}
      */
-    removeDecorations(decorationIds: string[]): { removed: Map<string, { sourceLayerId: string; decoration: Decoration | null }> } {
+    removeDecorations(decorationIds: string[]): { removed: Map<string, { sourceLayerId: string; decoration: Decoration }> } {
         if (!Array.isArray(decorationIds)) {
             throw new Error('HomesteadLayout.removeDecorations: decorationIds must be an array');
         }
 
-        const removed = new Map(); // decorationId → { sourceLayerId, decoration }
+        const removed = new Map<string, { sourceLayerId: string; decoration: Decoration }>();
 
         for (const decorationId of decorationIds) {
             const sourceLayer = this._findLayerContaining(decorationId);
@@ -366,6 +366,9 @@ class HomesteadLayout {
                 continue;
             }
             const decoration = sourceLayer.getDecoration(decorationId);
+            if (!decoration) {
+                continue;
+            }
             sourceLayer.removeDecoration(decorationId);
             removed.set(decorationId, { sourceLayerId: sourceLayer.id, decoration });
         }

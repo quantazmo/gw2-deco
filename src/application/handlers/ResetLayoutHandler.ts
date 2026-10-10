@@ -7,17 +7,21 @@
  */
 
 import { DockLayoutConfiguration } from '../../domain/DockLayoutConfiguration.js';
+import { DockPanelLayoutStore } from '../../ui/stores/DockPanelLayoutStore.ts';
+import { ResetLayoutCommand } from '../commands/ResetLayoutCommand.ts';
+
+type ClearableRepository = { clear(): void };
 
 export class ResetLayoutHandler {
-    _layoutStore: any; // JS domain object � fully typed once domain migrates to TypeScript
-    _repository: any; // JS domain object � fully typed once domain migrates to TypeScript
+    _layoutStore: DockPanelLayoutStore;
+    _repository: ClearableRepository | null;
 
     /**
      * @param {import('../../ui/stores/LayoutStore.js').LayoutStore} layoutStore
      * @param {import('../../infrastructure/repositories/LayoutRepository.js').LayoutRepository|null} [repository]
      *   Optional. When provided, clear() is called to remove the persisted layout.
      */
-    constructor(layoutStore: unknown, repository: unknown = null) {
+    constructor(layoutStore: DockPanelLayoutStore, repository: ClearableRepository | null = null) {
         this._layoutStore = layoutStore;
         this._repository = repository;
     }
@@ -25,14 +29,14 @@ export class ResetLayoutHandler {
     /**
      * @param {import('../commands/ResetLayoutCommand.js').ResetLayoutCommand} _command
      */
-    execute(_command: any) { // TODO: typed command interface pending domain migration
+    execute(_command: ResetLayoutCommand): void {
         return this.handle(_command);
     }
 
     /**
      * @param {import('../commands/ResetLayoutCommand.js').ResetLayoutCommand} _command
      */
-    handle(_command: any) { // TODO: typed command interface pending domain migration
+    handle(_command: ResetLayoutCommand): void {
         // Replace store state with the default layout
         this._layoutStore.setState(DockLayoutConfiguration.createDefault());
 

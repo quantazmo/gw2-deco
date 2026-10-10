@@ -1,9 +1,31 @@
-// @ts-nocheck
 /**
  * XML Layout Adapter
  * Handles parsing and validating XML layout files
  * Responsible for converting XML strings into layout objects
  */
+
+export type ParsedDecorationData = {
+    id: number;
+    name: string;
+    position: { x: number; y: number; z: number };
+    rotation: number | { x?: number; y?: number; z?: number };
+    scale: number;
+};
+
+export type ParsedLayoutData = {
+    id: number;
+    name: string;
+    decorations: ParsedDecorationData[];
+};
+
+interface ValidationResult {
+    isValid: boolean;
+    errors: string[];
+}
+
+function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
 
 /**
  * Validation result object
@@ -19,7 +41,14 @@ export class XmlLayoutAdapter {
      * @returns {Promise<Object>} Layout object with id, name, decorations
      * @throws {Error} If XML is invalid or required fields are missing
      */
-    static async parseLayout(xmlString) {
+    static async parseLayout(xmlString: string): Promise<ParsedLayoutData> {
+        return this.parseLayoutSync(xmlString);
+    }
+
+    /**
+     * Synchronously parse an XML layout string and return a layout object.
+     */
+    static parseLayoutSync(xmlString: string): ParsedLayoutData {
         const validationResult = this.validateXmlString(xmlString);
         if (!validationResult.isValid) {
             throw new Error(`XML validation failed:\n${validationResult.errors.join('\n')}`);
@@ -34,8 +63,8 @@ export class XmlLayoutAdapter {
      * @param {string} xmlString - The XML content to validate
      * @returns {ValidationResult} Validation result
      */
-    static validateXmlString(xmlString) {
-        const errors = [];
+    static validateXmlString(xmlString: string): ValidationResult {
+        const errors: string[] = [];
 
         // Check if string is empty
         if (!xmlString || typeof xmlString !== 'string' || xmlString.trim().length === 0) {
@@ -70,7 +99,7 @@ export class XmlLayoutAdapter {
 
             // Validate mapId is a valid number
             const mapId = rootElement.getAttribute('mapId');
-            if (isNaN(parseInt(mapId))) {
+            if (isNaN(parseInt(mapId ?? '', 10))) {
                 errors.push(`mapId must be a valid number, got: "${mapId}"`);
             }
 
@@ -81,7 +110,7 @@ export class XmlLayoutAdapter {
                 errors.push(...propErrors);
             }
         } catch (error) {
-            errors.push(`Unexpected error during validation: ${error.message}`);
+            errors.push(`Unexpected error during validation: ${errorMessage(error)}`);
         }
 
         return {
@@ -94,8 +123,8 @@ export class XmlLayoutAdapter {
      * Validate a single prop (decoration) element
      * @private
      */
-    static _validatePropElement(propElement, index) {
-        const errors = [];
+    static _validatePropElement(propElement: Element, index: number): string[] {
+        const errors: string[] = [];
         const requiredAttrs = ['id', 'name', 'pos', 'rot', 'scl'];
 
         for (const attr of requiredAttrs) {
@@ -106,23 +135,23 @@ export class XmlLayoutAdapter {
 
         // Validate position format if present
         if (propElement.hasAttribute('pos')) {
-            const pos = propElement.getAttribute('pos').trim().split(/\s+/);
-            if (pos.length !== 3 || !pos.every(v => !isNaN(parseFloat(v)))) {
+            const pos = (propElement.getAttribute('pos') ?? '').trim().split(/\s+/);
+            if (pos.length !== 3 || !pos.every((value: string) => !isNaN(parseFloat(value)))) {
                 errors.push(`Decoration #${index + 1} has invalid "pos" format. Expected 3 numbers, got: "${propElement.getAttribute('pos')}"`);
             }
         }
 
         // Validate rotation format if present
         if (propElement.hasAttribute('rot')) {
-            const rot = propElement.getAttribute('rot').trim().split(/\s+/);
-            if (rot.length !== 3 || !rot.every(v => !isNaN(parseFloat(v)))) {
+            const rot = (propElement.getAttribute('rot') ?? '').trim().split(/\s+/);
+            if (rot.length !== 3 || !rot.every((value: string) => !isNaN(parseFloat(value)))) {
                 errors.push(`Decoration #${index + 1} has invalid "rot" format. Expected 3 numbers, got: "${propElement.getAttribute('rot')}"`);
             }
         }
 
         // Validate scale is a number if present
         if (propElement.hasAttribute('scl')) {
-            const scl = propElement.getAttribute('scl');
+            const scl = propElement.getAttribute('scl') ?? '';
             if (isNaN(parseFloat(scl))) {
                 errors.push(`Decoration #${index + 1} has invalid "scl" value. Expected a number, got: "${scl}"`);
             }
@@ -130,8 +159,8 @@ export class XmlLayoutAdapter {
 
         // Validate id is a number if present
         if (propElement.hasAttribute('id')) {
-            const id = propElement.getAttribute('id');
-            if (isNaN(parseInt(id))) {
+            const id = propElement.getAttribute('id') ?? '';
+            if (isNaN(parseInt(id, 10))) {
                 errors.push(`Decoration #${index + 1} has invalid "id" value. Expected an integer, got: "${id}"`);
             }
         }
@@ -143,7 +172,7 @@ export class XmlLayoutAdapter {
      * Parse XML string into DOM
      * @private
      */
-    static _parseXmlString(xmlString) {
+    static _parseXmlString(xmlString: string): XMLDocument {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlString, 'application/xml');
 
@@ -158,17 +187,17 @@ export class XmlLayoutAdapter {
      * Extract layout data from parsed XML document
      * @private
      */
-    static _extractLayout(xmlDoc) {
+    static _extractLayout(xmlDoc: XMLDocument): ParsedLayoutData {
         const xmlMap = xmlDoc.documentElement;
-        const mapId = parseInt(xmlMap.getAttribute('mapId'));
-        const mapName = xmlMap.getAttribute('mapName');
+        const mapId = parseInt(xmlMap.getAttribute('mapId') ?? '', 10);
+        const mapName = xmlMap.getAttribute('mapName') ?? '';
 
         const decorations = [...xmlDoc.getElementsByTagName('prop')]
-            .map((xmlProp, index) => {
+            .map((xmlProp: Element, index: number) => {
                 try {
                     return this._extractDecoration(xmlProp);
                 } catch (error) {
-                    throw new Error(`Error parsing decoration #${index + 1}: ${error.message}`);
+                    throw new Error(`Error parsing decoration #${index + 1}: ${errorMessage(error)}`);
                 }
             });
 
@@ -183,13 +212,13 @@ export class XmlLayoutAdapter {
      * Extract a single decoration from a prop element
      * @private
      */
-    static _extractDecoration(xmlProp) {
-        const position = xmlProp.getAttribute('pos').trim().split(/\s+/).map(v => parseFloat(v));
-        const rotation = xmlProp.getAttribute('rot').trim().split(/\s+/).map(v => parseFloat(v));
+    static _extractDecoration(xmlProp: Element): ParsedDecorationData {
+        const position = xmlProp.getAttribute('pos')!.trim().split(/\s+/).map((value: string) => parseFloat(value));
+        const rotation = xmlProp.getAttribute('rot')!.trim().split(/\s+/).map((value: string) => parseFloat(value));
 
         return {
-            id: parseInt(xmlProp.getAttribute('id')),
-            name: xmlProp.getAttribute('name'),
+            id: parseInt(xmlProp.getAttribute('id')!, 10),
+            name: xmlProp.getAttribute('name')!,
             position: {
                 x: position[0],
                 y: position[1],
@@ -200,7 +229,7 @@ export class XmlLayoutAdapter {
                 y: rotation[1],
                 z: rotation[2]
             },
-            scale: parseFloat(xmlProp.getAttribute('scl'))
+            scale: parseFloat(xmlProp.getAttribute('scl')!)
         };
     }
 }

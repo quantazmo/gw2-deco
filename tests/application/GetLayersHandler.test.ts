@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/application/handlers/GetLayersHandler.js
  * Tests the application layer query handling for retrieving layers

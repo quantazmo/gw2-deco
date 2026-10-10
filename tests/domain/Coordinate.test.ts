@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/domain/Coordinate.js
  * Tests coordinate value object validation, distance calculations, and immutability

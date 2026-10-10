@@ -1,10 +1,13 @@
-// @ts-nocheck
 /**
  * MapRepository Interface
  * 
  * Defines the contract for GW2 map data persistence operations.
  * Implementations should handle storing and retrieving GW2Map instances.
  */
+import type { Coordinate } from '../../domain/Coordinate.js';
+import type { GW2Map } from '../../domain/GW2Map.js';
+import type { MapBoundary } from '../../domain/MapBoundary.js';
+
 export class MapRepository {
     /**
      * Load a GW2 map by ID
@@ -12,7 +15,7 @@ export class MapRepository {
      * @returns {Promise<GW2Map|null>} The map, or null if not found
      * @throws {Error} If load fails
      */
-    async loadById(mapId) {
+    async loadById(mapId: string | number): Promise<GW2Map | null> {
         throw new Error('loadById() must be implemented by subclass');
     }
 
@@ -21,7 +24,7 @@ export class MapRepository {
      * @returns {Promise<GW2Map[]>} Array of all available maps
      * @throws {Error} If load fails
      */
-    async loadAll() {
+    async loadAll(): Promise<GW2Map[]> {
         throw new Error('loadAll() must be implemented by subclass');
     }
 
@@ -31,7 +34,7 @@ export class MapRepository {
      * @returns {Promise<MapBoundary|null>} The boundary, or null if not found
      * @throws {Error} If load fails
      */
-    async getBoundary(mapId) {
+    async getBoundary(mapId: string | number): Promise<MapBoundary | null> {
         throw new Error('getBoundary() must be implemented by subclass');
     }
 
@@ -41,7 +44,7 @@ export class MapRepository {
      * @returns {Promise<Coordinate[]|null>} Array of tile coordinates, or null if not found
      * @throws {Error} If load fails
      */
-    async getTiles(mapId) {
+    async getTiles(mapId: string | number): Promise<Coordinate[] | null> {
         throw new Error('getTiles() must be implemented by subclass');
     }
 
@@ -52,7 +55,7 @@ export class MapRepository {
      * @returns {Promise<object|null>} Floor data, or null if not found
      * @throws {Error} If load fails
      */
-    async getFloorData(continentId, floorId) {
+    async getFloorData(continentId: string | number, floorId: string | number): Promise<unknown | null> {
         throw new Error('getFloorData() must be implemented by subclass');
     }
 
@@ -62,7 +65,7 @@ export class MapRepository {
      * @returns {Promise<boolean>} True if map exists, false otherwise
      * @throws {Error} If check fails
      */
-    async exists(mapId) {
+    async exists(mapId: string | number): Promise<boolean> {
         throw new Error('exists() must be implemented by subclass');
     }
 
@@ -72,7 +75,7 @@ export class MapRepository {
      * @returns {Promise<void>}
      * @throws {Error} If caching fails
      */
-    async cache(map) {
+    async cache(map: GW2Map): Promise<void> {
         throw new Error('cache() must be implemented by subclass');
     }
 
@@ -82,7 +85,7 @@ export class MapRepository {
      * @returns {Promise<void>}
      * @throws {Error} If clear fails
      */
-    async clearCache(mapId) {
+    async clearCache(mapId: string | number): Promise<void> {
         throw new Error('clearCache() must be implemented by subclass');
     }
 
@@ -91,7 +94,7 @@ export class MapRepository {
      * @returns {Promise<void>}
      * @throws {Error} If clear fails
      */
-    async clearAllCache() {
+    async clearAllCache(): Promise<void> {
         throw new Error('clearAllCache() must be implemented by subclass');
     }
 }

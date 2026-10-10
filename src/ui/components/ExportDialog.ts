@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ExportDialog Component
  * Modal dialog for selecting layers to export to XML.
@@ -7,10 +6,23 @@
  * Confirm button disabled when no layers are selected.
  * Cancel (button or Escape) resolves with null.
  */
+import type { Layer } from '../../domain/Layer.js';
 
 let _instanceCount = 0;
 
 export class ExportDialog {
+    private _id: string;
+    private _resolve: ((result: string[] | null) => void) | null;
+    private _selections: Map<string, boolean>;
+    private _layers: Layer[];
+    private _dialogEl: HTMLDialogElement;
+    private _titleEl!: HTMLHeadingElement;
+    private _descEl!: HTMLParagraphElement;
+    private _listEl!: HTMLDivElement;
+    private _emptyMsgEl!: HTMLParagraphElement;
+    private _cancelBtn!: HTMLButtonElement;
+    private _confirmBtn!: HTMLButtonElement;
+
     constructor() {
         _instanceCount++;
         this._id = `export-dialog-${_instanceCount}`;
@@ -30,7 +42,7 @@ export class ExportDialog {
      *   Resolves with array of selected layer IDs on confirm.
      *   Resolves with null on cancel or Escape.
      */
-    show(layers) {
+    show(layers: Layer[]): Promise<string[] | null> {
         this._layers = layers;
         this._selections = new Map();
         for (const layer of layers) {
@@ -56,7 +68,7 @@ export class ExportDialog {
     /**
      * @private
      */
-    _createDialogElement() {
+    _createDialogElement(): HTMLDialogElement {
         const dialog = document.createElement('dialog');
         dialog.classList.add('export-dialog');
         dialog.setAttribute('role', 'dialog');
@@ -136,7 +148,7 @@ export class ExportDialog {
      * Render one row per layer into the layer list container.
      * @private
      */
-    _renderLayerList() {
+    _renderLayerList(): void {
         this._listEl.innerHTML = '';
 
         for (const layer of this._layers) {
@@ -174,7 +186,7 @@ export class ExportDialog {
      * Enable or disable the confirm button based on whether any layers are selected.
      * @private
      */
-    _updateConfirmState() {
+    _updateConfirmState(): void {
         const anyChecked = [...this._selections.values()].some(Boolean);
         this._confirmBtn.disabled = !anyChecked;
         this._emptyMsgEl.hidden = anyChecked;
@@ -185,7 +197,7 @@ export class ExportDialog {
      * @param {string[] | null} result
      * @private
      */
-    _close(result) {
+    _close(result: string[] | null): void {
         if (typeof this._dialogEl.close === 'function') {
             this._dialogEl.close();
         } else {
@@ -200,7 +212,7 @@ export class ExportDialog {
     /**
      * Remove the dialog element from the DOM.
      */
-    destroy() {
+    destroy(): void {
         if (this._dialogEl && this._dialogEl.parentNode) {
             this._dialogEl.parentNode.removeChild(this._dialogEl);
         }

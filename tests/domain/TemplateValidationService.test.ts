@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/domain/LayoutValidationService.js
  * Tests validation of decorations, layers, and layouts

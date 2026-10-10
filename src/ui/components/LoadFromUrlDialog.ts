@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * LoadFromUrlDialog Component
  * Modal dialog for loading a layout from a URL.
@@ -13,6 +12,18 @@ declare const __SAMPLE_FILES__: { path: string; mapName: string | null }[];
 let _instanceCount = 0;
 
 export class LoadFromUrlDialog {
+    private _id: string;
+    private _resolve: ((result: string | null) => void) | null;
+    private _dialogEl: HTMLDialogElement;
+    private _urlInput!: HTMLInputElement;
+    private _cancelBtn!: HTMLButtonElement;
+    private _loadBtn!: HTMLButtonElement;
+    private _sampleFilterInput: HTMLInputElement | null = null;
+    private _sampleFilterClearBtn: HTMLButtonElement | null = null;
+    private _sampleList: HTMLUListElement | null = null;
+    private _sampleItems: Array<{ name: string; url: string }> = [];
+    private _renderSampleList: (filter: string) => void = () => { };
+
     constructor() {
         _instanceCount++;
         this._id = `load-from-url-dialog-${_instanceCount}`;
@@ -25,7 +36,7 @@ export class LoadFromUrlDialog {
      * Show the dialog.
      * @returns {Promise<string | null>} Resolves with the URL to load, or null if cancelled.
      */
-    show() {
+    show(): Promise<string | null> {
         this._urlInput.value = '';
         // Clear sample filter and deselect any selected item
         if (this._sampleFilterInput) {
@@ -51,7 +62,7 @@ export class LoadFromUrlDialog {
     /**
      * Remove the dialog element from the DOM.
      */
-    destroy() {
+    destroy(): void {
         if (this._dialogEl && this._dialogEl.parentNode) {
             this._dialogEl.parentNode.removeChild(this._dialogEl);
         }
@@ -59,7 +70,7 @@ export class LoadFromUrlDialog {
 
     // ── private ──────────────────────────────────────────────────────────────
 
-    _createDialogElement() {
+    _createDialogElement(): HTMLDialogElement {
         const dialog = document.createElement('dialog');
         dialog.classList.add('load-url-dialog');
         dialog.setAttribute('role', 'dialog');
@@ -102,23 +113,25 @@ export class LoadFromUrlDialog {
             const filterWrapper = document.createElement('div');
             filterWrapper.classList.add('load-url-dialog__sample-filter-wrapper');
 
-            this._sampleFilterInput = document.createElement('input');
-            this._sampleFilterInput.type = 'text';
-            this._sampleFilterInput.classList.add('load-url-dialog__sample-filter');
-            this._sampleFilterInput.id = `${this._id}-sample-filter`;
-            this._sampleFilterInput.placeholder = 'Filter samples…';
-            this._sampleFilterInput.setAttribute('aria-label', 'Filter sample layouts');
+            const sampleFilterInput = document.createElement('input');
+            this._sampleFilterInput = sampleFilterInput;
+            sampleFilterInput.type = 'text';
+            sampleFilterInput.classList.add('load-url-dialog__sample-filter');
+            sampleFilterInput.id = `${this._id}-sample-filter`;
+            sampleFilterInput.placeholder = 'Filter samples…';
+            sampleFilterInput.setAttribute('aria-label', 'Filter sample layouts');
 
-            this._sampleFilterClearBtn = document.createElement('button');
-            this._sampleFilterClearBtn.type = 'button';
-            this._sampleFilterClearBtn.classList.add('load-url-dialog__sample-clear');
-            this._sampleFilterClearBtn.title = 'Clear filter';
-            this._sampleFilterClearBtn.setAttribute('aria-label', 'Clear filter');
-            this._sampleFilterClearBtn.textContent = '×';
-            this._sampleFilterClearBtn.style.display = 'none';
+            const sampleFilterClearBtn = document.createElement('button');
+            this._sampleFilterClearBtn = sampleFilterClearBtn;
+            sampleFilterClearBtn.type = 'button';
+            sampleFilterClearBtn.classList.add('load-url-dialog__sample-clear');
+            sampleFilterClearBtn.title = 'Clear filter';
+            sampleFilterClearBtn.setAttribute('aria-label', 'Clear filter');
+            sampleFilterClearBtn.textContent = '×';
+            sampleFilterClearBtn.style.display = 'none';
 
-            filterWrapper.appendChild(this._sampleFilterInput);
-            filterWrapper.appendChild(this._sampleFilterClearBtn);
+            filterWrapper.appendChild(sampleFilterInput);
+            filterWrapper.appendChild(sampleFilterClearBtn);
 
             // Build item data
             const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '');
@@ -129,13 +142,14 @@ export class LoadFromUrlDialog {
             });
 
             // Scrollable sample list
-            this._sampleList = document.createElement('ul');
-            this._sampleList.classList.add('load-url-dialog__sample-list');
-            this._sampleList.setAttribute('role', 'listbox');
-            this._sampleList.setAttribute('aria-label', 'Sample layouts');
+            const sampleList = document.createElement('ul');
+            this._sampleList = sampleList;
+            sampleList.classList.add('load-url-dialog__sample-list');
+            sampleList.setAttribute('role', 'listbox');
+            sampleList.setAttribute('aria-label', 'Sample layouts');
 
-            this._renderSampleList = (filter) => {
-                this._sampleList.innerHTML = '';
+            this._renderSampleList = (filter: string) => {
+                sampleList.innerHTML = '';
                 const lowerFilter = filter.toLowerCase();
                 const filtered = filter
                     ? this._sampleItems.filter(item => item.name.toLowerCase().includes(lowerFilter))
@@ -146,21 +160,21 @@ export class LoadFromUrlDialog {
                     li.setAttribute('role', 'option');
                     li.textContent = item.name;
                     li.addEventListener('click', () => {
-                        const prev = this._sampleList.querySelector('.load-url-dialog__sample-item--selected');
+                        const prev = sampleList.querySelector('.load-url-dialog__sample-item--selected');
                         if (prev) prev.classList.remove('load-url-dialog__sample-item--selected');
                         li.classList.add('load-url-dialog__sample-item--selected');
                         this._urlInput.value = item.url;
                         this._updateLoadState();
                     });
-                    this._sampleList.appendChild(li);
+                    sampleList.appendChild(li);
                 }
             };
             this._renderSampleList('');
 
-            let _filterDebounce = null;
-            this._sampleFilterInput.addEventListener('input', () => {
-                const val = this._sampleFilterInput.value;
-                this._sampleFilterClearBtn.style.display = val ? '' : 'none';
+            let _filterDebounce: ReturnType<typeof setTimeout> | null = null;
+            sampleFilterInput.addEventListener('input', () => {
+                const val = sampleFilterInput.value;
+                sampleFilterClearBtn.style.display = val ? '' : 'none';
                 if (_filterDebounce !== null) clearTimeout(_filterDebounce);
                 _filterDebounce = setTimeout(() => {
                     _filterDebounce = null;
@@ -168,20 +182,20 @@ export class LoadFromUrlDialog {
                 }, 200);
             });
 
-            this._sampleFilterClearBtn.addEventListener('click', () => {
-                this._sampleFilterInput.value = '';
-                this._sampleFilterClearBtn.style.display = 'none';
+            sampleFilterClearBtn.addEventListener('click', () => {
+                sampleFilterInput.value = '';
+                sampleFilterClearBtn.style.display = 'none';
                 if (_filterDebounce !== null) {
                     clearTimeout(_filterDebounce);
                     _filterDebounce = null;
                 }
                 this._renderSampleList('');
-                this._sampleFilterInput.focus();
+                sampleFilterInput.focus();
             });
 
             sampleGroup.appendChild(sampleLabel);
             sampleGroup.appendChild(filterWrapper);
-            sampleGroup.appendChild(this._sampleList);
+            sampleGroup.appendChild(sampleList);
             body.appendChild(sampleGroup);
         } else {
             this._sampleFilterInput = null;
@@ -211,7 +225,7 @@ export class LoadFromUrlDialog {
         this._urlInput.addEventListener('input', () => {
             // Deselect sample item if user manually edits the URL
             if (this._sampleList) {
-                const sel = this._sampleList.querySelector('.load-url-dialog__sample-item--selected');
+                const sel = this._sampleList.querySelector<HTMLElement>('.load-url-dialog__sample-item--selected');
                 if (sel && this._urlInput.value !== sel.dataset?.url) {
                     sel.classList.remove('load-url-dialog__sample-item--selected');
                 }
@@ -262,19 +276,19 @@ export class LoadFromUrlDialog {
         return dialog;
     }
 
-    _updateLoadState() {
+    _updateLoadState(): void {
         const url = this._urlInput?.value?.trim() ?? '';
         this._loadBtn.disabled = url.length === 0;
     }
 
-    _submit() {
+    _submit(): void {
         const url = this._urlInput.value.trim();
         if (url) {
             this._close(url);
         }
     }
 
-    _close(result) {
+    _close(result: string | null): void {
         if (typeof this._dialogEl.close === 'function') {
             this._dialogEl.close();
         } else {

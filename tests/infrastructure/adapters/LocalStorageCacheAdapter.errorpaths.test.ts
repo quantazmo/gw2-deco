@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Error-path tests for LocalStorageCacheAdapter — catch block coverage.
  * Uncovered lines: 80 (delete catch), 109 (clear catch), 136 (clearExpired catch), 175-176 (getStats catch)

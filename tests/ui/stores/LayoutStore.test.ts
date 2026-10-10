@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/ui/stores/LayoutStore.js
  * Covers: constructor, getState, setState, subscribe/unsubscribe,

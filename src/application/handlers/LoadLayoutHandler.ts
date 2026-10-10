@@ -1,18 +1,21 @@
-// @ts-nocheck
 /**
  * Handler for LoadLayoutCommand
  */
 import { XmlLayoutAdapter } from '../../infrastructure/XmlLayoutAdapter.js';
+import { LoadLayoutCommand } from '../commands/LoadLayoutCommand.ts';
+
+type LayoutRepository = { loadById(layoutId: string): Promise<unknown> };
+type LoadLayoutPayload = LoadLayoutCommand & { layoutId?: string };
 
 export class LoadLayoutHandler {
-    xmlAdapter: any; // JS domain object � fully typed once domain migrates to TypeScript
-    layoutRepository: any; // JS domain object � fully typed once domain migrates to TypeScript
+    xmlAdapter: XmlLayoutAdapter;
+    layoutRepository: LayoutRepository | null;
 
     /**
      * @param {XmlLayoutAdapter} xmlAdapter - XML layout adapter
      * @param {LocalLayoutRepository} layoutRepository - Optional repository for loading saved layouts
      */
-    constructor(xmlAdapter: unknown, layoutRepository: unknown = null) {
+    constructor(xmlAdapter: XmlLayoutAdapter, layoutRepository: LayoutRepository | null = null) {
         this.xmlAdapter = xmlAdapter;
         this.layoutRepository = layoutRepository;
     }
@@ -22,7 +25,7 @@ export class LoadLayoutHandler {
      * @param {LoadLayoutCommand} command - The command to execute
      * @returns {Object} The parsed layout data (DTO or domain entity)
      */
-    async execute(command) {
+    async execute(command: LoadLayoutPayload): Promise<unknown> {
         // If layout ID is provided and repository is available, load from repository
         if (command.layoutId && this.layoutRepository) {
             const layout = await this.layoutRepository.loadById(command.layoutId);
@@ -46,7 +49,7 @@ export class LoadLayoutHandler {
      * @param {LoadLayoutCommand} command - The command to execute
      * @returns {Object} The parsed layout data
      */
-    handle(command: any) { // TODO: typed command interface pending domain migration
+    handle(command: LoadLayoutPayload): unknown {
         if (!command) {
             throw new Error('LoadLayoutHandler.handle: command is required');
         }
@@ -58,7 +61,7 @@ export class LoadLayoutHandler {
                 // In production, prefer using execute() which is async
                 throw new Error('LoadLayoutHandler.handle: Use execute() for repository-based loading');
             } catch (error) {
-                throw new Error(`LoadLayoutHandler.handle: ${error.message}`);
+                throw new Error(`LoadLayoutHandler.handle: ${(error as Error).message}`);
             }
         }
 
@@ -71,7 +74,7 @@ export class LoadLayoutHandler {
             const layoutData = XmlLayoutAdapter.parseLayoutSync(command.xmlContent);
             return layoutData;
         } catch (error) {
-            throw new Error(`LoadLayoutHandler.handle: Failed to parse layout - ${error.message}`);
+            throw new Error(`LoadLayoutHandler.handle: Failed to parse layout - ${(error as Error).message}`);
         }
     }
 }

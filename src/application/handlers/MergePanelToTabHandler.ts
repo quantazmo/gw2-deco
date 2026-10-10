@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * MergePanelToTabHandler
  * Handles MergePanelToTabCommand:
@@ -18,14 +17,16 @@ import {
     removeNode,
     replaceNode,
 } from '../../domain/DockLayoutConfiguration.js';
+import { DockPanelLayoutStore } from '../../ui/stores/DockPanelLayoutStore.ts';
+import { MergePanelToTabCommand } from '../commands/MergePanelToTabCommand.ts';
 
 export class MergePanelToTabHandler {
-    layoutStore: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layoutStore: DockPanelLayoutStore;
 
     /**
      * @param {import('../../ui/stores/LayoutStore.js').LayoutStore} layoutStore
      */
-    constructor(layoutStore: unknown) {
+    constructor(layoutStore: DockPanelLayoutStore) {
         this.layoutStore = layoutStore;
     }
 
@@ -33,11 +34,11 @@ export class MergePanelToTabHandler {
      * @param {import('../commands/MergePanelToTabCommand.js').MergePanelToTabCommand} command
      * @returns {DockLayoutConfiguration}
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: MergePanelToTabCommand): DockLayoutConfiguration {
         return this.handle(command);
     }
 
-    handle(command: any) { // TODO: typed command interface pending domain migration
+    handle(command: MergePanelToTabCommand): DockLayoutConfiguration {
         const { draggedPanelId, targetPanelId } = command;
 
         if (draggedPanelId === targetPanelId) {
@@ -93,6 +94,9 @@ export class MergePanelToTabHandler {
             n => n === targetNode,
             replacementNode
         );
+        if (!newTree) {
+            throw new Error(`MergePanelToTabHandler: failed to replace target panel "${targetPanelId}"`);
+        }
 
         // 5. Validate and commit
         const newLayout = new DockLayoutConfiguration(newTree, currentLayout.version);

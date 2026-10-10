@@ -1,15 +1,20 @@
 /**
  * Application Service that orchestrates command and query handling
  */
+import { HomesteadLayout } from '../domain/HomesteadLayout.ts';
+import { XmlLayoutAdapter } from '../infrastructure/XmlLayoutAdapter.ts';
+
+type StoreDispatcher = { dispatch(action: string, payload?: unknown): void };
+
 export class AppService {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
-    xmlAdapter: any; // JS domain object � fully typed once domain migrates to TypeScript
-    appStore: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
+    xmlAdapter: XmlLayoutAdapter;
+    appStore: StoreDispatcher | null;
     eventHandlers: Record<string, Array<(event: unknown) => void>>;
     commandHandlers: Map<string, { execute(command: unknown): unknown }>;
-    queryHandlers: Map<string, { execute?(query: unknown): any; handle?(query: unknown): unknown }>; // JS domain object – fully typed once domain migrates to TypeScript
+    queryHandlers: Map<string, { execute?(query: unknown): unknown; handle?(query: unknown): unknown }>;
 
-    constructor(layout: unknown, xmlAdapter: unknown) {
+    constructor(layout: HomesteadLayout, xmlAdapter: XmlLayoutAdapter) {
         console.log('[AppService] 🚀 AppService constructor called');
         this.layout = layout;
         this.xmlAdapter = xmlAdapter;
@@ -24,7 +29,7 @@ export class AppService {
      * Set the AppStore reference for dispatching updates
      * @param {AppStore} store - The AppStore instance
      */
-    setAppStore(store: unknown): void {
+    setAppStore(store: StoreDispatcher): void {
         console.log('[AppService] ⚡ setAppStore() called');
         this.appStore = store;
         console.log('[AppService] ✅ AppStore reference set');
@@ -38,7 +43,7 @@ export class AppService {
      * @param {Object} handlers - Pre-instantiated handler instances
      * @returns {AppService} Initialized AppService instance
      */
-    static async createAsync(layout: unknown, xmlAdapter: unknown): Promise<AppService> {
+    static async createAsync(layout: HomesteadLayout, xmlAdapter: XmlLayoutAdapter): Promise<AppService> {
         console.log('[AppService] ⚡ createAsync() called - loading handlers...');
         // Import all handlers dynamically using ES modules
         const { CreateLayerHandler } = await import('./handlers/CreateLayerHandler.js');
@@ -226,7 +231,7 @@ export class AppService {
      * @private
      */
     _dispatchToStore(commandType: string, payload: unknown, result: unknown): void {
-        const store = this.appStore as { dispatch(action: string, data?: unknown): void } | null;
+        const store = this.appStore;
         if (!store) return;
         const p = payload as Record<string, unknown>;
         switch (commandType) {
@@ -282,11 +287,11 @@ export class AppService {
      * @param {string} eventType - The event type to subscribe to
      * @param {Function} handler - The handler function
      */
-    subscribe(eventType: string, handler: (event: unknown) => void): void {
+    subscribe<T = unknown>(eventType: string, handler: (event: T) => void): void {
         if (!this.eventHandlers[eventType]) {
             this.eventHandlers[eventType] = [];
         }
-        this.eventHandlers[eventType].push(handler);
+        this.eventHandlers[eventType].push(handler as (event: unknown) => void);
     }
 
     /**

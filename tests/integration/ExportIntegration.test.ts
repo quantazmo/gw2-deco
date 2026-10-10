@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration tests for the Export XML pipeline.
  * Tests the full chain: build state → ExportLayersHandler → XmlExportAdapter → parse XML output.

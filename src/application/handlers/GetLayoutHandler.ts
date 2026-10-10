@@ -1,14 +1,15 @@
-// @ts-nocheck
 /**
  * Handler for GetLayoutQuery
  */
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
+
 export class GetLayoutHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      */
-    constructor(layout: unknown) {
+    constructor(layout: HomesteadLayout) {
         this.layout = layout;
     }
 
@@ -17,7 +18,7 @@ export class GetLayoutHandler {
      * @param {GetLayoutQuery} query - The query to execute
      * @returns {Object} The layout as a DTO
      */
-    execute(query) {
+    execute(_query: unknown): ReturnType<HomesteadLayout['toDTO']> {
         return this.layout.toDTO();
     }
 }

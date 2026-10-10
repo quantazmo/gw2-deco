@@ -3,11 +3,12 @@
  */
 import { LayerId } from '../../domain/LayerId.js';
 import { LayerColorChangedEvent } from '../../domain/events/LayerColorChangedEvent.js';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
 
 export class SetLayerColorHandler {
-    layout: any;
+    layout: HomesteadLayout;
 
-    constructor(layout: unknown) {
+    constructor(layout: HomesteadLayout) {
         this.layout = layout;
     }
 
@@ -16,7 +17,7 @@ export class SetLayerColorHandler {
      * @param {Object} command - { layerId, color }
      * @returns {{ layerId: string, color: string }}
      */
-    execute(command: any) {
+    execute(command: { layerId: string; color: string }): { layerId: string; color: string } {
         const layerId = new LayerId(command.layerId);
 
         const layer = this.layout.getLayer(layerId.id);

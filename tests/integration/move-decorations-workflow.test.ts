@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration tests for move-decorations workflow
  * Covers: move from list to layer, move from map to layer, context menu move,

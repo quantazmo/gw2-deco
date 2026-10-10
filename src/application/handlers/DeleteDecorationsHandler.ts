@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Handler for DeleteDecorationsCommand
  * Deletes decorations from their layers via HomesteadLayout.removeDecorations().
@@ -8,18 +7,24 @@
  */
 import { DecorationsDeletedEvent } from '../../domain/events/DecorationsDeletedEvent.js';
 import { UndoRecord } from '../UndoRecord.js';
+import { UndoRedoManager } from '../UndoRedoManager.ts';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
+
+type DecorationSelectionStore = {
+    clearSelection(): void;
+};
 
 export class DeleteDecorationsHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
-    selectionStore: any; // JS domain object � fully typed once domain migrates to TypeScript
-    undoRedoManager: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
+    selectionStore: DecorationSelectionStore | null;
+    undoRedoManager: UndoRedoManager | null;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      * @param {SelectionStore} [selectionStore] - Optional selection store for auto-deselect
      * @param {UndoRedoManager} [undoRedoManager] - Optional undo/redo manager
      */
-    constructor(layout: unknown, selectionStore: unknown, undoRedoManager: unknown) {
+    constructor(layout: HomesteadLayout, selectionStore: DecorationSelectionStore | null = null, undoRedoManager: UndoRedoManager | null = null) {
         this.layout = layout;
         this.selectionStore = selectionStore || null;
         this.undoRedoManager = undoRedoManager || null;
@@ -30,7 +35,7 @@ export class DeleteDecorationsHandler {
      * @param {Object} command - { decorationIds: string[] }
      * @returns {{ success: boolean, deleted: number }}
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: { decorationIds: string[] }): { success: boolean; deleted: number } {
         const { decorationIds } = command;
 
         if (!Array.isArray(decorationIds) || decorationIds.length === 0) {
@@ -38,7 +43,7 @@ export class DeleteDecorationsHandler {
         }
 
         // Capture original indices before deleting (for undo order preservation)
-        const originalIndices = {};
+        const originalIndices: Record<string, number> = {};
         for (const decorationId of decorationIds) {
             const sourceLayer = this.layout.getDecorationLayer(decorationId);
             if (sourceLayer) {
@@ -52,8 +57,8 @@ export class DeleteDecorationsHandler {
         if (this.undoRedoManager && removed.size > 0) {
             const deletedCount = removed.size;
             // Store full decoration data for undo restore
-            const removedData = {};
-            const sourceMapping = {};
+            const removedData: Record<string, { sourceLayerId: string; decoration: Record<string, unknown>; originalIndex: number }> = {};
+            const sourceMapping: Record<string, string> = {};
             for (const [id, { sourceLayerId, decoration }] of removed) {
                 sourceMapping[id] = sourceLayerId;
                 removedData[id] = {

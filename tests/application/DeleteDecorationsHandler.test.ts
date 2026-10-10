@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for DeleteDecorationsHandler (Phase 10 — US7: Delete Selected Decorations)
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * InfrastructureFactory
  * 
@@ -11,8 +10,25 @@ import { LocalStorageCacheAdapter } from './adapters/LocalStorageCacheAdapter.js
 import { XmlLayoutAdapter } from './XmlLayoutAdapter.js';
 import { Gw2MapRepository } from './repositories/Gw2MapRepository.js';
 
+interface InfrastructureOptions {
+    apiBaseUrl?: string;
+    apiMaxRetries?: number;
+    apiTimeout?: number;
+    apiRetryDelay?: number;
+    cacheDefaultTTL?: number;
+    cacheStoragePrefix?: string;
+    layoutStorageKey?: string;
+}
+
 export class InfrastructureFactory {
-    constructor(options = {}) {
+    private readonly options: Required<InfrastructureOptions>;
+    private _apiAdapter: Gw2ApiAdapter | null;
+    private _cacheAdapter: LocalStorageCacheAdapter | null;
+    private _layoutAdapter: XmlLayoutAdapter | null;
+    private _mapRepository: Gw2MapRepository | null;
+    private _layoutRepository: unknown | null;
+
+    constructor(options: InfrastructureOptions = {}) {
         this.options = {
             apiBaseUrl: options.apiBaseUrl || 'https://api.guildwars2.com',
             apiMaxRetries: options.apiMaxRetries || 3,
@@ -144,7 +160,7 @@ export let infrastructureFactory = new InfrastructureFactory();
  * Set a custom infrastructure factory instance
  * @param {InfrastructureFactory} factory
  */
-export function setInfrastructureFactory(factory) {
+export function setInfrastructureFactory(factory: InfrastructureFactory): void {
     infrastructureFactory = factory;
 }
 

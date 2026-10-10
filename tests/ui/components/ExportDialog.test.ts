@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for ExportDialog component
  * Covers US2 (pre-check, decoration count, confirm disabled) and US3 (cancel, Escape).

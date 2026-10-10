@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for LayoutRepository
  * Validates localStorage serialization, deserialization, error recovery, and version checks.

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * DividerResizer
  * A 6px draggable divider element placed between two panel children in a SplitNode.
@@ -14,7 +13,23 @@
 
 import { LAYOUT } from '../../config/constants.js';
 
+type SplitDirection = 'horizontal' | 'vertical';
+interface DividerResizerOptions {
+    minRatio?: number;
+    maxRatio?: number;
+}
+
 export class DividerResizer {
+    private _direction: SplitDirection;
+    private _onRatioChange: (ratio: number) => void;
+    private _minRatio: number;
+    private _maxRatio: number;
+    private _element: HTMLDivElement;
+    private _splitContainer: HTMLElement | null = null;
+    private _firstChild: HTMLElement | null = null;
+    private _secondChild: HTMLElement | null = null;
+    private _lastRatio: number | null = null;
+
     /**
      * @param {'horizontal'|'vertical'} direction
      *   'horizontal' → the split stacks panels top-to-bottom (divider is a horizontal bar)
@@ -26,7 +41,7 @@ export class DividerResizer {
      * @param {number}  [options.maxRatio]  Maximum allowed ratio (defaults to SPLIT_RATIO_MAX).
      *   Pass 1 - MAP_MIN_RATIO when the second child contains the map panel.
      */
-    constructor(direction, onRatioChange, options = {}) {
+    constructor(direction: SplitDirection, onRatioChange: (ratio: number) => void, options: DividerResizerOptions = {}) {
         this._direction = direction;
         this._onRatioChange = onRatioChange;
         this._minRatio = options.minRatio !== undefined ? options.minRatio : LAYOUT.SPLIT_RATIO_MIN;
@@ -40,7 +55,7 @@ export class DividerResizer {
     }
 
     /** @returns {HTMLElement} */
-    getElement() {
+    getElement(): HTMLElement {
         return this._element;
     }
 
@@ -48,26 +63,26 @@ export class DividerResizer {
     // Private
     // ─────────────────────────────────────────────────────────────────────────
 
-    _createElement() {
+    _createElement(): HTMLDivElement {
         const el = document.createElement('div');
         el.className = `divider-resizer divider-${this._direction}`;
         el.addEventListener('mousedown', this._onMouseDown);
         return el;
     }
 
-    _onMouseDown(e) {
+    _onMouseDown(e: MouseEvent): void {
         e.preventDefault();
         // Store references to the parent container and its two panel siblings
         this._splitContainer = this._element.parentElement;
-        this._firstChild = this._element.previousElementSibling;
-        this._secondChild = this._element.nextElementSibling;
+        this._firstChild = this._element.previousElementSibling instanceof HTMLElement ? this._element.previousElementSibling : null;
+        this._secondChild = this._element.nextElementSibling instanceof HTMLElement ? this._element.nextElementSibling : null;
         this._lastRatio = null;
         document.addEventListener('mousemove', this._onMouseMove);
         document.addEventListener('mouseup', this._onMouseUp);
         document.body.classList.add('divider-resizing');
     }
 
-    _onMouseMove(e) {
+    _onMouseMove(e: MouseEvent): void {
         if (!this._splitContainer) return;
         const newRatio = this._computeRatio(e.clientX, e.clientY);
         if (newRatio !== null) {
@@ -78,7 +93,7 @@ export class DividerResizer {
         }
     }
 
-    _onMouseUp(e) {
+    _onMouseUp(_e: MouseEvent): void {
         document.removeEventListener('mousemove', this._onMouseMove);
         document.removeEventListener('mouseup', this._onMouseUp);
         document.body.classList.remove('divider-resizing');
@@ -101,11 +116,11 @@ export class DividerResizer {
      * @returns {number|null}
      * @private
      */
-    _computeRatio(clientX, clientY) {
+    _computeRatio(clientX: number, clientY: number): number | null {
         if (!this._splitContainer) return null;
 
         const rect = this._splitContainer.getBoundingClientRect();
-        let ratio;
+        let ratio: number;
 
         if (this._direction === 'horizontal') {
             // Top-to-bottom layout: ratio is cursor Y position within the container

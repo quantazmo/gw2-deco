@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for LayoutValidationService — targeting catch blocks and
  * missing branches not covered by existing tests.

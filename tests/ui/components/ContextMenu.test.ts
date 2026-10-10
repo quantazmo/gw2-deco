@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for ContextMenu Component (Phase 9 — US6)
  *

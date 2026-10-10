@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for MoveDecorationsHandler (Phase 9 — US6: Move Decorations)
  *

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * SettingsRepository
  * Persists and restores application settings to/from localStorage.
@@ -16,17 +15,38 @@ import { SETTINGS } from '../../config/constants.js';
 
 const SUPPORTED_VERSION = 1;
 
-const DEFAULT_SETTINGS = Object.freeze({
+type Theme = 'light' | 'dark' | 'system';
+
+interface AppSettings {
+    apiKey: string;
+    theme: Theme;
+}
+
+interface SettingsInput {
+    apiKey?: string | null;
+    theme?: string | null;
+}
+
+interface StorageLike {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+    removeItem(key: string): void;
+}
+
+const DEFAULT_SETTINGS: Readonly<AppSettings> = Object.freeze({
     apiKey: '',
     theme: 'system',
 });
 
 export class SettingsRepository {
+    private readonly _storage: StorageLike;
+    private readonly _key: string;
+
     /**
      * @param {Storage|object} [storage]  localStorage-compatible storage.
      *   Defaults to globalThis.localStorage when omitted.
      */
-    constructor(storage = null) {
+    constructor(storage: StorageLike | null = null) {
         this._storage = storage || (typeof localStorage !== 'undefined' ? localStorage : globalThis.localStorage);
         this._key = SETTINGS.SETTINGS_STORAGE_KEY;
     }
@@ -35,7 +55,7 @@ export class SettingsRepository {
      * Serialize settings and write them to localStorage.
      * @param {{ apiKey: string, theme: string }} settings
      */
-    save(settings) {
+    save(settings: SettingsInput): void {
         try {
             const doc = {
                 version: SUPPORTED_VERSION,
@@ -44,7 +64,7 @@ export class SettingsRepository {
             };
             this._storage.setItem(this._key, JSON.stringify(doc));
         } catch (err) {
-            console.warn('[SettingsRepository] Failed to save settings:', err.message);
+            console.warn('[SettingsRepository] Failed to save settings:', err instanceof Error ? err.message : String(err));
         }
     }
 
@@ -53,23 +73,26 @@ export class SettingsRepository {
      * Returns default settings if the data is missing, corrupt, or invalid.
      * @returns {{ apiKey: string, theme: string }}
      */
-    load() {
+    load(): AppSettings {
         try {
             const raw = this._storage.getItem(this._key);
             if (!raw) return { ...DEFAULT_SETTINGS };
 
-            const doc = JSON.parse(raw);
+            const parsed: unknown = JSON.parse(raw);
 
-            if (!doc || typeof doc !== 'object') return { ...DEFAULT_SETTINGS };
+            if (!parsed || typeof parsed !== 'object') return { ...DEFAULT_SETTINGS };
+            const doc = parsed as Record<string, unknown>;
             if (doc.version !== SUPPORTED_VERSION) return { ...DEFAULT_SETTINGS };
 
-            const validThemes = ['light', 'dark', 'system'];
+            const validThemes: readonly Theme[] = ['light', 'dark', 'system'];
             return {
                 apiKey: typeof doc.apiKey === 'string' ? doc.apiKey : '',
-                theme: validThemes.includes(doc.theme) ? doc.theme : 'system',
+                theme: typeof doc.theme === 'string' && validThemes.includes(doc.theme as Theme)
+                    ? doc.theme as Theme
+                    : 'system',
             };
         } catch (err) {
-            console.warn('[SettingsRepository] Failed to load settings, using defaults:', err.message);
+            console.warn('[SettingsRepository] Failed to load settings, using defaults:', err instanceof Error ? err.message : String(err));
             return { ...DEFAULT_SETTINGS };
         }
     }
@@ -77,11 +100,11 @@ export class SettingsRepository {
     /**
      * Remove the persisted settings from localStorage.
      */
-    clear() {
+    clear(): void {
         try {
             this._storage.removeItem(this._key);
         } catch (err) {
-            console.warn('[SettingsRepository] Failed to clear settings:', err.message);
+            console.warn('[SettingsRepository] Failed to clear settings:', err instanceof Error ? err.message : String(err));
         }
     }
 }

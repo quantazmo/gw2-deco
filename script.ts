@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { scaleLinear } from './scaleFactory.js';
+import { scaleLinear } from './scaleFactory.ts';
 import { createZoomHandler } from './src/ui/ZoomHandler.js';
 import { UI_LAYOUT, ZOOM } from './src/config/constants.js';
 import { initializeApplication } from './src/initialization/ApplicationInitializer.js';
@@ -10,11 +9,64 @@ import { LayerPanel } from './src/ui/components/LayerPanel.js';
 import { ToolPanel } from './src/ui/components/ToolPanel.js';
 import { FileDropZone } from './src/ui/components/FileDropZone.js';
 
+type LinearScale = ((value: number) => number) & {
+    domain: {
+        (): [number, number];
+        (values: [number, number]): LinearScale;
+    };
+    range: {
+        (): [number, number];
+        (values: [number, number]): LinearScale;
+    };
+    copy: () => LinearScale;
+    rescaleX: (transform: { k: number; x: number; y: number }) => LinearScale;
+    rescaleY: (transform: { k: number; x: number; y: number }) => LinearScale;
+};
+
+type ZoomTransform = { k: number; x: number; y: number };
+
+type AppContextLike = {
+    appStore: { getState: () => any; subscribe: (listener: (state: any) => void) => void; dispatch: (action: string, payload?: any) => void };
+    selectionStore: any;
+    appService: { execute: (command: any) => any };
+    eventBus: { publish: (eventName: string, payload?: unknown) => void; subscribe: (eventName: string, handler: (payload: any) => void) => void };
+    homesteadLayout?: { setMap?: (map: any) => void; getAllLayers?: () => any[]; addLayer?: (layer: any) => void };
+    contextMenu?: any;
+    toolModeStore?: any;
+    mapRepository?: { loadById: (id: number) => Promise<any> };
+} & Record<string, any>;
+
+function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    return String(error);
+}
+
+function zoomed(): void {
+    // Legacy compatibility hook. Real rendering updates are driven by MapViewer/ZoomStore.
+}
+
+declare global {
+    interface Window {
+        xZoom?: (value: number) => number;
+        yZoom?: (value: number) => number;
+        resetZoom?: () => void;
+        openFileDialog?: () => void;
+        addDecorationRefactored?: (...args: any[]) => any;
+        deleteDecorationRefactored?: (...args: any[]) => any;
+        getBoundaryInfo?: (...args: any[]) => any;
+        isPointInMapBoundary?: (...args: any[]) => any;
+        completeLayoutLoadingWorkflow?: (xmlContent: string, fileName: string) => Promise<void>;
+    }
+}
+
 // ============================================================================
 // REFACTORED ARCHITECTURE INITIALIZATION
 // ============================================================================
 // Initialize the refactored architecture
-let appContext = null;
+let appContext: AppContextLike | null = null;
 
 async function setupRefactoredArchitecture() {
     console.log('[script.js] 🚀 ========== SETUP REFACTORED ARCHITECTURE ==========');
@@ -47,10 +99,10 @@ async function setupRefactoredArchitecture() {
             console.log('[script.js]   ↳ Initializing LayerPanel component...');
             layerPanel = new LayerPanel(
                 layersPanelContainer,
-                appContext.appStore,
+                appContext.appStore as any,
                 appContext.selectionStore,
-                appContext.appService,
-                appContext.eventBus
+                appContext.appService as any,
+                appContext.eventBus as any
             );
             if (appContext.contextMenu) {
                 layerPanel.setContextMenu(appContext.contextMenu);
@@ -61,13 +113,13 @@ async function setupRefactoredArchitecture() {
         }
 
         // Initialize FileDropZone component
-        const chartContainer = document.getElementById('chart-container');
-        const fileInput = document.getElementById('file-input');
+        const chartContainer = document.getElementById('map-container');
+        const fileInput = document.getElementById('file-input') as HTMLInputElement | null;
         if (chartContainer) {
             console.log('[script.js]   ↳ Initializing FileDropZone component...');
-            fileDropZone = new FileDropZone(chartContainer, appContext.appService, appContext.eventBus, {
+            fileDropZone = new FileDropZone(chartContainer, appContext.appService as any, appContext.eventBus as any, {
                 useExistingUI: true,
-                fileInputElement: fileInput
+                fileInputElement: fileInput ?? undefined
             });
             console.log('[script.js] ✅ FileDropZone component initialized');
         } else {
@@ -87,20 +139,22 @@ let architectureInitialized = false;
 
 // Disable add-layer button until a layout is loaded
 function updateAddLayerButtonState() {
-    const addLayerBtn = document.getElementById('add-layer-btn');
-    addLayerBtn.disabled = !isMapLoaded();
+    const addLayerBtn = document.getElementById('add-layer-btn') as HTMLButtonElement | null;
+    if (addLayerBtn) {
+        addLayerBtn.disabled = !isMapLoaded();
+    }
 }
 
-var xZoom;
-var yZoom;
-var xZoomBase;
-var yZoomBase;
+let xZoom: LinearScale | null = null;
+let yZoom: LinearScale | null = null;
+let xZoomBase: LinearScale | null = null;
+let yZoomBase: LinearScale | null = null;
 
 // UI Component instances
-let mapViewer = null;
-let layerPanel = null;
-let toolPanel = null;
-let fileDropZone = null;
+let mapViewer: any = null;
+let layerPanel: any = null;
+let toolPanel: any = null;
+let fileDropZone: any = null;
 
 // ============================================================================
 // PHASE 8: QUERIES & DATA ACCESS (CQRS Queries)
@@ -136,9 +190,9 @@ function getLayers() {
  * @param {number} layerId - The layer ID to find
  * @returns {Layer|undefined} The layer or undefined if not found
  */
-function getLayerById(layerId) {
+function getLayerById(layerId: number | string) {
     const allLayers = getLayers();
-    return allLayers.find(l => l.id === layerId);
+    return allLayers.find((l: { id: number | string }) => l.id === layerId);
 }
 
 /**
@@ -178,8 +232,8 @@ function isMapLoaded() {
  * Create a new layer (refactored version)
  * Uses AppStore dispatch instead of direct state mutation
  */
-function createLayerRefactored(layerName) {
-    console.log(`[script.js] ⚡ createLayerRefactored called with name: "${layerName}"`);
+function createLayerRefactored(layerName?: string) {
+    console.log(`[script.js] ⚡ createLayerRefactored called with name: "${layerName ?? 'undefined'}"`);
 
     if (!appContext || !architectureInitialized) {
         console.warn('[script.js] ⚠️  Architecture not ready, using legacy layer creation');
@@ -223,7 +277,7 @@ function createLayerRefactored(layerName) {
 /**
  * Delete a layer (refactored version)
  */
-function deleteLayerRefactored(layerId) {
+function deleteLayerRefactored(layerId: number | string) {
     console.log(`[script.js] ⚡ deleteLayerRefactored called for layerId: ${layerId}`);
 
     if (!appContext || !architectureInitialized) {
@@ -266,7 +320,7 @@ function deleteLayerRefactored(layerId) {
 /**
  * Rename a layer (refactored version)
  */
-function renameLayerRefactored(layerId, newName) {
+function renameLayerRefactored(layerId: number | string, newName: string) {
     if (!appContext || !architectureInitialized) {
         console.warn('Architecture not ready, using legacy layer rename');
         return;
@@ -296,7 +350,7 @@ function renameLayerRefactored(layerId, newName) {
 /**
  * Set active layer (refactored version)
  */
-function setActiveLayerRefactored(layerId) {
+function setActiveLayerRefactored(layerId: number | string | null) {
     if (!appContext || !architectureInitialized) {
         return;
     }
@@ -321,7 +375,7 @@ function setActiveLayerRefactored(layerId) {
 // ============================================================================
 
 /**
- * Returns the usable drawing dimensions from the #chart-container element,
+ * Returns the usable drawing dimensions from the #map-container element,
  * accounting for UI_LAYOUT margins.  Falls back to window dimensions when
  * the container element is not yet present (e.g. during tests).
  *
@@ -334,7 +388,7 @@ function getChartContainerDimensions() {
         bottom: UI_LAYOUT.MARGIN_BOTTOM,
         left: UI_LAYOUT.MARGIN_LEFT
     };
-    const container = document.getElementById('chart-container');
+    const container = document.getElementById('map-container');
     if (container) {
         return {
             width: container.clientWidth - margin.left - margin.right,
@@ -352,7 +406,11 @@ function getChartContainerDimensions() {
  * Store zoom handler reference for later integration with ZoomStore
  */
 // Store global zoom handler for reset functionality
-let globalZoomHandler = null;
+let globalZoomHandler: {
+    reset: () => void;
+    getTransform: () => ZoomTransform;
+    setTransform: (transform: ZoomTransform) => void;
+} | null = null;
 
 /**
  * Reset zoom and pan using the refactored zoom handler
@@ -369,7 +427,7 @@ function resetZoomRefactored() {
             try {
                 zoomStore.reset();
             } catch (error) {
-                console.debug('ZoomStore reset skipped:', error.message);
+                console.debug('ZoomStore reset skipped:', getErrorMessage(error));
             }
         }
 
@@ -413,11 +471,11 @@ function resetZoom() {
         maxY = bounds.max.y;
     } else {
         // Plain array or object with points
-        const boundaryPoints = currentMap.boundary.points || currentMap.boundary;
-        minX = Math.min(...boundaryPoints.map(point => point.x));
-        maxX = Math.max(...boundaryPoints.map(point => point.x));
-        minY = Math.min(...boundaryPoints.map(point => point.y));
-        maxY = Math.max(...boundaryPoints.map(point => point.y));
+        const boundaryPoints = (currentMap.boundary.points || currentMap.boundary) as Array<{ x: number; y: number }>;
+        minX = Math.min(...boundaryPoints.map((point: { x: number; y: number }) => point.x));
+        maxX = Math.max(...boundaryPoints.map((point: { x: number; y: number }) => point.x));
+        minY = Math.min(...boundaryPoints.map((point: { x: number; y: number }) => point.y));
+        maxY = Math.max(...boundaryPoints.map((point: { x: number; y: number }) => point.y));
     }
 
     const rangeX = maxX - minX;
@@ -449,8 +507,8 @@ function resetZoom() {
     if (minY === maxY) { minY -= 1; maxY += 1; }
 
     // Create native scales using scaleLinear from scaleFactory
-    var x = scaleLinear().domain([minX, maxX]).range([0, width]);
-    var y = scaleLinear().domain([minY, maxY]).range([height, 0]);
+    const x: LinearScale = scaleLinear().domain([minX, maxX]).range([0, width]) as LinearScale;
+    const y: LinearScale = scaleLinear().domain([minY, maxY]).range([height, 0]) as LinearScale;
 
     // Create scales for zoom transformation
     xZoom = x.copy();
@@ -468,15 +526,17 @@ function resetZoom() {
     const svgGroup = document.querySelector('svg g');
     const margin_top = UI_LAYOUT.MARGIN_TOP;
     const margin_left = UI_LAYOUT.MARGIN_LEFT;
-    svgGroup.setAttribute('transform', `translate(${margin_left}, ${margin_top})`);
+    if (svgGroup) {
+        svgGroup.setAttribute('transform', `translate(${margin_left}, ${margin_top})`);
+    }
 
     // Initialize ZoomStore with the base scales if architecture is initialized
     if (architectureInitialized && appContext && zoomStore) {
         try {
-            zoomStore.initialize(xZoom, yZoom, xZoomBase, yZoomBase);
+            zoomStore.initialize(xZoom as any, yZoom as any, xZoomBase as any, yZoomBase as any);
         } catch (error) {
             // ZoomStore may already be initialized, that's ok
-            console.debug('ZoomStore already initialized:', error.message);
+            console.debug('ZoomStore already initialized:', getErrorMessage(error));
         }
     }
 
@@ -500,7 +560,14 @@ function resetZoom() {
  * @param {number} [scale=1] - The scale factor
  * @returns {Decoration} The created decoration
  */
-async function addDecorationRefactored(layerId, decorationId, name, position, rotation = 0, scale = 1) {
+async function addDecorationRefactored(
+    layerId: string | number,
+    decorationId: string | number,
+    name: string,
+    position: { x: number; y: number; z?: number },
+    rotation = 0,
+    scale = 1
+) {
     if (!appContext || !architectureInitialized) {
         console.warn('Architecture not ready, cannot add decoration');
         return null;
@@ -518,8 +585,8 @@ async function addDecorationRefactored(layerId, decorationId, name, position, ro
         const AddDecorationHandler = AddDecorationHandlerModule.default || AddDecorationHandlerModule;
 
         // Create and execute command
-        const command = new AddDecorationCommand(layerId, decorationId, name, position, rotation, scale);
-        const handler = new AddDecorationHandler(homesteadLayout);
+        const command = new AddDecorationCommand(String(layerId), String(decorationId), String(name), position as any, rotation, scale);
+        const handler = new AddDecorationHandler(homesteadLayout as any);
         const decoration = handler.execute(command);
 
         // Emit event
@@ -543,7 +610,7 @@ async function addDecorationRefactored(layerId, decorationId, name, position, ro
  * @param {string} layerId - The ID of the layer
  * @param {string} decorationId - The ID of the decoration to delete
  */
-async function deleteDecorationRefactored(layerId, decorationId) {
+async function deleteDecorationRefactored(layerId: string | number, decorationId: string | number) {
     if (!appContext || !architectureInitialized) {
         console.warn('Architecture not ready, cannot delete decoration');
         return;
@@ -561,8 +628,8 @@ async function deleteDecorationRefactored(layerId, decorationId) {
         const DeleteDecorationHandler = DeleteDecorationHandlerModule.default || DeleteDecorationHandlerModule;
 
         // Create and execute command
-        const command = new DeleteDecorationCommand(layerId, decorationId);
-        const handler = new DeleteDecorationHandler(homesteadLayout);
+        const command = new DeleteDecorationCommand(String(layerId), String(decorationId));
+        const handler = new DeleteDecorationHandler(homesteadLayout as any);
         handler.execute(command);
 
         // Emit event
@@ -588,7 +655,7 @@ async function deleteDecorationRefactored(layerId, decorationId) {
  * @param {GW2Map} gw2Map - The GW2Map domain entity
  * @returns {Object} Boundary info with validation
  */
-function getBoundaryInfo(gw2Map) {
+function getBoundaryInfo(gw2Map: { boundary?: { getBounds: () => any; points?: Array<{ x: number; y: number }> } } | null) {
     if (!gw2Map || !gw2Map.boundary) {
         console.warn('No boundary available');
         return null;
@@ -597,9 +664,10 @@ function getBoundaryInfo(gw2Map) {
     try {
         const boundary = gw2Map.boundary;
         const bounds = boundary.getBounds();
+        const pointCount = boundary.points?.length ?? 0;
 
         return {
-            pointCount: boundary.points.length,
+            pointCount,
             bounds: bounds,
             width: bounds.maxX - bounds.minX,
             height: bounds.maxY - bounds.minY,
@@ -617,7 +685,7 @@ function getBoundaryInfo(gw2Map) {
  * @param {Object} point - Point with x, y coordinates
  * @returns {boolean} Whether point is contained in boundary
  */
-function isPointInMapBoundary(gw2Map, point) {
+function isPointInMapBoundary(gw2Map: { boundary?: { contains: (point: { x: number; y: number }) => boolean } } | null, point: { x: number; y: number }) {
     if (!gw2Map || !gw2Map.boundary) {
         return false;
     }
@@ -645,7 +713,7 @@ function isPointInMapBoundary(gw2Map, point) {
  * @param {string} xmlString - The XML layout content
  * @returns {Promise<Object>} The loaded layout data
  */
-async function completeLayoutLoadingWorkflow(xmlString, fileName?: string) {
+async function completeLayoutLoadingWorkflow(xmlString: string, fileName?: string) {
     console.log('[completeLayoutLoadingWorkflow] 🚀 Starting layout load workflow');
 
     try {
@@ -668,7 +736,11 @@ async function completeLayoutLoadingWorkflow(xmlString, fileName?: string) {
             console.log('[Debug] gw2MapEntity.boundary:', gw2MapEntity?.boundary);
 
             if (gw2MapEntity) {
-                appContext.homesteadLayout.setMap(gw2MapEntity);
+                const homesteadLayoutInstance = appContext.homesteadLayout;
+                if (!homesteadLayoutInstance || typeof homesteadLayoutInstance.setMap !== 'function') {
+                    throw new Error('HomesteadLayout is not available for map assignment');
+                }
+                homesteadLayoutInstance.setMap(gw2MapEntity);
                 // Convert to legacy format for backward compatibility
                 newMap = {
                     id: gw2MapEntity.id,
@@ -695,10 +767,14 @@ async function completeLayoutLoadingWorkflow(xmlString, fileName?: string) {
             const { Decoration } = await import('./src/domain/Decoration.js');
             const { LAYER_COLORS } = await import('./src/config/constants.js');
 
+            if (!homesteadLayout || typeof homesteadLayout.getAllLayers !== 'function' || typeof homesteadLayout.addLayer !== 'function') {
+                throw new Error('HomesteadLayout is not available for default layer creation');
+            }
+
             // Create a proper Layer domain entity with a random unused palette color
             const defaultLayerId = 'layer-' + Date.now();
             const layerName = fileName ? fileName.replace(/\.xml$/i, '') : 'Default Layer';
-            const usedColors = new Set(homesteadLayout.getAllLayers().map((l: any) => l.color));
+            const usedColors = new Set(homesteadLayout.getAllLayers().map(layer => layer.color));
             const unusedColors = (LAYER_COLORS as readonly string[]).filter(c => !usedColors.has(c));
             const pool = unusedColors.length > 0 ? unusedColors : (LAYER_COLORS as readonly string[]);
             const layerColor = pool[Math.floor(Math.random() * pool.length)];
@@ -707,9 +783,10 @@ async function completeLayoutLoadingWorkflow(xmlString, fileName?: string) {
             // Add decorations to the layer
             // Decoration.create() sets id = XML prop-type and assigns a unique uid.
             layout.decorations.forEach((decorationData) => {
+                const decorationName = String(decorationData.name ?? 'Decoration');
                 const decoration = Decoration.create(
                     decorationData.id,
-                    decorationData.name,
+                    decorationName,
                     { x: decorationData.position.x, y: decorationData.position.y, z: decorationData.position.z },
                     decorationData.rotation?.y || 0,  // Use y rotation as single rotation value
                     decorationData.scale || 1
@@ -755,13 +832,13 @@ async function completeLayoutLoadingWorkflow(xmlString, fileName?: string) {
 }
 
 // Expose for use by FileDropZone component
-window.completeLayoutLoadingWorkflow = completeLayoutLoadingWorkflow;
+(window as any).completeLayoutLoadingWorkflow = completeLayoutLoadingWorkflow;
 
 /**
  * Load layout using the refactored XmlLayoutAdapter
  * Uses AppStore and EventBus instead of direct state manipulation
  */
-async function loadLayoutWithRefactoredArchitecture(xmlString) {
+async function loadLayoutWithRefactoredArchitecture(xmlString: string) {
     if (!appContext) {
         console.warn('Refactored architecture not initialized, using legacy loading');
         return loadLayoutFromXml(xmlString);
@@ -785,28 +862,30 @@ async function loadLayoutWithRefactoredArchitecture(xmlString) {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlString, 'application/xml');
         const xmlMap = xmlDoc.documentElement;
-        const mapId = parseInt(xmlMap.getAttribute("mapId"));
-        const mapName = xmlMap.getAttribute("mapName");
+        const mapId = Number.parseInt(xmlMap.getAttribute('mapId') ?? '0', 10);
+        const mapName = xmlMap.getAttribute('mapName') ?? '';
 
         // Decorations are already parsed by XmlLayoutAdapter
-        const decorations = [...xmlDoc.getElementsByTagName("prop")]
+        const decorations = [...xmlDoc.getElementsByTagName('prop')]
             .map(xmlProp => {
-                let position = xmlProp.getAttribute('pos').split(' ');
-                let rotation = xmlProp.getAttribute('rot').split(' ');
+                const posAttr = xmlProp.getAttribute('pos') ?? '0 0 0';
+                const rotAttr = xmlProp.getAttribute('rot') ?? '0 0 0';
+                const position = posAttr.split(' ');
+                const rotation = rotAttr.split(' ');
                 return {
-                    id: parseInt(xmlProp.getAttribute('id')),
+                    id: Number.parseInt(xmlProp.getAttribute('id') ?? '0', 10),
                     name: xmlProp.getAttribute('name'),
                     position: {
-                        x: parseFloat(position[0]),
-                        y: parseFloat(position[1]),
-                        z: parseFloat(position[2])
+                        x: Number.parseFloat(position[0] ?? '0'),
+                        y: Number.parseFloat(position[1] ?? '0'),
+                        z: Number.parseFloat(position[2] ?? '0')
                     },
                     rotation: {
-                        x: parseFloat(rotation[0]),
-                        y: parseFloat(rotation[1]),
-                        z: parseFloat(rotation[2])
+                        x: Number.parseFloat(rotation[0] ?? '0'),
+                        y: Number.parseFloat(rotation[1] ?? '0'),
+                        z: Number.parseFloat(rotation[2] ?? '0')
                     },
-                    scale: parseFloat(xmlProp.getAttribute('scl'))
+                    scale: Number.parseFloat(xmlProp.getAttribute('scl') ?? '1')
                 };
             });
 
@@ -825,7 +904,7 @@ async function loadLayoutWithRefactoredArchitecture(xmlString) {
     }
 }
 
-async function loadLayoutFromXml(xmlString) {
+async function loadLayoutFromXml(xmlString: string) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, 'application/xml');
 
@@ -835,29 +914,31 @@ async function loadLayoutFromXml(xmlString) {
     }
 
     const xmlMap = xmlDoc.documentElement;
-    const mapId = parseInt(xmlMap.getAttribute("mapId"));
+    const mapId = Number.parseInt(xmlMap.getAttribute('mapId') ?? '0', 10);
 
     const layout = {
         id: mapId,
-        name: xmlMap.getAttribute("mapName"),
-        decorations: [...xmlDoc.getElementsByTagName("prop")]
+        name: xmlMap.getAttribute('mapName'),
+        decorations: [...xmlDoc.getElementsByTagName('prop')]
             .map(xmlProp => {
-                let position = xmlProp.getAttribute('pos').split(' ');
-                let rotation = xmlProp.getAttribute('rot').split(' ');
+                const posAttr = xmlProp.getAttribute('pos') ?? '0 0 0';
+                const rotAttr = xmlProp.getAttribute('rot') ?? '0 0 0';
+                const position = posAttr.split(' ');
+                const rotation = rotAttr.split(' ');
                 return {
-                    id: parseInt(xmlProp.getAttribute('id')),
+                    id: Number.parseInt(xmlProp.getAttribute('id') ?? '0', 10),
                     name: xmlProp.getAttribute('name'),
                     position: {
-                        x: parseFloat(position[0]),
-                        y: parseFloat(position[1]),
-                        z: parseFloat(position[2])
+                        x: Number.parseFloat(position[0] ?? '0'),
+                        y: Number.parseFloat(position[1] ?? '0'),
+                        z: Number.parseFloat(position[2] ?? '0')
                     },
                     rotation: {
-                        x: parseFloat(rotation[0]),
-                        y: parseFloat(rotation[1]),
-                        z: parseFloat(rotation[2])
+                        x: Number.parseFloat(rotation[0] ?? '0'),
+                        y: Number.parseFloat(rotation[1] ?? '0'),
+                        z: Number.parseFloat(rotation[2] ?? '0')
                     },
-                    scale: parseFloat(xmlProp.getAttribute('scl'))
+                    scale: Number.parseFloat(xmlProp.getAttribute('scl') ?? '1')
                 };
             })
     };
@@ -905,19 +986,22 @@ if (panelResizer && toolPanel) {
  * Handle files dropped onto the container
  * @param {FileList} files - The dropped files
  */
-function handleDroppedFiles(files) {
+function handleDroppedFiles(files: FileList) {
     for (const file of files) {
         if (file.type === 'text/xml' || file.name.endsWith('.xml')) {
             const reader = new FileReader();
             reader.onload = async function (event) {
                 try {
-                    const xmlString = event.target.result;
+                    const xmlString = event.target?.result;
+                    if (typeof xmlString !== 'string') {
+                        throw new Error('Loaded file content was not text');
+                    }
 
                     // Use the complete workflow function
                     await completeLayoutLoadingWorkflow(xmlString, file.name);
                 } catch (error) {
-                    console.error("Error reading file:", error);
-                    alert('Error reading file: ' + error.message);
+                    console.error('Error reading file:', error);
+                    alert('Error reading file: ' + getErrorMessage(error));
                 }
             };
             reader.readAsText(file);
@@ -932,7 +1016,10 @@ function handleDroppedFiles(files) {
  * Creates MapViewer component to handle SVG rendering.
  */
 function initializeMapElements() {
-    const chartContainer = document.getElementById('chart-container');
+    const chartContainer = document.getElementById('map-container');
+    if (!chartContainer) {
+        return;
+    }
 
     // Remove the welcome dialog before replacing content
     const welcomeDialog = chartContainer.querySelector('#welcome-dialog');
@@ -949,10 +1036,12 @@ function initializeMapElements() {
     const { width, height } = getChartContainerDimensions();
 
     // Get the SVG element and the inner group
-    const svgElement = chartContainer.querySelector('svg');
-    var svgGroup = chartContainer.querySelector('svg g');
-    svgGroup.setAttribute("transform",
-        "translate(" + UI_LAYOUT.MARGIN_LEFT + "," + UI_LAYOUT.MARGIN_TOP + ")");
+    const svgElement = chartContainer.querySelector('svg') as SVGSVGElement | null;
+    const svgGroup = chartContainer.querySelector('svg g') as SVGGElement | null;
+    if (svgGroup) {
+        svgGroup.setAttribute('transform',
+            'translate(' + UI_LAYOUT.MARGIN_LEFT + ',' + UI_LAYOUT.MARGIN_TOP + ')');
+    }
 
     // Calculate the map bounds from the boundary polygon
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -972,7 +1061,7 @@ function initializeMapElements() {
             maxY = bounds.max.y;
         } else if (Array.isArray(currentMap.boundary)) {
             // Plain array of points (legacy format)
-            currentMap.boundary.forEach(point => {
+            currentMap.boundary.forEach((point: { x: number; y: number }) => {
                 minX = Math.min(minX, point.x);
                 maxX = Math.max(maxX, point.x);
                 minY = Math.min(minY, point.y);
@@ -980,7 +1069,7 @@ function initializeMapElements() {
             });
         } else if (currentMap.boundary.points && Array.isArray(currentMap.boundary.points)) {
             // MapBoundary-like object with points array
-            currentMap.boundary.points.forEach(point => {
+            currentMap.boundary.points.forEach((point: { x: number; y: number }) => {
                 minX = Math.min(minX, point.x);
                 maxX = Math.max(maxX, point.x);
                 minY = Math.min(minY, point.y);
@@ -989,7 +1078,7 @@ function initializeMapElements() {
         }
     } else if (currentMap && currentMap.tiles && currentMap.tiles.length > 0) {
         // Fallback to tile bounds if no boundary is available
-        currentMap.tiles.forEach(tile => {
+        currentMap.tiles.forEach((tile: { mapCoords: { x: number; y: number }; tileSize: number }) => {
             minX = Math.min(minX, tile.mapCoords.x);
             maxX = Math.max(maxX, tile.mapCoords.x + tile.tileSize);
             minY = Math.min(minY, tile.mapCoords.y);
@@ -1033,8 +1122,8 @@ function initializeMapElements() {
     if (minY === maxY) { minY -= 1; maxY += 1; }
 
     // Create native scale functions using scaleLinear from scaleFactory
-    var x = scaleLinear().domain([minX, maxX]).range([0, viewportWidth]);
-    var y = scaleLinear().domain([minY, maxY]).range([viewportHeight, 0]);
+    const x: LinearScale = scaleLinear().domain([minX, maxX]).range([0, viewportWidth]) as LinearScale;
+    const y: LinearScale = scaleLinear().domain([minY, maxY]).range([viewportHeight, 0]) as LinearScale;
 
     // Create scales for zoom transformation
     xZoom = x.copy();
@@ -1045,18 +1134,18 @@ function initializeMapElements() {
     yZoomBase = y.copy();
 
     // Expose zoom functions globally for MapViewer component
-    window.xZoom = xZoom;
-    window.yZoom = yZoom;
+    window.xZoom = xZoom as any;
+    window.yZoom = yZoom as any;
 
     // Initialize ZoomStore if architecture is active
     if (architectureInitialized && appContext && zoomStore) {
-        zoomStore.initialize(xZoom, yZoom, xZoomBase, yZoomBase);
+        zoomStore.initialize(xZoom as any, yZoom as any, xZoomBase as any, yZoomBase as any);
         console.log('✓ ZoomStore initialized with scales');
     }
 
     // Create MapViewer instance if architecture is initialized
     if (architectureInitialized && appContext) {
-        mapViewer = new MapViewer(svgElement, zoomStore, appContext.appStore, appContext.selectionStore);
+        mapViewer = new MapViewer(svgElement as SVGSVGElement, zoomStore as any, appContext.appStore as any, appContext.selectionStore as any);
         console.log('✓ MapViewer component initialized');
 
         // Wire appService and shared contextMenu to MapViewer for DnD and context menu
@@ -1079,6 +1168,10 @@ function initializeMapElements() {
         }
     }
 
+    if (!svgElement) {
+        return;
+    }
+
     // Initialize zoom handler with native events
     const margin = { top: UI_LAYOUT.MARGIN_TOP, right: UI_LAYOUT.MARGIN_RIGHT, bottom: UI_LAYOUT.MARGIN_BOTTOM, left: UI_LAYOUT.MARGIN_LEFT };
     initializeZoomHandler(svgElement, margin, width, height);
@@ -1094,9 +1187,9 @@ function initializeMapElements() {
  * @param {number} width - Chart width
  * @param {number} height - Chart height
  */
-function initializeZoomHandler(svgElement, margin, width, height) {
+function initializeZoomHandler(svgElement: SVGSVGElement, margin: { top: number; right: number; bottom: number; left: number }, width: number, height: number) {
     // Create zoom handler with refactored architecture
-    const zoomHandler = createZoomHandler(svgElement, zoomStore, {
+    const zoomHandler = createZoomHandler(svgElement, zoomStore as any, {
         minZoom: ZOOM.MIN_LEVEL,
         maxZoom: ZOOM.MAX_LEVEL,
         eventBus: architectureInitialized && appContext ? appContext.eventBus : null
@@ -1110,17 +1203,17 @@ function initializeZoomHandler(svgElement, margin, width, height) {
         // Update scales based on current zoom/pan transform
         // xZoomBase and yZoomBase are the original scales without zoom/pan
         // Use rescaleX/Y to adjust for the current zoom/pan
-        xZoom = transform.rescaleX(xZoomBase);
-        yZoom = transform.rescaleY(yZoomBase);
+        xZoom = transform.rescaleX(xZoomBase as any) as any;
+        yZoom = transform.rescaleY(yZoomBase as any) as any;
 
         // Update global references for MapViewer component (must happen before setZoom)
-        window.xZoom = xZoom;
-        window.yZoom = yZoom;
+        window.xZoom = xZoom as any;
+        window.yZoom = yZoom as any;
 
         // Update ZoomStore with new scales
         // This will trigger MapViewer to update if architecture is initialized
         if (zoomStore && zoomStore.isInitialized()) {
-            zoomStore.setZoom(xZoom, yZoom);
+            zoomStore.setZoom(xZoom as any, yZoom as any);
         }
 
         // Call legacy zoomed() only if refactored architecture is NOT active
@@ -1210,14 +1303,6 @@ document.addEventListener('DOMContentLoaded', function () {
         resetZoomBtn.addEventListener('click', resetZoomRefactored);
     }
 
-    // NOTE: add-layer-btn is bound by LayerPanel component, not here
-    // Do NOT bind legacy handlers to avoid double-binding
-    console.log('[script.js]     ℹ️  add-layer-btn NOT bound here (handled by LayerPanel)');
-
-    // Handle collapsible groups - NOW MANAGED BY ToolPanel COMPONENT
-    // The ToolPanel component attaches event listeners in setupRefactoredArchitecture()
-    console.log('[script.js]   ↳ Collapsible groups managed by ToolPanel component');
-
     // Initialize refactored architecture
     console.log('[script.js]   ↳ Initializing refactored architecture...');
     setupRefactoredArchitecture().then((context) => {
@@ -1248,13 +1333,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // Wire ribbon zoom buttons through EventBus → ZoomHandler
+        if (!appContext) return;
+
         appContext.eventBus.subscribe('zoom:fit-requested', () => {
             if (isMapLoaded()) resetZoom();
         });
         appContext.eventBus.subscribe('zoom:in-requested', () => {
             if (!globalZoomHandler) return;
             const t = globalZoomHandler.getTransform();
-            const svgEl = document.getElementById('chart-container')?.querySelector('svg');
+            const svgEl = document.getElementById('map-container')?.querySelector('svg');
             if (!svgEl) return;
             const rect = svgEl.getBoundingClientRect();
             const cx = rect.width / 2;
@@ -1270,7 +1357,7 @@ document.addEventListener('DOMContentLoaded', function () {
         appContext.eventBus.subscribe('zoom:out-requested', () => {
             if (!globalZoomHandler) return;
             const t = globalZoomHandler.getTransform();
-            const svgEl = document.getElementById('chart-container')?.querySelector('svg');
+            const svgEl = document.getElementById('map-container')?.querySelector('svg');
             if (!svgEl) return;
             const rect = svgEl.getBoundingClientRect();
             const cx = rect.width / 2;
@@ -1295,7 +1382,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // T119: Re-fit map when the chart container changes size (e.g. panels toggled)
-    const chartContainerForObserver = document.getElementById('chart-container');
+    const chartContainerForObserver = document.getElementById('map-container');
     if (chartContainerForObserver && typeof ResizeObserver !== 'undefined') {
         const containerResizeObserver = new ResizeObserver(() => {
             if (isMapLoaded()) {

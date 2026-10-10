@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ToolPanel Component
  * Organize all tool controls
@@ -7,8 +6,21 @@
 
 import * as domHelpers from '../domHelpers.js';
 
+type ToolPanelEntry = {
+    element: HTMLElement;
+    header: HTMLElement;
+    content: HTMLElement;
+    title: string;
+    arrow?: HTMLElement | null;
+    toggleBtn?: HTMLButtonElement;
+};
+
 class ToolPanel {
-    constructor(containerElement) {
+    container: HTMLElement;
+    panels: Record<string, ToolPanelEntry>;
+    collapsedPanels: Record<string, boolean>;
+
+    constructor(containerElement: HTMLElement) {
         this.container = containerElement;
         this.panels = {};
         this.collapsedPanels = {};
@@ -19,7 +31,7 @@ class ToolPanel {
     /**
      * Initialize component structure
      */
-    initialize() {
+    initialize(): void {
         // Don't empty container if it already has content (for legacy HTML)
         if (this.container.children.length === 0) {
             domHelpers.addClass(this.container, 'tool-panel');
@@ -30,14 +42,14 @@ class ToolPanel {
      * Attach to existing HTML structure with legacy class names
      * Finds .tool-group elements and wires them up with toggle functionality
      */
-    attachExistingGroups() {
-        const existingGroups = this.container.querySelectorAll('.tool-group');
+    attachExistingGroups(): void {
+        const existingGroups = this.container.querySelectorAll<HTMLElement>('.tool-group');
 
         existingGroups.forEach((groupElement, index) => {
-            const header = groupElement.querySelector('.tool-group-header');
-            const content = groupElement.querySelector('.tool-group-content');
-            const arrow = header?.querySelector('.group-arrow');
-            const titleElement = header?.querySelector('.group-title');
+            const header = groupElement.querySelector<HTMLElement>('.tool-group-header');
+            const content = groupElement.querySelector<HTMLElement>('.tool-group-content');
+            const arrow = header?.querySelector<HTMLElement>('.group-arrow');
+            const titleElement = header?.querySelector<HTMLElement>('.group-title');
 
             if (!header || !content) return;
 
@@ -72,7 +84,7 @@ class ToolPanel {
      * Toggle panel with legacy HTML structure
      * @param {string} panelId - Panel identifier
      */
-    toggleLegacyPanel(panelId) {
+    toggleLegacyPanel(panelId: string): void {
         const panel = this.panels[panelId];
         if (!panel) return;
 
@@ -100,7 +112,7 @@ class ToolPanel {
      * @param {HTMLElement} content - Panel content element
      * @param {boolean} collapsed - Whether to start collapsed
      */
-    addPanel(panelId, title, content, collapsed = false) {
+    addPanel(panelId: string, title: string, content: HTMLElement | null = null, collapsed: boolean = false): void {
         const panel = domHelpers.createElement('div', {
             className: `tool-panel-group ${collapsed ? 'collapsed' : ''}`
         });
@@ -158,7 +170,7 @@ class ToolPanel {
      * Works with both new and legacy HTML structures
      * @param {string} panelId - Panel identifier
      */
-    togglePanel(panelId) {
+    togglePanel(panelId: string): void {
         const panel = this.panels[panelId];
         if (!panel) return;
 
@@ -190,7 +202,7 @@ class ToolPanel {
      * Expand a panel
      * @param {string} panelId - Panel identifier
      */
-    expandPanel(panelId) {
+    expandPanel(panelId: string): void {
         if (this.collapsedPanels[panelId]) {
             this.togglePanel(panelId);
         }
@@ -200,7 +212,7 @@ class ToolPanel {
      * Collapse a panel
      * @param {string} panelId - Panel identifier
      */
-    collapsePanel(panelId) {
+    collapsePanel(panelId: string): void {
         if (!this.collapsedPanels[panelId]) {
             this.togglePanel(panelId);
         }
@@ -211,7 +223,7 @@ class ToolPanel {
      * @param {string} panelId - Panel identifier
      * @returns {HTMLElement|null}
      */
-    getPanel(panelId) {
+    getPanel(panelId: string): HTMLElement | null {
         return this.panels[panelId]?.content || null;
     }
 
@@ -220,7 +232,7 @@ class ToolPanel {
      * @param {string} panelId - Panel identifier
      * @param {HTMLElement} content - Content to add
      */
-    addPanelContent(panelId, content) {
+    addPanelContent(panelId: string, content: HTMLElement): void {
         const panel = this.panels[panelId];
         if (panel) {
             domHelpers.append(panel.content, content);
@@ -231,7 +243,7 @@ class ToolPanel {
      * Clear panel content
      * @param {string} panelId - Panel identifier
      */
-    clearPanel(panelId) {
+    clearPanel(panelId: string): void {
         const panel = this.panels[panelId];
         if (panel) {
             domHelpers.empty(panel.content);
@@ -242,7 +254,7 @@ class ToolPanel {
      * Remove a panel
      * @param {string} panelId - Panel identifier
      */
-    removePanel(panelId) {
+    removePanel(panelId: string): void {
         const panel = this.panels[panelId];
         if (panel) {
             domHelpers.remove(panel.element);
@@ -255,7 +267,7 @@ class ToolPanel {
      * Get the container element
      * @returns {HTMLElement}
      */
-    getElement() {
+    getElement(): HTMLElement {
         return this.container;
     }
 }

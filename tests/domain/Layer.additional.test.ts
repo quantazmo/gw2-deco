@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for src/domain/Layer.js
  * Covers: clone, equals, toString, fromDTO, getDecoration

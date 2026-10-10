@@ -1,20 +1,34 @@
-// @ts-nocheck
 /**
  * Handler for ExportLayersCommand
  * Orchestrates the export: fetches map metadata and layers from AppStore,
  * delegates serialisation to XmlExportAdapter, and triggers the browser download.
  */
 import { XmlExportAdapter } from '../../infrastructure/XmlExportAdapter.js';
+import { AppStore } from '../../ui/stores/AppStore.ts';
+
+type ExportStore = Pick<AppStore, 'getState'>;
+type DownloadFunction = (xmlString: string, filename: string) => void | Promise<void>;
+type SaveFilePickerWindow = Window & {
+    showSaveFilePicker?: (options: {
+        suggestedName: string;
+        types: Array<{ description: string; accept: Record<string, string[]> }>;
+    }) => Promise<{
+        createWritable(): Promise<{
+            write(data: string): Promise<void>;
+            close(): Promise<void>;
+        }>;
+    }>;
+};
 
 export class ExportLayersHandler {
-    appStore: any; // JS domain object � fully typed once domain migrates to TypeScript
-    _downloadFn: any; // JS domain object � fully typed once domain migrates to TypeScript
+    appStore: ExportStore;
+    _downloadFn: DownloadFunction | null;
 
     /**
      * @param {Object} appStore - AppStore with getState() method
      * @param {Function} [_downloadFn] - Optional override for the download trigger (used in tests)
      */
-    constructor(appStore: unknown, _downloadFn: unknown = null) {
+    constructor(appStore: ExportStore, _downloadFn: DownloadFunction | null = null) {
         this.appStore = appStore;
         this._downloadFn = _downloadFn;
     }
@@ -24,7 +38,7 @@ export class ExportLayersHandler {
      * @param {{ selectedLayerIds: string[] }} payload
      * @returns {Promise<{ success: true, filename: string, decorationCount: number }>}
      */
-    async execute(payload) {
+    async execute(payload: { selectedLayerIds: string[] }): Promise<{ success: true; filename: string; decorationCount: number }> {
         const { selectedLayerIds } = payload;
 
         if (!selectedLayerIds || selectedLayerIds.length === 0) {
@@ -66,16 +80,19 @@ export class ExportLayersHandler {
      * auto-download for browsers that do not support showSaveFilePicker.
      * @private
      */
-    async _triggerDownload(xmlString, filename) {
+    async _triggerDownload(xmlString: string, filename: string): Promise<void> {
         if (this._downloadFn) {
             this._downloadFn(xmlString, filename);
             return;
         }
 
         // Use native Save As dialog when available (Chrome 86+, Edge 86+)
-        if (typeof window !== 'undefined' && typeof window.showSaveFilePicker === 'function') {
+        const showSaveFilePicker = typeof window !== 'undefined'
+            ? (window as SaveFilePickerWindow).showSaveFilePicker
+            : undefined;
+        if (typeof showSaveFilePicker === 'function') {
             try {
-                const handle = await window.showSaveFilePicker({
+                const handle = await showSaveFilePicker.call(window, {
                     suggestedName: filename,
                     types: [{
                         description: 'GW2 Homestead XML',
@@ -88,7 +105,7 @@ export class ExportLayersHandler {
                 return;
             } catch (err) {
                 // User dismissed the dialog (AbortError) — treat as cancellation
-                if (err.name === 'AbortError') return;
+                if (err instanceof Error && err.name === 'AbortError') return;
                 // Any other error: fall through to the anchor-click fallback
                 console.warn('[ExportLayersHandler] showSaveFilePicker failed, falling back:', err);
             }

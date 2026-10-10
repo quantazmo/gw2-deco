@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for LayoutConfiguration — targeting uncovered branches.
  *

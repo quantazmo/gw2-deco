@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for RibbonToolbar
  * Covers: _build(), button click handlers, _updateState(), subscriptions, unmount

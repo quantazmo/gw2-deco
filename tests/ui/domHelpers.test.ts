@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/ui/domHelpers.js
  * Pure DOM utility functions — all testable in jsdom

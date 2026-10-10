@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for domain event classes not covered by DomainEvents.test.js:
  * DomainEvent (base), LayerCreatedEvent, LayerDeletedEvent, LayerRenamedEvent,

@@ -1,23 +1,27 @@
-// @ts-nocheck
 /**
  * DockRegion
  * Renders a single panel wrapper with a title bar (drag handle) and a content area.
  * Used by DockManager to wrap each panel content element in the layout tree.
  */
 
-const PANEL_LABELS = {
+const PANEL_LABELS: Record<string, string> = {
     map: 'Map',
     layers: 'Layers',
     decorationList: 'Decoration List'
 };
 
 export class DockRegion {
+    private panelId: string;
+    private contentElement: HTMLElement | null;
+    private label: string;
+    private _element: HTMLElement;
+
     /**
      * @param {string} panelId  One of the PANEL_IDS values
      * @param {HTMLElement|null} contentElement  DOM element to place inside the content area
      * @param {string} [label]  Override display label (defaults to PANEL_LABELS[panelId])
      */
-    constructor(panelId, contentElement, label) {
+    constructor(panelId: string, contentElement: HTMLElement | null, label?: string) {
         this.panelId = panelId;
         this.contentElement = contentElement;
         this.label = label || PANEL_LABELS[panelId] || panelId;
@@ -28,7 +32,7 @@ export class DockRegion {
      * Build the DockRegion DOM element.
      * @private
      */
-    _createElement() {
+    _createElement(): HTMLDivElement {
         const wrapper = document.createElement('div');
         wrapper.className = 'dock-region';
         wrapper.dataset.panelId = this.panelId;
@@ -53,15 +57,15 @@ export class DockRegion {
             sortBtn.setAttribute('aria-label', 'Sort decorations');
             sortBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/></svg>`;
 
-            const sortOptions = [
+            const sortOptions: Array<{ mode: 'oldest' | 'newest' | 'az' | 'za'; label: string }> = [
                 { mode: 'oldest', label: 'Oldest first' },
                 { mode: 'newest', label: 'Newest first' },
                 { mode: 'az', label: 'A \u2192 Z' },
                 { mode: 'za', label: 'Z \u2192 A' },
             ];
 
-            let currentSortMode = 'oldest';
-            let sortDropdown = null;
+            let currentSortMode: 'oldest' | 'newest' | 'az' | 'za' = 'oldest';
+            let sortDropdown: HTMLDivElement | null = null;
 
             const closeSortDropdown = () => {
                 if (sortDropdown) {
@@ -70,8 +74,9 @@ export class DockRegion {
                 }
             };
 
-            const outsideClickHandler = (e) => {
-                if (sortDropdown && !sortDropdown.contains(e.target) && e.target !== sortBtn) {
+            const outsideClickHandler = (e: MouseEvent) => {
+                const target = e.target;
+                if (sortDropdown && target instanceof Node && !sortDropdown.contains(target) && target !== sortBtn) {
                     closeSortDropdown();
                     document.removeEventListener('click', outsideClickHandler, true);
                 }
@@ -85,15 +90,16 @@ export class DockRegion {
                     return;
                 }
 
-                sortDropdown = document.createElement('div');
-                sortDropdown.className = 'decoration-sort-dropdown';
+                const dropdown = document.createElement('div');
+                sortDropdown = dropdown;
+                dropdown.className = 'decoration-sort-dropdown';
 
                 sortOptions.forEach(opt => {
                     const option = document.createElement('button');
                     option.className = 'decoration-sort-dropdown__option' + (opt.mode === currentSortMode ? ' active' : '');
                     option.type = 'button';
                     option.textContent = opt.label;
-                    option.addEventListener('click', (ev) => {
+                    option.addEventListener('click', (ev: MouseEvent) => {
                         ev.stopPropagation();
                         currentSortMode = opt.mode;
                         sortBtn.classList.toggle('active', opt.mode !== 'oldest');
@@ -101,14 +107,14 @@ export class DockRegion {
                         closeSortDropdown();
                         document.removeEventListener('click', outsideClickHandler, true);
                     });
-                    sortDropdown.appendChild(option);
+                    dropdown.appendChild(option);
                 });
 
                 const rect = sortBtn.getBoundingClientRect();
-                sortDropdown.style.position = 'fixed';
-                sortDropdown.style.top = `${rect.bottom + 2}px`;
-                sortDropdown.style.right = `${window.innerWidth - rect.right}px`;
-                document.body.appendChild(sortDropdown);
+                dropdown.style.position = 'fixed';
+                dropdown.style.top = `${rect.bottom + 2}px`;
+                dropdown.style.right = `${window.innerWidth - rect.right}px`;
+                document.body.appendChild(dropdown);
 
                 setTimeout(() => {
                     document.addEventListener('click', outsideClickHandler, true);
@@ -157,7 +163,7 @@ export class DockRegion {
      * Return the root DOM element for this DockRegion.
      * @returns {HTMLElement}
      */
-    getElement() {
+    getElement(): HTMLElement {
         return this._element;
     }
 }

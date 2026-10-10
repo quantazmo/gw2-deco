@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for TabbedContainer — covers lines 71-74, 83, 111-222.
  * Specifically: tab clicks, missing panel content, and tab reorder drag.

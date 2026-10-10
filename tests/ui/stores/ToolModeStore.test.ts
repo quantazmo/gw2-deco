@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/ui/stores/ToolModeStore.js
  * Covers: getMode, setMode, subscribe, default mode is 'pan'

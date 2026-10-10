@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * EventBus
  * Simple pub/sub event system for decoupling components
@@ -6,6 +5,9 @@
  */
 
 class EventBus {
+    subscribers: Record<string, Array<(data: unknown) => void>> = {};
+    debugEnabled: boolean = true;
+
     constructor() {
         this.subscribers = {};
         this.debugEnabled = true; // Enable debug logging
@@ -18,7 +20,7 @@ class EventBus {
      * @param {Function} handler - Handler function to call when event is published
      * @returns {Function} Unsubscribe function
      */
-    subscribe(eventType, handler) {
+    subscribe<T = unknown>(eventType: string, handler: (data: T) => void): () => void {
         if (typeof eventType !== 'string' || !eventType) {
             throw new Error('Event type must be a non-empty string');
         }
@@ -33,7 +35,7 @@ class EventBus {
         }
 
         // Add handler
-        this.subscribers[eventType].push(handler);
+        this.subscribers[eventType].push(handler as (data: unknown) => void);
 
         const subscriberCount = this.subscribers[eventType].length;
         if (this.debugEnabled) {
@@ -52,9 +54,9 @@ class EventBus {
     /**
      * Publish an event to all subscribers
      * @param {string} eventType - Event type
-     * @param {any} data - Event data to pass to handlers
+    * @param {unknown} data - Event data to pass to handlers
      */
-    publish(eventType, data) {
+    publish<T = unknown>(eventType: string, data?: T): void {
         if (typeof eventType !== 'string' || !eventType) {
             throw new Error('Event type must be a non-empty string');
         }
@@ -89,7 +91,7 @@ class EventBus {
      * @param {string} eventType - Event type
      * @param {Function} handler - Handler function to remove
      */
-    unsubscribe(eventType, handler) {
+    unsubscribe<T = unknown>(eventType: string, handler: (data: T) => void): void {
         if (!this.subscribers[eventType]) {
             if (this.debugEnabled) {
                 console.log(`[EventBus] ❌ UNSUBSCRIBE failed: No subscribers for "${eventType}"`);
@@ -98,7 +100,7 @@ class EventBus {
         }
 
         const beforeCount = this.subscribers[eventType].length;
-        const index = this.subscribers[eventType].indexOf(handler);
+        const index = this.subscribers[eventType].indexOf(handler as (data: unknown) => void);
         if (index > -1) {
             this.subscribers[eventType].splice(index, 1);
         }
@@ -122,7 +124,7 @@ class EventBus {
      * @param {string} eventType - Event type
      * @returns {boolean}
      */
-    hasSubscribers(eventType) {
+    hasSubscribers(eventType: string): boolean {
         return !!(this.subscribers[eventType] && this.subscribers[eventType].length > 0);
     }
 
@@ -131,14 +133,14 @@ class EventBus {
      * @param {string} eventType - Event type
      * @returns {number}
      */
-    getSubscriberCount(eventType) {
+    getSubscriberCount(eventType: string): number {
         return this.subscribers[eventType] ? this.subscribers[eventType].length : 0;
     }
 
     /**
      * Clear all subscribers (useful for testing)
      */
-    clearAll() {
+    clearAll(): void {
         this.subscribers = {};
     }
 
@@ -146,7 +148,7 @@ class EventBus {
      * Clear subscribers for a specific event type
      * @param {string} eventType - Event type
      */
-    clear(eventType) {
+    clear(eventType: string): void {
         if (this.subscribers[eventType]) {
             delete this.subscribers[eventType];
         }

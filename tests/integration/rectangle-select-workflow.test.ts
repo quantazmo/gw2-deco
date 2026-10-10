@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration tests for rectangle selection workflow (US10)
  * Covers: draw rectangle to select, Ctrl+drag for additive,

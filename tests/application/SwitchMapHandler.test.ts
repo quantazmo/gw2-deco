@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for SwitchMapHandler
  * Covers: clear all layers, load new map, undo history cleared

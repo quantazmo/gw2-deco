@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/application/handlers/CreateLayerHandler.js
  * Tests the application layer command handling for layer creation

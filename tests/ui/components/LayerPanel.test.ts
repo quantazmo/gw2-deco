@@ -1,4 +1,4 @@
-// @ts-nocheck
+export { };
 
 // Mock eventBinders module
 const mockBindCreateLayerButton = vi.fn();
@@ -17,49 +17,71 @@ vi.doMock('../../../src/ui/eventBinders.js', () => ({
     setButtonState: mockSetButtonState,
 }));
 
-const { LayerPanel } = await import('../../../src/ui/components/LayerPanel.js');
+const { LayerPanel: LayerPanelImplementation } = await import('../../../src/ui/components/LayerPanel.js');
 
-function makeMockAppStore(layers = []) {
-    const subs = [];
+type TestLayer = { id: string; name: string; isVisible: boolean };
+type TestAppState = { layers: TestLayer[]; activeLayerId?: string | null };
+type ComponentLayer = Parameters<InstanceType<typeof LayerPanelImplementation>['createLayerElement']>[0];
+
+class LayerPanel extends LayerPanelImplementation {
+    render(state: TestAppState): void {
+        super.render(state as Parameters<InstanceType<typeof LayerPanelImplementation>['render']>[0]);
+    }
+
+    createLayerElement(layer: TestLayer, isActive: boolean): HTMLElement {
+        return super.createLayerElement(layer as unknown as ComponentLayer, isActive);
+    }
+}
+
+function makeMockAppStore(layers: TestLayer[] = []) {
+    const subs: Array<(state: TestAppState) => void> = [];
     return {
-        subscribe: (cb) => subs.push(cb),
+        subscribe: (cb: (state: TestAppState) => void) => subs.push(cb),
         getState: () => ({ layers }),
-        _trigger: (state) => subs.forEach(cb => cb(state)),
+        _trigger: (state: TestAppState) => subs.forEach(cb => cb(state)),
+    } as unknown as ConstructorParameters<typeof LayerPanel>[1] & {
+        _trigger: (state: TestAppState) => void;
     };
 }
 
-function makeMockSelectionStore(activeLayerId = null) {
-    const subs = [];
+function makeMockSelectionStore(activeLayerId: string | null = null) {
+    const subs: Array<(state: { activeLayerId: string | null }) => void> = [];
     return {
-        subscribe: (cb) => subs.push(cb),
+        subscribe: (cb: (state: { activeLayerId: string | null }) => void) => subs.push(cb),
         getActiveLayerId: () => activeLayerId,
-        _trigger: (state) => subs.forEach(cb => cb(state)),
+        _trigger: (state: { activeLayerId: string | null }) => subs.forEach(cb => cb(state)),
+    } as unknown as ConstructorParameters<typeof LayerPanel>[2] & {
+        _trigger: (state: { activeLayerId: string | null }) => void;
     };
 }
 
 function makeMockAppService() {
-    const calls = [];
+    const calls: Array<{ type: string; payload?: unknown }> = [];
     return {
-        execute: async (cmd) => { calls.push(cmd); return Promise.resolve(); },
+        execute: async (cmd: { type: string; payload?: unknown }) => { calls.push(cmd); },
         _calls: calls,
+    } as unknown as ConstructorParameters<typeof LayerPanel>[3] & {
+        _calls: Array<{ type: string; payload?: unknown }>;
     };
 }
 
 function makeMockEventBus() {
-    const calls = [];
+    const calls: Array<{ event: string; data: unknown }> = [];
     return {
-        publish: (event, data) => calls.push({ event, data }),
+        publish: (event: string, data: unknown) => calls.push({ event, data }),
         _calls: calls,
+    } as unknown as ConstructorParameters<typeof LayerPanel>[4] & {
+        _calls: Array<{ event: string; data: unknown }>;
     };
 }
 
 describe('LayerPanel', () => {
-    let container;
-    let appStore;
-    let selectionStore;
-    let appService;
-    let eventBus;
-    let layerPanel;
+    let container: HTMLDivElement;
+    let appStore: ReturnType<typeof makeMockAppStore>;
+    let selectionStore: ReturnType<typeof makeMockSelectionStore>;
+    let appService: ReturnType<typeof makeMockAppService>;
+    let eventBus: ReturnType<typeof makeMockEventBus>;
+    let layerPanel: InstanceType<typeof LayerPanel>;
 
     beforeEach(() => {
         vi.clearAllMocks();

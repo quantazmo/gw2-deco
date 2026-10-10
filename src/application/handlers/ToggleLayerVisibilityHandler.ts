@@ -1,19 +1,23 @@
-// @ts-nocheck
 /**
  * Handler for ToggleLayerVisibilityCommand
  */
 import { LayerId } from '../../domain/LayerId.js';
 import { LayerVisibilityToggledEvent } from '../../domain/events/LayerVisibilityToggledEvent.js';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
+
+type LayerVisibilitySelectionStore = {
+    deselectByLayer(layerId: string, decorationBelongsToLayer: (id: string) => boolean): void;
+};
 
 export class ToggleLayerVisibilityHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
-    selectionStore: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
+    selectionStore: LayerVisibilitySelectionStore | null;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      * @param {SelectionStore} [selectionStore] - Optional selection store for auto-deselect on hide
      */
-    constructor(layout: unknown, selectionStore: unknown = null) {
+    constructor(layout: HomesteadLayout, selectionStore: LayerVisibilitySelectionStore | null = null) {
         this.layout = layout;
         this.selectionStore = selectionStore || null;
     }
@@ -23,7 +27,7 @@ export class ToggleLayerVisibilityHandler {
      * @param {ToggleLayerVisibilityCommand|Object} command - The command to execute
      * @returns {Object} Result object with the new visibility state
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: { layerId: string }): { layerId: string; isVisible: boolean } {
         const layerId = new LayerId(command.layerId);
 
         // Validate that the layer exists

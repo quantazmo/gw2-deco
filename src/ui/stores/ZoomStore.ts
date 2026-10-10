@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ZoomStore
  * Manages zoom and pan state encapsulated in a single object
@@ -6,10 +5,34 @@
  * Provides event emitter pattern for state changes
  */
 
+export interface ZoomScale {
+    (value: number): number;
+    copy(): ZoomScale;
+    domain(): number[];
+    domain(values: number[]): ZoomScale;
+    range(): number[];
+}
+
+export type ZoomTransformState = {
+    scaleX: number;
+    scaleY: number;
+    translateX: number;
+    translateY: number;
+};
+
+type ZoomEventData = Record<string, unknown>;
+type ZoomHistoryEntry = {
+    transform: ZoomTransformState;
+    xZoom: ZoomScale | null;
+    yZoom: ZoomScale | null;
+};
+
 /**
  * Simple event emitter for zoom changes
  */
 class ZoomEventEmitter {
+    listeners: Record<string, Array<(data: ZoomEventData) => void>>;
+
     constructor() {
         this.listeners = {
             change: []
@@ -22,7 +45,7 @@ class ZoomEventEmitter {
      * @param {Function} callback - Callback function
      * @returns {Function} Unsubscribe function
      */
-    on(event, callback) {
+    on(event: string, callback: (data: ZoomEventData) => void): () => void {
         if (!this.listeners[event]) {
             this.listeners[event] = [];
         }
@@ -37,9 +60,9 @@ class ZoomEventEmitter {
     /**
      * Emit an event and notify all listeners
      * @param {string} event - Event name
-     * @param {any} data - Data to pass to listeners
+    * @param {unknown} data - Data to pass to listeners
      */
-    emit(event, data) {
+    emit(event: string, data: ZoomEventData): void {
         const listenerCount = this.listeners[event] ? this.listeners[event].length : 0;
         console.log(`[ZoomEventEmitter] 📤 EMIT: "${event}" (${listenerCount} listener${listenerCount !== 1 ? 's' : ''})`, data);
 
@@ -61,7 +84,7 @@ class ZoomEventEmitter {
      * @param {Function} callback - Callback function
      * @returns {Function} Unsubscribe function
      */
-    once(event, callback) {
+    once(event: string, callback: (data: ZoomEventData) => void): () => void {
         const unsubscribe = this.on(event, (data) => {
             callback(data);
             unsubscribe();
@@ -74,6 +97,18 @@ class ZoomEventEmitter {
  * ZoomStore - Manages zoom and pan state
  */
 export class ZoomStore {
+    xZoom: ZoomScale | null = null;
+    yZoom: ZoomScale | null = null;
+    xZoomBase: ZoomScale | null = null;
+    yZoomBase: ZoomScale | null = null;
+    transform: ZoomTransformState = { scaleX: 1, scaleY: 1, translateX: 0, translateY: 0 };
+    minZoom: number = 0.1;
+    maxZoom: number = 10;
+    history: ZoomHistoryEntry[] = [];
+    historyIndex: number = -1;
+    emitter: ZoomEventEmitter = new ZoomEventEmitter();
+    debugEnabled: boolean = true;
+
     /**
      * Create a new ZoomStore
      * Initializes with identity transforms
@@ -120,7 +155,7 @@ export class ZoomStore {
      * @param {Object} xBaseScale - The original x scale (for reset)
      * @param {Object} yBaseScale - The original y scale (for reset)
      */
-    initialize(xZoomScale, yZoomScale, xBaseScale, yBaseScale) {
+    initialize(xZoomScale: ZoomScale, yZoomScale: ZoomScale, xBaseScale: ZoomScale, yBaseScale: ZoomScale): void {
         if (this.debugEnabled) {
             console.log('[ZoomStore] ⚡ INITIALIZE called');
         }
@@ -159,7 +194,7 @@ export class ZoomStore {
      * @param {Object} newXZoom - Updated x scale
      * @param {Object} newYZoom - Updated y scale
      */
-    setZoom(newXZoom, newYZoom) {
+    setZoom(newXZoom: ZoomScale, newYZoom: ZoomScale): void {
         if (this.debugEnabled) {
             console.log('[ZoomStore] ⚡ SETZOOM called');
         }
@@ -186,7 +221,7 @@ export class ZoomStore {
      * Get the current X zoom scale
      * @returns {Object|null} The x zoom scale
      */
-    getXZoom() {
+    getXZoom(): ZoomScale | null {
         return this.xZoom;
     }
 
@@ -194,7 +229,7 @@ export class ZoomStore {
      * Get the current Y zoom scale
      * @returns {Object|null} The y zoom scale
      */
-    getYZoom() {
+    getYZoom(): ZoomScale | null {
         return this.yZoom;
     }
 
@@ -202,7 +237,7 @@ export class ZoomStore {
      * Get the base X scale (unzoomed/unpanned)
      * @returns {Object|null} The base x scale
      */
-    getXZoomBase() {
+    getXZoomBase(): ZoomScale | null {
         return this.xZoomBase;
     }
 
@@ -210,7 +245,7 @@ export class ZoomStore {
      * Get the base Y scale (unzoomed/unpanned)
      * @returns {Object|null} The base y scale
      */
-    getYZoomBase() {
+    getYZoomBase(): ZoomScale | null {
         return this.yZoomBase;
     }
 
@@ -218,7 +253,7 @@ export class ZoomStore {
      * Get all zoom state as an object
      * @returns {Object} Object with xZoom, yZoom, xZoomBase, yZoomBase
      */
-    getState() {
+    getState(): { xZoom: ZoomScale | null; yZoom: ZoomScale | null; xZoomBase: ZoomScale | null; yZoomBase: ZoomScale | null } {
         return {
             xZoom: this.xZoom,
             yZoom: this.yZoom,
@@ -233,7 +268,7 @@ export class ZoomStore {
      * @param {number} centerX - X coordinate of zoom center
      * @param {number} centerY - Y coordinate of zoom center
      */
-    zoom(factor, centerX = 0, centerY = 0) {
+    zoom(factor: number, centerX: number = 0, centerY: number = 0): void {
         // Constrain zoom factor to limits
         const constrainedFactor = Math.max(this.minZoom, Math.min(this.maxZoom, this.transform.scaleX * factor));
         const actualFactor = constrainedFactor / this.transform.scaleX;
@@ -269,7 +304,7 @@ export class ZoomStore {
      * @param {number} deltaX - Amount to pan in X direction
      * @param {number} deltaY - Amount to pan in Y direction
      */
-    pan(deltaX, deltaY) {
+    pan(deltaX: number, deltaY: number): void {
         if (deltaX === 0 && deltaY === 0) {
             return; // No pan change
         }
@@ -294,7 +329,7 @@ export class ZoomStore {
      * Save current state to history for undo
      * @private
      */
-    pushHistory() {
+    pushHistory(): void {
         // Remove any redo history if we're making a new change
         if (this.historyIndex < this.history.length - 1) {
             this.history = this.history.slice(0, this.historyIndex + 1);
@@ -314,7 +349,7 @@ export class ZoomStore {
      * Undo the last zoom/pan operation
      * @returns {boolean} True if undo was performed, false if at history start
      */
-    undo() {
+    undo(): boolean {
         if (this.historyIndex <= 0) {
             return false;
         }
@@ -340,7 +375,7 @@ export class ZoomStore {
      * Redo the last undone operation
      * @returns {boolean} True if redo was performed, false if at history end
      */
-    redo() {
+    redo(): boolean {
         if (this.historyIndex >= this.history.length - 1) {
             return false;
         }
@@ -366,7 +401,7 @@ export class ZoomStore {
      * Get current transform state
      * @returns {Object} Transform object with scaleX, scaleY, translateX, translateY
      */
-    getTransform() {
+    getTransform(): ZoomTransformState {
         return { ...this.transform };
     }
 
@@ -375,7 +410,7 @@ export class ZoomStore {
      * @param {number} min - Minimum zoom factor
      * @param {number} max - Maximum zoom factor
      */
-    setZoomLimits(min, max) {
+    setZoomLimits(min: number, max: number): void {
         if (min >= max || min <= 0 || max <= 0) {
             throw new Error('Invalid zoom limits: min must be > 0 and < max');
         }
@@ -387,7 +422,7 @@ export class ZoomStore {
      * Get zoom limits
      * @returns {Object} Object with min and max zoom factors
      */
-    getZoomLimits() {
+    getZoomLimits(): { min: number; max: number } {
         return {
             min: this.minZoom,
             max: this.maxZoom
@@ -398,7 +433,7 @@ export class ZoomStore {
      * Check if undo is available
      * @returns {boolean}
      */
-    canUndo() {
+    canUndo(): boolean {
         return this.historyIndex > 0;
     }
 
@@ -406,14 +441,14 @@ export class ZoomStore {
      * Check if redo is available
      * @returns {boolean}
      */
-    canRedo() {
+    canRedo(): boolean {
         return this.historyIndex < this.history.length - 1;
     }
 
     /**
      * Clear history (useful when loading new layout)
      */
-    clearHistory() {
+    clearHistory(): void {
         this.history = [];
         this.historyIndex = -1;
     }
@@ -422,7 +457,7 @@ export class ZoomStore {
      * Reset zoom/pan to original scales
      * Restores the base scales
      */
-    reset() {
+    reset(): void {
         if (!this.xZoomBase || !this.yZoomBase) {
             throw new Error('Cannot reset: base scales not initialized');
         }
@@ -459,7 +494,7 @@ export class ZoomStore {
      * Check if zoom/pan is initialized
      * @returns {boolean}
      */
-    isInitialized() {
+    isInitialized(): boolean {
         return this.xZoom !== null && this.yZoom !== null;
     }
 
@@ -468,7 +503,7 @@ export class ZoomStore {
      * @param {Function} callback - Function called when state changes
      * @returns {Function} Unsubscribe function
      */
-    onChange(callback) {
+    onChange(callback: (data: ZoomEventData) => void): () => void {
         return this.emitter.on('change', callback);
     }
 
@@ -477,7 +512,7 @@ export class ZoomStore {
      * @param {Function} callback - Function called once when state changes
      * @returns {Function} Unsubscribe function
      */
-    onceChange(callback) {
+    onceChange(callback: (data: ZoomEventData) => void): () => void {
         return this.emitter.once('change', callback);
     }
 
@@ -485,7 +520,7 @@ export class ZoomStore {
      * Get event emitter for advanced usage
      * @returns {ZoomEventEmitter}
      */
-    getEmitter() {
+    getEmitter(): ZoomEventEmitter {
         return this.emitter;
     }
 }

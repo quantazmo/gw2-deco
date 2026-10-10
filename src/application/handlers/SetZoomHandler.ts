@@ -2,14 +2,15 @@
  * Handler for SetZoomCommand
  */
 import { ZoomChangedEvent } from '../../domain/events/ZoomChangedEvent.js';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
 
 export class SetZoomHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      */
-    constructor(layout: unknown) {
+    constructor(layout: HomesteadLayout) {
         this.layout = layout;
     }
 
@@ -18,7 +19,7 @@ export class SetZoomHandler {
      * @param {SetZoomCommand|Object} command - The command to execute
      * @returns {Object} Result object with the new zoom level
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: { zoomLevel: number }): { zoomLevel: number } {
         const { zoomLevel } = command;
 
         // Validate zoom level

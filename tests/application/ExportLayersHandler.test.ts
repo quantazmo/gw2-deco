@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/application/handlers/ExportLayersHandler.js
  * Covers: filtering, ordering, filename derivation, error cases.

@@ -135,7 +135,7 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-#chart-container {
+#map-container {
   width: 100%;
   height: 100%;
   position: relative;
@@ -143,13 +143,13 @@ body {
   overflow: hidden;
 }
 
-#chart-container.drag-over {
+#map-container.drag-over {
   background-color: rgba(100, 150, 255, 0.1);
   border: 2px dashed #4496ff;
 }
 
 /* ============================================================
-   WELCOME DIALOG — shown in chart-container before a file loads
+   WELCOME DIALOG — shown in map-container before a file loads
    ============================================================ */
 
 .welcome-dialog {

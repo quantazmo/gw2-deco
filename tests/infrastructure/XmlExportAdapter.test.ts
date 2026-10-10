@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/infrastructure/XmlExportAdapter.js
  * Covers XML serialisation, numeric precision, special-character escaping, and rotation fields.

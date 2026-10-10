@@ -5,17 +5,19 @@
 import { Layer } from '../../domain/Layer.js';
 import { LayerCreatedEvent } from '../../domain/events/LayerCreatedEvent.js';
 import { UndoRecord } from '../UndoRecord.js';
+import { UndoRedoManager } from '../UndoRedoManager.ts';
 import { LAYER_COLORS } from '../../config/constants.js';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
 
 export class CreateLayerHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
-    undoRedoManager: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
+    undoRedoManager: UndoRedoManager | null;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      * @param {UndoRedoManager} [undoRedoManager] - Optional undo/redo manager for undo support
      */
-    constructor(layout: unknown, undoRedoManager: unknown = null) {
+    constructor(layout: HomesteadLayout, undoRedoManager: UndoRedoManager | null = null) {
         this.layout = layout;
         this.undoRedoManager = undoRedoManager || null;
     }
@@ -25,7 +27,7 @@ export class CreateLayerHandler {
      * @param {CreateLayerCommand} command - The command to execute
      * @returns {Layer} The created layer
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: { id?: string; name?: string; isVisible?: boolean; color?: string }): Layer {
         // Auto-generate ID if not provided
         const layerId = command.id || `layer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -34,7 +36,7 @@ export class CreateLayerHandler {
         const layerName = command.name || `Layer ${layerCount + 1}`;
 
         // Auto-assign color: prefer an unused palette color; fall back to random from palette
-        const usedColors = new Set(this.layout.getAllLayers().map((l: any) => l.color));
+        const usedColors = new Set(this.layout.getAllLayers().map(layer => layer.color));
         const unusedColors = (LAYER_COLORS as readonly string[]).filter(c => !usedColors.has(c));
         const pool = unusedColors.length > 0 ? unusedColors : (LAYER_COLORS as readonly string[]);
         const randomColor = pool[Math.floor(Math.random() * pool.length)];
@@ -56,12 +58,11 @@ export class CreateLayerHandler {
         }
 
         // Emit domain event
-        const event = new LayerCreatedEvent(
+        const event = Object.assign(new LayerCreatedEvent(
             this.layout.id,
             layer.id,
             layerName
-        );
-        (event as any).layer = layer; // Attach layer for convenience
+        ), { layer });
         this.layout.addEvent(event);
 
         return layer;
@@ -72,7 +73,7 @@ export class CreateLayerHandler {
      * @param {CreateLayerCommand} command - The command to execute
      * @returns {Object} Result object with the created layer
      */
-    handle(command: any) { // TODO: typed command interface pending domain migration
+    handle(command: { layout: HomesteadLayout; layerName: string }): { layer: Layer; layerId: string } {
         if (!command) {
             throw new Error('CreateLayerHandler.handle: command is required');
         }
@@ -93,12 +94,11 @@ export class CreateLayerHandler {
         command.layout.addLayer(layer);
 
         // Emit domain event
-        const event = new LayerCreatedEvent(
+        const event = Object.assign(new LayerCreatedEvent(
             command.layout.id,
             layerId,
             command.layerName
-        );
-        (event as any).layer = layer; // attach convenience property not in domain Event base type
+        ), { layer });
         command.layout.addEvent(event);
 
         return {

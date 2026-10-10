@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration tests for undo/redo workflow
  * Covers: move-then-undo, delete-layer-then-undo, delete-decorations-then-undo,

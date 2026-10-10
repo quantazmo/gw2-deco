@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * SettingsDialog Component
  * Modal dialog for editing application settings (e.g. API Key).
@@ -22,8 +21,20 @@ const TOKENINFO_URL = 'https://api.guildwars2.com/v2/tokeninfo';
 const API_KEY_PATTERN = /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{20}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i;
 
 let _instanceCount = 0;
+type ThemePreference = 'light' | 'dark' | 'system';
+type SettingsResult = { apiKey: string; theme: ThemePreference };
 
 export class SettingsDialog {
+    private _id: string;
+    private _resolve: ((result: SettingsResult | null) => void) | null = null;
+    private _validateTimer: ReturnType<typeof setTimeout> | null = null;
+    private _currentValidationKey: string | null = null;
+    private _dialogEl!: HTMLDialogElement;
+    private _apiKeyInput!: HTMLInputElement;
+    private _validationIcon!: HTMLSpanElement;
+    private _cancelBtn!: HTMLButtonElement;
+    private _saveBtn!: HTMLButtonElement;
+
     constructor() {
         _instanceCount++;
         this._id = `settings-dialog-${_instanceCount}`;
@@ -42,14 +53,14 @@ export class SettingsDialog {
      *   Resolves with the new settings object on Save.
      *   Resolves with null on Cancel or Escape.
      */
-    show(settings) {
+    show(settings: { apiKey: string; theme?: ThemePreference }): Promise<SettingsResult | null> {
         this._apiKeyInput.value = settings.apiKey ?? '';
         // Validate the existing key immediately on open (no debounce)
         this._scheduleValidation(0);
 
         // Pre-select the theme radio button
         const theme = settings.theme ?? 'system';
-        const themeRadio = this._dialogEl.querySelector(`input[name="${this._id}-theme"][value="${theme}"]`);
+        const themeRadio = this._dialogEl.querySelector<HTMLInputElement>(`input[name="${this._id}-theme"][value="${theme}"]`);
         if (themeRadio) themeRadio.checked = true;
 
         if (typeof this._dialogEl.showModal === 'function') {
@@ -60,14 +71,14 @@ export class SettingsDialog {
 
         this._cancelBtn.focus();
 
-        return new Promise((resolve) => {
+        return new Promise<SettingsResult | null>((resolve) => {
             this._resolve = resolve;
         });
     }
 
     // ── private ──────────────────────────────────────────────────────────────
 
-    _createDialogElement() {
+    _createDialogElement(): HTMLDialogElement {
         const dialog = document.createElement('dialog');
         dialog.classList.add('settings-dialog');
         dialog.setAttribute('role', 'dialog');
@@ -145,7 +156,7 @@ export class SettingsDialog {
             { value: 'system', icon: '🌗', label: 'System default' },
             { value: 'light', icon: '☀️', label: 'Light' },
             { value: 'dark', icon: '🌙', label: 'Dark' },
-        ];
+        ] as const;
 
         for (const def of themeDefs) {
             const optionEl = document.createElement('label');
@@ -208,18 +219,21 @@ export class SettingsDialog {
         return dialog;
     }
 
-    _onSave() {
-        const selectedThemeRadio = this._dialogEl.querySelector(`input[name="${this._id}-theme"]:checked`);
-        const result = {
+    _onSave(): void {
+        const selectedThemeRadio = this._dialogEl.querySelector<HTMLInputElement>(`input[name="${this._id}-theme"]:checked`);
+        const selectedTheme = selectedThemeRadio?.value;
+        const result: SettingsResult = {
             apiKey: this._apiKeyInput.value.trim(),
-            theme: selectedThemeRadio ? selectedThemeRadio.value : 'system',
+            theme: selectedTheme === 'light' || selectedTheme === 'dark' || selectedTheme === 'system'
+                ? selectedTheme
+                : 'system',
         };
         this._close(result);
     }
 
-    _close(result) {
+    _close(result: SettingsResult | null): void {
         // Cancel any in-flight validation
-        clearTimeout(this._validateTimer);
+        if (this._validateTimer !== null) clearTimeout(this._validateTimer);
         this._currentValidationKey = null;
 
         if (typeof this._dialogEl.close === 'function') {
@@ -238,8 +252,8 @@ export class SettingsDialog {
      * Cancels any previously scheduled run.
      * @param {number} delay
      */
-    _scheduleValidation(delay) {
-        clearTimeout(this._validateTimer);
+    _scheduleValidation(delay: number): void {
+        if (this._validateTimer !== null) clearTimeout(this._validateTimer);
         const key = this._apiKeyInput.value.trim();
 
         if (!key) {
@@ -263,7 +277,7 @@ export class SettingsDialog {
      * Only applies the result if the key has not changed since the call was made.
      * @param {string} key
      */
-    async _validateKey(key) {
+    async _validateKey(key: string): Promise<void> {
         this._currentValidationKey = key;
         try {
             const url = `${TOKENINFO_URL}?access_token=${encodeURIComponent(key)}`;
@@ -285,7 +299,7 @@ export class SettingsDialog {
      * Update the validation icon state.
      * @param {'idle'|'pending'|'valid'|'invalid'} state
      */
-    _setValidationState(state) {
+    _setValidationState(state: 'idle' | 'pending' | 'valid' | 'invalid'): void {
         const icon = this._validationIcon;
         icon.className = 'settings-dialog__validation-icon';
 
@@ -315,7 +329,7 @@ export class SettingsDialog {
     /**
      * Remove the dialog element from the DOM.
      */
-    destroy() {
+    destroy(): void {
         this._dialogEl.remove();
     }
 }

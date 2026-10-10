@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for LoadAdditionalLayoutHandler
  * Covers: same-map layer addition, different-map confirmation return, first-load behavior

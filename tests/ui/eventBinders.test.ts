@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 // Mock ExportDialog before importing eventBinders
 let mockExportDialogShow = vi.fn(async () => ['layer-1']);

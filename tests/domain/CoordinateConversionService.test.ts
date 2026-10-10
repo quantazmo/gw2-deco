@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/domain/CoordinateConversionService.js
  * Tests coordinate system transformations between different spaces

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for SettingsRepository — targeting uncovered error paths.
  * Covers: save catch/warn, clear catch/warn, load getItem throws.

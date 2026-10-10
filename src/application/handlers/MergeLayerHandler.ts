@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Handler for MergeLayerCommand.
  * Moves all decorations from the source layer to the target layer,
@@ -6,18 +5,24 @@
  */
 import { UndoRecord } from '../UndoRecord.js';
 import { LayerDeletedEvent } from '../../domain/events/LayerDeletedEvent.js';
+import { UndoRedoManager } from '../UndoRedoManager.ts';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
+
+type MergeSelectionStore = {
+    deselectByLayer(layerId: string, decorationBelongsToLayer: (id: string) => boolean): void;
+};
 
 export class MergeLayerHandler {
-    layout: any;
-    selectionStore: any;
-    undoRedoManager: any;
+    layout: HomesteadLayout;
+    selectionStore: MergeSelectionStore | null;
+    undoRedoManager: UndoRedoManager | null;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      * @param {SelectionStore} [selectionStore] - Optional selection store for auto-deselect
      * @param {UndoRedoManager} [undoRedoManager] - Optional undo/redo manager
      */
-    constructor(layout: unknown, selectionStore: unknown = null, undoRedoManager: unknown = null) {
+    constructor(layout: HomesteadLayout, selectionStore: MergeSelectionStore | null = null, undoRedoManager: UndoRedoManager | null = null) {
         this.layout = layout;
         this.selectionStore = selectionStore || null;
         this.undoRedoManager = undoRedoManager || null;
@@ -27,7 +32,7 @@ export class MergeLayerHandler {
      * Executes the merge layer command.
      * @param {{ sourceLayerId: string, targetLayerId: string }} command
      */
-    execute(command: any) {
+    execute(command: { sourceLayerId: string; targetLayerId: string }): void {
         const { sourceLayerId, targetLayerId } = command;
 
         if (!sourceLayerId || !targetLayerId) {

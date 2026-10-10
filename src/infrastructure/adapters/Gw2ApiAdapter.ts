@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Gw2ApiAdapter
  * 
@@ -6,8 +5,43 @@
  * Provides a cleaner interface for API operations with resilience features.
  */
 
+interface Gw2ApiAdapterOptions {
+    maxRetries?: number;
+    timeout?: number;
+    retryDelay?: number;
+    baseUrl?: string;
+}
+
+export type Gw2CoordinatePair = [number, number];
+export type Gw2CoordinateRect = [Gw2CoordinatePair, Gw2CoordinatePair];
+
+export interface Gw2ApiMapData {
+    id: number;
+    name: string;
+    continent_id: number;
+    default_floor: number;
+    floors?: number[];
+    region_id: number;
+    map_rect?: Gw2CoordinateRect;
+}
+
+export interface Gw2ApiFloorMapData {
+    continent_rect: Gw2CoordinateRect;
+    map_rect: Gw2CoordinateRect;
+    sectors?: Array<{ bounds?: Gw2CoordinatePair[] }> | Record<string, { bounds?: Gw2CoordinatePair[] }>;
+}
+
+export interface Gw2ApiMapFloorData {
+    regions?: Record<number, { maps?: Record<number, Gw2ApiFloorMapData> }>;
+}
+
 export class Gw2ApiAdapter {
-    constructor(options = {}) {
+    private readonly maxRetries: number;
+    private readonly timeout: number;
+    private readonly retryDelay: number;
+    private readonly baseUrl: string;
+
+    constructor(options: Gw2ApiAdapterOptions = {}) {
         this.maxRetries = options.maxRetries || 3;
         this.timeout = options.timeout || 10000; // 10 seconds
         this.retryDelay = options.retryDelay || 1000; // 1 second
@@ -20,8 +54,8 @@ export class Gw2ApiAdapter {
      * @returns {Promise<object|null>} Map data or null if not found
      * @throws {Error} If all retries fail
      */
-    async getMap(mapId) {
-        return this._callWithRetry(`v2/maps/${mapId}`);
+    async getMap(mapId: number): Promise<Gw2ApiMapData | null> {
+        return this._callWithRetry<Gw2ApiMapData>(`v2/maps/${mapId}`);
     }
 
     /**
@@ -30,7 +64,7 @@ export class Gw2ApiAdapter {
      * @returns {Promise<object|null>} Continent data or null if not found
      * @throws {Error} If all retries fail
      */
-    async getContinent(continentId) {
+    async getContinent(continentId: number): Promise<unknown | null> {
         return this._callWithRetry(`v2/continents/${continentId}`);
     }
 
@@ -41,8 +75,8 @@ export class Gw2ApiAdapter {
      * @returns {Promise<object|null>} Floor data or null if not found
      * @throws {Error} If all retries fail
      */
-    async getMapFloor(continentId, floorId) {
-        return this._callWithRetry(`v1/map_floor.json?continent_id=${continentId}&floor=${floorId}`);
+    async getMapFloor(continentId: number, floorId: number): Promise<Gw2ApiMapFloorData | null> {
+        return this._callWithRetry<Gw2ApiMapFloorData>(`v1/map_floor.json?continent_id=${continentId}&floor=${floorId}`);
     }
 
     /**
@@ -50,7 +84,7 @@ export class Gw2ApiAdapter {
      * @returns {Promise<number[]>} Array of map IDs
      * @throws {Error} If request fails
      */
-    async getAllMapIds() {
+    async getAllMapIds(): Promise<number[]> {
         try {
             const response = await this._fetchWithTimeout(`${this.baseUrl}/v2/maps`);
             if (!response.ok) {
@@ -58,7 +92,8 @@ export class Gw2ApiAdapter {
             }
             return await response.json();
         } catch (error) {
-            throw new Error(`Failed to get map IDs: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to get map IDs: ${message}`);
         }
     }
 
@@ -69,8 +104,10 @@ export class Gw2ApiAdapter {
      * @returns {Promise<Array<{id: number, count: number}>|null>} Array of decoration entries or null if not found
      * @throws {Error} If the request fails or the API key is unauthorized
      */
-    async getAccountHomesteadDecorations(apiKey) {
-        return this._callWithRetry(`v2/account/homestead/decorations?access_token=${encodeURIComponent(apiKey)}`);
+    async getAccountHomesteadDecorations(apiKey: string): Promise<Array<{ id: number; count: number }> | null> {
+        return this._callWithRetry<Array<{ id: number; count: number }>>(
+            `v2/account/homestead/decorations?access_token=${encodeURIComponent(apiKey)}`
+        );
     }
 
     /**
@@ -92,8 +129,8 @@ export class Gw2ApiAdapter {
      * Call an API endpoint with retry logic and timeout
      * @private
      */
-    async _callWithRetry(endpoint, headers = {}) {
-        let lastError;
+    async _callWithRetry<T = unknown>(endpoint: string, headers: HeadersInit = {}): Promise<T | null> {
+        let lastError: unknown;
 
         for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
             try {
@@ -105,21 +142,22 @@ export class Gw2ApiAdapter {
                     const delayMs = this.retryDelay * Math.pow(2, attempt - 1); // Exponential backoff
                     console.warn(
                         `API call failed (attempt ${attempt}/${this.maxRetries}), ` +
-                        `retrying in ${delayMs}ms: ${error.message}`
+                        `retrying in ${delayMs}ms: ${error instanceof Error ? error.message : String(error)}`
                     );
                     await this._sleep(delayMs);
                 }
             }
         }
 
-        throw new Error(`API request failed after ${this.maxRetries} attempts: ${lastError.message}`);
+        const message = lastError instanceof Error ? lastError.message : String(lastError);
+        throw new Error(`API request failed after ${this.maxRetries} attempts: ${message}`);
     }
 
     /**
      * Make the actual API call
      * @private
      */
-    async _callApiEndpoint(endpoint, headers = {}) {
+    async _callApiEndpoint<T = unknown>(endpoint: string, headers: HeadersInit = {}): Promise<T | null> {
         const response = await this._fetchWithTimeout(`${this.baseUrl}/${endpoint}`, headers);
 
         if (response.status === 404) {
@@ -137,14 +175,14 @@ export class Gw2ApiAdapter {
      * Fetch with timeout
      * @private
      */
-    _fetchWithTimeout(url, headers = {}) {
+    _fetchWithTimeout(url: string, headers: HeadersInit = {}): Promise<Response> {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
         return fetch(url, { signal: controller.signal, headers })
             .finally(() => clearTimeout(timeoutId))
-            .catch(error => {
-                if (error.name === 'AbortError') {
+            .catch((error: unknown) => {
+                if (error instanceof Error && error.name === 'AbortError') {
                     throw new Error(`Request timeout after ${this.timeout}ms`);
                 }
                 throw error;
@@ -155,7 +193,7 @@ export class Gw2ApiAdapter {
      * Sleep for a given number of milliseconds
      * @private
      */
-    _sleep(ms) {
+    _sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 }

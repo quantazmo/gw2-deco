@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * DecorationReportDialog Component
  * Modal dialog that reports the current map name and the decoration count
@@ -6,10 +5,26 @@
  * Uses native <dialog> element with a Promise-based API.
  * Dismissed via the OK button (or programmatically).
  */
+import type { AccountDecorationInventory } from '../../domain/AccountDecorationInventory.js';
+
+interface ReportLayer {
+    name: string;
+    isVisible?: boolean;
+    getAllDecorations?: () => Array<{ id: string | number; name: string }>;
+}
 
 let _instanceCount = 0;
 
 export class DecorationReportDialog {
+    private _resolve: (() => void) | null;
+    private _dialogEl: HTMLDialogElement;
+    private _id: string;
+    private _titleEl!: HTMLHeadingElement;
+    private _mapNameEl!: HTMLSpanElement;
+    private _listEl!: HTMLDivElement;
+    private _emptyMsgEl!: HTMLParagraphElement;
+    private _okBtn!: HTMLButtonElement;
+
     constructor() {
         _instanceCount++;
         this._id = `decoration-report-dialog-${_instanceCount}`;
@@ -26,7 +41,7 @@ export class DecorationReportDialog {
      * @param {object} [inventory] - Optional AccountDecorationInventory for missing-decoration detection
      * @returns {Promise<void>}  Resolves when the user clicks OK
      */
-    show(mapName, layers, inventory = null) {
+    show(mapName: string, layers: ReportLayer[], inventory: AccountDecorationInventory | null = null): Promise<void> {
         const visibleLayers = layers.filter(l => l.isVisible !== false);
 
         // Render map name
@@ -57,7 +72,7 @@ export class DecorationReportDialog {
     // ── private ──────────────────────────────────────────────────────────────
 
     /** @private */
-    _createDialogElement() {
+    _createDialogElement(): HTMLDialogElement {
         const dialog = document.createElement('dialog');
         dialog.classList.add('decoration-report-dialog');
         dialog.setAttribute('role', 'dialog');
@@ -122,7 +137,7 @@ export class DecorationReportDialog {
      * @param {Array} visibleLayers
      * @private
      */
-    _renderLayerList(visibleLayers) {
+    _renderLayerList(visibleLayers: ReportLayer[]): void {
         this._listEl.innerHTML = '';
 
         for (const layer of visibleLayers) {
@@ -151,7 +166,7 @@ export class DecorationReportDialog {
      * @param {object|null} inventory - AccountDecorationInventory or null
      * @private
      */
-    _renderMissingSection(visibleLayers, inventory) {
+    _renderMissingSection(visibleLayers: ReportLayer[], inventory: AccountDecorationInventory | null): void {
         // Remove any existing missing section from a previous render
         const existing = this._dialogEl.querySelector('.decoration-report-dialog__missing-section');
         if (existing) existing.remove();
@@ -159,7 +174,7 @@ export class DecorationReportDialog {
         if (!inventory) return;
 
         // Count instances per decoration id across all visible layers
-        const grouped = new Map(); // numericId -> { name, count }
+        const grouped = new Map<number, { name: string; count: number }>();
         for (const layer of visibleLayers) {
             const decorations = layer.getAllDecorations ? layer.getAllDecorations() : [];
             for (const dec of decorations) {
@@ -168,7 +183,8 @@ export class DecorationReportDialog {
                     if (!grouped.has(numericId)) {
                         grouped.set(numericId, { name: dec.name, count: 0 });
                     }
-                    grouped.get(numericId).count++;
+                    const entry = grouped.get(numericId);
+                    if (entry) entry.count++;
                 }
             }
         }
@@ -209,21 +225,21 @@ export class DecorationReportDialog {
         section.appendChild(list);
 
         // Insert before the actions footer
-        this._okBtn.parentElement.insertAdjacentElement('beforebegin', section);
+        this._okBtn.parentElement?.insertAdjacentElement('beforebegin', section);
     }
 
     /**
      * Close the dialog and resolve the pending Promise.
      * @private
      */
-    _close() {
+    _close(): void {
         if (typeof this._dialogEl.close === 'function') {
             this._dialogEl.close();
         } else {
             this._dialogEl.removeAttribute('open');
         }
         if (this._resolve) {
-            this._resolve(undefined);
+            this._resolve();
             this._resolve = null;
         }
     }

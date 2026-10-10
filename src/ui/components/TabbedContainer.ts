@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * TabbedContainer
  * Renders a tabbed panel group (TabGroupNode).
@@ -12,13 +11,22 @@
  *   - Supports in-bar tab reordering: drag tab to new position, calls onReorder callback
  */
 
-const PANEL_LABELS = {
+import { TabGroupNode } from '../../domain/DockLayoutConfiguration.ts';
+import { EventBus } from '../EventBus.ts';
+
+const PANEL_LABELS: Record<string, string> = {
     map: 'Map',
     layers: 'Layers',
     decorationList: 'Decoration List'
 };
 
 export class TabbedContainer {
+    private _node: TabGroupNode;
+    private _panelContentMap: Record<string, HTMLElement>;
+    private _eventBus: Pick<EventBus, 'publish'> | null;
+    private _onReorder: ((fromIndex: number, toIndex: number) => void) | null;
+    private _element: HTMLElement;
+
     /**
      * @param {object}          tabGroupNode      The TabGroupNode to render
      * @param {Object}          panelContentMap   Map of panelId → HTMLElement content sources
@@ -26,7 +34,7 @@ export class TabbedContainer {
      * @param {Function|null}   onReorder         Called with (fromIndex, toIndex) when a tab
      *                                            is dragged to a new position within the tab bar
      */
-    constructor(tabGroupNode, panelContentMap, eventBus = null, onReorder = null) {
+    constructor(tabGroupNode: TabGroupNode, panelContentMap: Record<string, HTMLElement>, eventBus: Pick<EventBus, 'publish'> | null = null, onReorder: ((fromIndex: number, toIndex: number) => void) | null = null) {
         this._node = tabGroupNode;
         this._panelContentMap = panelContentMap || {};
         this._eventBus = eventBus;
@@ -38,7 +46,7 @@ export class TabbedContainer {
      * Return the root DOM element.
      * @returns {HTMLElement}
      */
-    getElement() {
+    getElement(): HTMLElement {
         return this._element;
     }
 
@@ -46,7 +54,7 @@ export class TabbedContainer {
     // Private
     // ─────────────────────────────────────────────────────────────────────────
 
-    _createElement() {
+    _createElement(): HTMLElement {
         const wrapper = document.createElement('div');
         wrapper.className = 'tabbed-container';
         // Expose the active panel id for hit-testing by DockManager
@@ -107,11 +115,11 @@ export class TabbedContainer {
      * @param {HTMLElement} tabBar
      * @private
      */
-    _attachTabReorderDrag(tabBar) {
-        let dragFromIndex = null;
+    _attachTabReorderDrag(tabBar: HTMLElement): void {
+        let dragFromIndex: number | null = null;
         let hasMoved = false;
         /** @type {HTMLElement|null} */
-        let indicator = null;
+        let indicator: HTMLElement | null = null;
 
         /** Remove the insertion-point indicator from the DOM. */
         const removeIndicator = () => {
@@ -129,8 +137,8 @@ export class TabbedContainer {
          * @param {number} clientX
          * @returns {number}
          */
-        const getInsertionIndex = (clientX) => {
-            const tabs = Array.from(tabBar.querySelectorAll('.tab-button'));
+        const getInsertionIndex = (clientX: number): number => {
+            const tabs = Array.from(tabBar.querySelectorAll<HTMLElement>('.tab-button'));
             for (let i = 0; i < tabs.length; i++) {
                 const rect = tabs[i].getBoundingClientRect();
                 if (clientX < rect.left + rect.width / 2) return i;
@@ -142,10 +150,10 @@ export class TabbedContainer {
          * Show a thin vertical bar between tabs at the computed insertion point.
          * @param {number} clientX
          */
-        const showIndicator = (clientX) => {
+        const showIndicator = (clientX: number): void => {
             removeIndicator();
             const insertIndex = getInsertionIndex(clientX);
-            const tabs = Array.from(tabBar.querySelectorAll('.tab-button'));
+            const tabs = Array.from(tabBar.querySelectorAll<HTMLElement>('.tab-button'));
 
             indicator = document.createElement('div');
             indicator.className = 'tab-insertion-indicator';
@@ -157,7 +165,7 @@ export class TabbedContainer {
             }
         };
 
-        const onMouseMove = (e) => {
+        const onMouseMove = (e: MouseEvent): void => {
             if (dragFromIndex === null) return;
             hasMoved = true;
             const barRect = tabBar.getBoundingClientRect();
@@ -170,7 +178,7 @@ export class TabbedContainer {
             }
         };
 
-        const onMouseUp = (e) => {
+        const onMouseUp = (e: MouseEvent): void => {
             if (dragFromIndex === null) return;
             const fromIdx = dragFromIndex;
             dragFromIndex = null;
@@ -180,7 +188,7 @@ export class TabbedContainer {
 
             // Mark the source tab as dragged so its click handler is suppressed
             // — but only if the mouse actually moved (otherwise it's just a click)
-            const tabs = tabBar.querySelectorAll('.tab-button');
+            const tabs = tabBar.querySelectorAll<HTMLElement>('.tab-button');
             if (hasMoved && tabs[fromIdx]) tabs[fromIdx].dataset.wasDragging = 'true';
 
             const barRect = tabBar.getBoundingClientRect();
@@ -196,14 +204,17 @@ export class TabbedContainer {
             // Convert insertion index to toIndex (accounts for the removed element)
             const toIdx = insertionIndex > fromIdx ? insertionIndex - 1 : insertionIndex;
 
-            this._onReorder(fromIdx, toIdx);
+            this._onReorder?.(fromIdx, toIdx);
         };
 
         // Use event delegation on the tab bar to start reorder tracking
-        tabBar.addEventListener('mousedown', (e) => {
-            const tab = e.target.closest('.tab-button');
+        tabBar.addEventListener('mousedown', (e: MouseEvent) => {
+            if (!(e.target instanceof Element)) return;
+            const tab = e.target.closest<HTMLElement>('.tab-button');
             if (!tab) return;
-            dragFromIndex = parseInt(tab.dataset.tabIndex, 10);
+            const index = Number(tab.dataset.tabIndex);
+            if (!Number.isInteger(index)) return;
+            dragFromIndex = index;
             hasMoved = false;
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
@@ -217,7 +228,7 @@ export class TabbedContainer {
      * @param {string} panelId
      * @private
      */
-    _onTabClick(panelId) {
+    _onTabClick(panelId: string): void {
         if (this._eventBus) {
             this._eventBus.publish('layout:tab-activated', {
                 panels: this._node.panels,

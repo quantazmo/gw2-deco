@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
     InfrastructureFactory,
     setInfrastructureFactory,

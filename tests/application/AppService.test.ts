@@ -1,14 +1,24 @@
-// @ts-nocheck
-import { AppService } from '../../src/application/AppService.js';
+import { AppService as AppServiceImplementation } from '../../src/application/AppService.js';
 
-function makeLayout(pendingEvents = [], hasClear = false) {
-    const t = {
+type AppServiceLayout = ConstructorParameters<typeof AppServiceImplementation>[0];
+type AppServiceLayoutFixture = AppServiceLayout & {
+    clearPendingEvents?: ReturnType<typeof vi.fn>;
+};
+
+class AppService extends AppServiceImplementation {
+    constructor(layout: AppServiceLayoutFixture, xmlAdapter: ConstructorParameters<typeof AppServiceImplementation>[1] | null) {
+        super(layout, xmlAdapter as ConstructorParameters<typeof AppServiceImplementation>[1]);
+    }
+}
+
+function makeLayout(pendingEvents: unknown[] = [], hasClear = false): AppServiceLayoutFixture {
+    const t: { getPendingEvents: ReturnType<typeof vi.fn>; clearPendingEvents?: ReturnType<typeof vi.fn> } = {
         getPendingEvents: vi.fn(() => pendingEvents),
     };
     if (hasClear) {
         t.clearPendingEvents = vi.fn();
     }
-    return t;
+    return t as unknown as AppServiceLayoutFixture;
 }
 
 describe('AppService', () => {
@@ -199,7 +209,7 @@ describe('AppService', () => {
         });
 
         it('does not fail when layout has no getPendingEvents', () => {
-            const svc = new AppService({}, null);
+            const svc = new AppService({} as AppServiceLayoutFixture, null);
             expect(() => svc.publishEvents()).not.toThrow();
         });
     });
@@ -248,8 +258,8 @@ describe('AppService', () => {
     });
 
     describe('_dispatchToStore', () => {
-        let svc;
-        let mockAppStore;
+        let svc: AppService;
+        let mockAppStore: { dispatch: ReturnType<typeof vi.fn> };
 
         beforeEach(() => {
             svc = new AppService(makeLayout(), null);

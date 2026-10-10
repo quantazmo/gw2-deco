@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Gw2MapRepository
  * 
@@ -9,9 +8,45 @@ import { MapRepository } from './MapRepository.js';
 import { GW2Map } from '../../domain/GW2Map.js';
 import { MapBoundary } from '../../domain/MapBoundary.js';
 import { Coordinate } from '../../domain/Coordinate.js';
+import type { MapTile } from '../../domain/GW2Map.js';
+import type {
+    Gw2ApiMapData,
+    Gw2CoordinatePair,
+    Gw2CoordinateRect,
+} from '../adapters/Gw2ApiAdapter.js';
+
+interface CachedMap {
+    id: number;
+    name: string;
+    continent_id: number;
+    floor: number;
+    tiles?: MapTile[];
+    boundary?: { points: Array<{ x: number; y: number }> } | null;
+    rect?: GW2Map['rect'];
+}
+
+function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
+
+function isCachedMap(value: unknown): value is CachedMap {
+    if (typeof value !== 'object' || value === null) return false;
+    const map = value as Partial<CachedMap>;
+    return typeof map.id === 'number' &&
+        typeof map.name === 'string' &&
+        typeof map.continent_id === 'number' &&
+        typeof map.floor === 'number';
+}
 
 export class Gw2MapRepository extends MapRepository {
-    constructor(gw2ApiAdapter, cacheAdapter) {
+    private readonly gw2Api: import('../adapters/Gw2ApiAdapter.js').Gw2ApiAdapter;
+    private readonly cacheAdapter: import('../adapters/LocalStorageCacheAdapter.js').LocalStorageCacheAdapter | null;
+    private readonly inMemoryCache: Map<number, GW2Map>;
+
+    constructor(
+        gw2ApiAdapter: import('../adapters/Gw2ApiAdapter.js').Gw2ApiAdapter,
+        cacheAdapter: import('../adapters/LocalStorageCacheAdapter.js').LocalStorageCacheAdapter | null
+    ) {
         super();
         this.gw2Api = gw2ApiAdapter;
         this.cacheAdapter = cacheAdapter;
@@ -23,25 +58,25 @@ export class Gw2MapRepository extends MapRepository {
      * @param {string|number} mapId - The GW2 map ID
      * @returns {Promise<GW2Map|null>}
      */
-    async loadById(mapId) {
+    async loadById(mapId: string | number): Promise<GW2Map | null> {
         try {
-            mapId = Number(mapId);
+            const numericMapId = Number(mapId);
 
             // Check in-memory cache first
-            if (this.inMemoryCache.has(mapId)) {
-                return this.inMemoryCache.get(mapId);
+            if (this.inMemoryCache.has(numericMapId)) {
+                return this.inMemoryCache.get(numericMapId) ?? null;
             }
 
             // Check persistent cache
-            const cached = await this.cacheAdapter?.get(`map-${mapId}`);
-            if (cached) {
+            const cached = await this.cacheAdapter?.get(`map-${numericMapId}`);
+            if (isCachedMap(cached)) {
                 const map = this._reconstructMapFromCached(cached);
-                this.inMemoryCache.set(mapId, map);
+                this.inMemoryCache.set(numericMapId, map);
                 return map;
             }
 
             // Load from API
-            const mapData = await this.gw2Api.getMap(mapId);
+            const mapData = await this.gw2Api.getMap(numericMapId);
             if (!mapData) {
                 return null;
             }
@@ -50,13 +85,13 @@ export class Gw2MapRepository extends MapRepository {
 
             // Cache the result
             if (this.cacheAdapter) {
-                await this.cacheAdapter.set(`map-${mapId}`, this._serializeMap(map), 3600); // 1 hour
+                await this.cacheAdapter.set(`map-${numericMapId}`, this._serializeMap(map), 3600); // 1 hour
             }
-            this.inMemoryCache.set(mapId, map);
+            this.inMemoryCache.set(numericMapId, map);
 
             return map;
         } catch (error) {
-            throw new Error(`Failed to load map ${mapId}: ${error.message}`);
+            throw new Error(`Failed to load map ${mapId}: ${errorMessage(error)}`);
         }
     }
 
@@ -65,10 +100,10 @@ export class Gw2MapRepository extends MapRepository {
      * This is expensive - typically you'd load specific maps
      * @returns {Promise<GW2Map[]>}
      */
-    async loadAll() {
+    async loadAll(): Promise<GW2Map[]> {
         try {
             const mapIds = await this.gw2Api.getAllMapIds();
-            const maps = [];
+            const maps: GW2Map[] = [];
 
             for (const mapId of mapIds) {
                 const map = await this.loadById(mapId);
@@ -79,7 +114,7 @@ export class Gw2MapRepository extends MapRepository {
 
             return maps;
         } catch (error) {
-            throw new Error(`Failed to load all maps: ${error.message}`);
+            throw new Error(`Failed to load all maps: ${errorMessage(error)}`);
         }
     }
 
@@ -88,12 +123,12 @@ export class Gw2MapRepository extends MapRepository {
      * @param {string|number} mapId - The GW2 map ID
      * @returns {Promise<MapBoundary|null>}
      */
-    async getBoundary(mapId) {
+    async getBoundary(mapId: string | number): Promise<MapBoundary | null> {
         try {
             const map = await this.loadById(mapId);
             return map ? map.boundary : null;
         } catch (error) {
-            throw new Error(`Failed to get boundary for map ${mapId}: ${error.message}`);
+            throw new Error(`Failed to get boundary for map ${mapId}: ${errorMessage(error)}`);
         }
     }
 
@@ -102,7 +137,7 @@ export class Gw2MapRepository extends MapRepository {
      * @param {string|number} mapId - The GW2 map ID
      * @returns {Promise<Coordinate[]|null>}
      */
-    async getTiles(mapId) {
+    async getTiles(mapId: string | number): Promise<Coordinate[] | null> {
         try {
             const map = await this.loadById(mapId);
             if (!map) {
@@ -113,14 +148,16 @@ export class Gw2MapRepository extends MapRepository {
             }
 
             // Convert tile data to Coordinate objects if needed
-            return map.tiles.map(tile => {
+            return map.tiles.map((tile: MapTile) => {
                 if (tile instanceof Coordinate) {
                     return tile;
                 }
-                return new Coordinate(tile.x ?? tile.mapCoords?.x, tile.y ?? tile.mapCoords?.y);
+                const x = 'x' in tile ? tile.x : tile.mapCoords.x;
+                const y = 'y' in tile ? tile.y : tile.mapCoords.y;
+                return new Coordinate(x, y);
             });
         } catch (error) {
-            throw new Error(`Failed to get tiles for map ${mapId}: ${error.message}`);
+            throw new Error(`Failed to get tiles for map ${mapId}: ${errorMessage(error)}`);
         }
     }
 
@@ -130,12 +167,12 @@ export class Gw2MapRepository extends MapRepository {
      * @param {string|number} floorId - The floor ID
      * @returns {Promise<object|null>}
      */
-    async getFloorData(continentId, floorId) {
+    async getFloorData(continentId: string | number, floorId: string | number) {
         try {
-            const floorData = await this.gw2Api.getMapFloor(continentId, floorId);
+            const floorData = await this.gw2Api.getMapFloor(Number(continentId), Number(floorId));
             return floorData || null;
         } catch (error) {
-            throw new Error(`Failed to get floor data for continent ${continentId}, floor ${floorId}: ${error.message}`);
+            throw new Error(`Failed to get floor data for continent ${continentId}, floor ${floorId}: ${errorMessage(error)}`);
         }
     }
 
@@ -144,7 +181,7 @@ export class Gw2MapRepository extends MapRepository {
      * @param {string|number} mapId - The GW2 map ID
      * @returns {Promise<boolean>}
      */
-    async exists(mapId) {
+    async exists(mapId: string | number): Promise<boolean> {
         try {
             const map = await this.loadById(mapId);
             return map !== null;
@@ -159,7 +196,7 @@ export class Gw2MapRepository extends MapRepository {
      * @param {GW2Map} map - The map to cache
      * @returns {Promise<void>}
      */
-    async cache(map) {
+    async cache(map: GW2Map): Promise<void> {
         try {
             if (!map || !map.id) {
                 throw new Error('Invalid map: must have an id');
@@ -171,7 +208,7 @@ export class Gw2MapRepository extends MapRepository {
                 await this.cacheAdapter.set(`map-${map.id}`, this._serializeMap(map), 3600);
             }
         } catch (error) {
-            throw new Error(`Failed to cache map: ${error.message}`);
+            throw new Error(`Failed to cache map: ${errorMessage(error)}`);
         }
     }
 
@@ -180,16 +217,16 @@ export class Gw2MapRepository extends MapRepository {
      * @param {string|number} mapId - The GW2 map ID
      * @returns {Promise<void>}
      */
-    async clearCache(mapId) {
+    async clearCache(mapId: string | number): Promise<void> {
         try {
-            mapId = Number(mapId);
-            this.inMemoryCache.delete(mapId);
+            const numericMapId = Number(mapId);
+            this.inMemoryCache.delete(numericMapId);
 
             if (this.cacheAdapter) {
-                await this.cacheAdapter.delete(`map-${mapId}`);
+                await this.cacheAdapter.delete(`map-${numericMapId}`);
             }
         } catch (error) {
-            throw new Error(`Failed to clear cache for map ${mapId}: ${error.message}`);
+            throw new Error(`Failed to clear cache for map ${mapId}: ${errorMessage(error)}`);
         }
     }
 
@@ -205,12 +242,12 @@ export class Gw2MapRepository extends MapRepository {
                 const keys = Array.from(this.inMemoryCache.keys());
                 for (const key of keys) {
                     if (key.toString().startsWith('map-')) {
-                        await this.cacheAdapter.delete(key);
+                        await this.cacheAdapter.delete(String(key));
                     }
                 }
             }
         } catch (error) {
-            throw new Error(`Failed to clear all cache: ${error.message}`);
+            throw new Error(`Failed to clear all cache: ${errorMessage(error)}`);
         }
     }
 
@@ -220,12 +257,15 @@ export class Gw2MapRepository extends MapRepository {
      * Build a GW2Map from API response data, including tiles and boundary from the floor API.
      * @private
      */
-    async _buildMapFromApiData(mapData) {
+    async _buildMapFromApiData(mapData: Gw2ApiMapData): Promise<GW2Map> {
         const map = new GW2Map(mapData.id, mapData.name, mapData.continent_id, mapData.default_floor);
 
         // Set rect if available
-        if (mapData.map_rect) {
-            map.rect = mapData.map_rect;
+        if (mapData.map_rect?.length === 2) {
+            map.setRect(
+                { x: mapData.map_rect[0][0], y: mapData.map_rect[0][1] },
+                { x: mapData.map_rect[1][0], y: mapData.map_rect[1][1] }
+            );
         }
 
         // Fetch floor data to get tiles and boundary polygon
@@ -247,7 +287,9 @@ export class Gw2MapRepository extends MapRepository {
 
                 // Set boundary from the first sector's bounds (continent coords → map coords)
                 const sectors = mapFloorData.sectors;
-                const firstSector = Array.isArray(sectors) ? sectors[0] : Object.values(sectors)[0];
+                const firstSector = Array.isArray(sectors)
+                    ? sectors[0]
+                    : sectors ? Object.values(sectors)[0] : undefined;
                 const rawBounds = firstSector?.bounds;
                 if (rawBounds && rawBounds.length >= 3) {
                     // Remove duplicate closing point if present (first === last)
@@ -271,7 +313,7 @@ export class Gw2MapRepository extends MapRepository {
                     };
                     const tileZoom = 7;
                     const tileRange = this._calculateTileRange(continentRect, rawBoundsForTiles, tileZoom);
-                    const tiles = [];
+                    const tiles: MapTile[] = [];
 
                     const continentTileSize = continentRect.width / Math.pow(2, tileZoom);
                     const { x: mapTileX1 } = continentToMap([0, 0]);
@@ -298,7 +340,7 @@ export class Gw2MapRepository extends MapRepository {
                 }
             }
         } catch (error) {
-            console.warn(`[Gw2MapRepository] Could not load floor data for map ${mapData.id}: ${error.message}`);
+            console.warn(`[Gw2MapRepository] Could not load floor data for map ${mapData.id}: ${errorMessage(error)}`);
         }
 
         // Fallback: if no boundary was set, create a rectangular one from map_rect
@@ -323,7 +365,10 @@ export class Gw2MapRepository extends MapRepository {
      * @returns {function([number, number]): {x: number, y: number}}
      * @private
      */
-    _createContinentToMapConverter(continentRect, mapRect) {
+    _createContinentToMapConverter(
+        continentRect: Gw2CoordinateRect,
+        mapRect: Gw2CoordinateRect
+    ): (coordinates: Gw2CoordinatePair) => { x: number; y: number } {
         const [cont_nw, cont_se] = continentRect;
         const [map_bl, map_tr] = mapRect;
         const contWidth = cont_se[0] - cont_nw[0];
@@ -331,7 +376,7 @@ export class Gw2MapRepository extends MapRepository {
         const mapWidth = map_tr[0] - map_bl[0];
         const mapHeight = map_tr[1] - map_bl[1];
 
-        return function ([cont_x, cont_y]) {
+        return function ([cont_x, cont_y]: Gw2CoordinatePair) {
             const norm_x = (cont_x - cont_nw[0]) / contWidth;
             const norm_y = (cont_nw[1] - cont_y) / contHeight;
             return {
@@ -349,7 +394,11 @@ export class Gw2MapRepository extends MapRepository {
      * @returns {{min_x: number, max_x: number, min_y: number, max_y: number}}
      * @private
      */
-    _calculateTileRange(continentRect, bounds, zoom = 7) {
+    _calculateTileRange(
+        continentRect: { width: number; height: number },
+        bounds: Gw2CoordinatePair[],
+        zoom = 7
+    ): { min_x: number; max_x: number; min_y: number; max_y: number } {
         const tilesAtZoom = Math.pow(2, zoom);
         const buffer = 50;
         const minBX = Math.min(...bounds.map(b => b[0])) - buffer;
@@ -368,7 +417,7 @@ export class Gw2MapRepository extends MapRepository {
      * Reconstruct a GW2Map from cached data
      * @private
      */
-    _reconstructMapFromCached(cached) {
+    _reconstructMapFromCached(cached: CachedMap): GW2Map {
         const map = new GW2Map(cached.id, cached.name, cached.continent_id, cached.floor);
 
         if (cached.tiles) {
@@ -377,7 +426,7 @@ export class Gw2MapRepository extends MapRepository {
 
         if (cached.boundary && cached.boundary.points) {
             const boundaryPoints = cached.boundary.points.map(point =>
-                new Coordinate(point.x, point.y, point.z || 0)
+                new Coordinate(point.x, point.y)
             );
             const boundary = new MapBoundary(boundaryPoints);
             map.setBoundary(boundary);
@@ -394,7 +443,7 @@ export class Gw2MapRepository extends MapRepository {
      * Serialize a GW2Map for caching
      * @private
      */
-    _serializeMap(map) {
+    _serializeMap(map: GW2Map): CachedMap {
         return {
             id: map.id,
             name: map.name,
@@ -405,7 +454,6 @@ export class Gw2MapRepository extends MapRepository {
                 points: map.boundary.points.map(p => ({
                     x: p.x,
                     y: p.y,
-                    z: p.z
                 }))
             } : null,
             rect: map.rect

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for DecorationReportDialog component
  * Covers: dialog structure, visible-only layer filtering, decoration counts, OK button closes.

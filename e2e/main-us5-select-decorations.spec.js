@@ -54,9 +54,9 @@ test.describe('US5: Select Decorations', () => {
 
         // Click empty area on the SVG via evaluate to avoid Playwright's real-mouse
         // events potentially setting panDragOccurred=true through mousemove handlers.
-        // Use #chart-container svg to target the map SVG specifically (not icon SVGs).
+        // Use #map-container svg to target the map SVG specifically (not icon SVGs).
         await page.evaluate(() => {
-            const svg = document.querySelector('#chart-container svg');
+            const svg = document.querySelector('#map-container svg');
             if (svg) svg.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
         });
 

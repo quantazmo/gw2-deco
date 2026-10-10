@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * SelectionRectangle
  * Manages an SVG <rect> element that represents a rubber-band selection rectangle.
@@ -16,11 +15,19 @@
  *   sr.getDecorationsInBounds(bounds, decorationCircles)
  *   → returns array of decoration IDs whose centres fall within bounds
  */
+export type SelectionBounds = { x: number; y: number; width: number; height: number };
+
 export class SelectionRectangle {
+    private _svg: SVGSVGElement;
+    private _rect: SVGRectElement | null;
+    private _startX: number;
+    private _startY: number;
+    private _active: boolean;
+
     /**
      * @param {SVGSVGElement} svgElement - The SVG element to attach the rect to.
      */
-    constructor(svgElement) {
+    constructor(svgElement: SVGSVGElement) {
         this._svg = svgElement;
         this._rect = null;
         this._startX = 0;
@@ -33,7 +40,7 @@ export class SelectionRectangle {
      * @param {number} x
      * @param {number} y
      */
-    start(x, y) {
+    start(x: number, y: number): void {
         this._startX = x;
         this._startY = y;
         this._active = true;
@@ -44,10 +51,10 @@ export class SelectionRectangle {
             this._rect.setAttribute('pointer-events', 'none');
         }
 
-        this._rect.setAttribute('x', x);
-        this._rect.setAttribute('y', y);
-        this._rect.setAttribute('width', 0);
-        this._rect.setAttribute('height', 0);
+        this._rect.setAttribute('x', String(x));
+        this._rect.setAttribute('y', String(y));
+        this._rect.setAttribute('width', '0');
+        this._rect.setAttribute('height', '0');
 
         if (!this._rect.parentNode) {
             this._svg.appendChild(this._rect);
@@ -59,7 +66,7 @@ export class SelectionRectangle {
      * @param {number} x
      * @param {number} y
      */
-    update(x, y) {
+    update(x: number, y: number): void {
         if (!this._active || !this._rect) return;
 
         const rx = Math.min(x, this._startX);
@@ -67,10 +74,10 @@ export class SelectionRectangle {
         const rw = Math.abs(x - this._startX);
         const rh = Math.abs(y - this._startY);
 
-        this._rect.setAttribute('x', rx);
-        this._rect.setAttribute('y', ry);
-        this._rect.setAttribute('width', rw);
-        this._rect.setAttribute('height', rh);
+        this._rect.setAttribute('x', String(rx));
+        this._rect.setAttribute('y', String(ry));
+        this._rect.setAttribute('width', String(rw));
+        this._rect.setAttribute('height', String(rh));
     }
 
     /**
@@ -78,15 +85,15 @@ export class SelectionRectangle {
      * Removes the rect from the SVG and returns the final bounds.
      * @returns {{ x: number, y: number, width: number, height: number } | null}
      */
-    finish() {
+    finish(): SelectionBounds | null {
         if (!this._active) return null;
 
         const bounds = this._rect
             ? {
-                x: parseFloat(this._rect.getAttribute('x')),
-                y: parseFloat(this._rect.getAttribute('y')),
-                width: parseFloat(this._rect.getAttribute('width')),
-                height: parseFloat(this._rect.getAttribute('height'))
+                x: parseFloat(this._rect.getAttribute('x') ?? '0'),
+                y: parseFloat(this._rect.getAttribute('y') ?? '0'),
+                width: parseFloat(this._rect.getAttribute('width') ?? '0'),
+                height: parseFloat(this._rect.getAttribute('height') ?? '0')
             }
             : null;
 
@@ -103,7 +110,7 @@ export class SelectionRectangle {
      * Whether a rectangle selection is currently in progress.
      * @returns {boolean}
      */
-    isActive() {
+    isActive(): boolean {
         return this._active;
     }
 
@@ -115,17 +122,17 @@ export class SelectionRectangle {
      *   Map<decorationId, SVGCircleElement> as maintained by MapViewer
      * @returns {string[]} Array of decoration IDs inside the bounds
      */
-    getDecorationsInBounds(bounds, decorationCircles) {
+    getDecorationsInBounds(bounds: SelectionBounds, decorationCircles: Map<string, SVGCircleElement>): string[] {
         if (!bounds || !decorationCircles) return [];
 
         const { x, y, width, height } = bounds;
         const x2 = x + width;
         const y2 = y + height;
 
-        const result = [];
+        const result: string[] = [];
         for (const [id, circle] of decorationCircles) {
-            const cx = parseFloat(circle.getAttribute('cx'));
-            const cy = parseFloat(circle.getAttribute('cy'));
+            const cx = parseFloat(circle.getAttribute('cx') ?? 'NaN');
+            const cy = parseFloat(circle.getAttribute('cy') ?? 'NaN');
             if (cx >= x && cx <= x2 && cy >= y && cy <= y2) {
                 result.push(id);
             }

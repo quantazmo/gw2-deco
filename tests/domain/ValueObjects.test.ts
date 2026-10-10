@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for domain value objects:
  * LayerId, ZoomLevel, ScreenCoordinate, WorldCoordinate, MapCoordinate, ContinentCoordinate

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for new HomesteadLayout multi-layer methods:
  * moveDecorations, removeDecorations, getDecorationLayer,

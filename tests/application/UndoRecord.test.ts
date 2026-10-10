@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/application/UndoRecord.js
  * Tests UndoRecord value object — construction, immutability, validation

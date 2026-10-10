@@ -1,6 +1,8 @@
 /**
  * Data Transfer Object for Map
  */
+import { GW2Map } from '../../domain/GW2Map.ts';
+
 export class MapDTO {
     id: string;
     name: string;
@@ -23,20 +25,33 @@ export class MapDTO {
      * @param {GW2Map} map - The domain entity
      * @returns {MapDTO}
      */
-    static fromDomain(map: { id: string; name: string; boundary: { points: Array<{ x: number; y: number }> }; tiles: Array<{ x: number; y: number; z?: number }>; continent_id: number; floor: number }): MapDTO {
-        const boundaryPoints = map.boundary.points.map(p => ({
-            x: p.x,
-            y: p.y
+    static fromDomain(map: GW2Map): MapDTO {
+        if (!map.boundary) {
+            throw new Error('MapDTO.fromDomain: map boundary is required');
+        }
+
+        const boundaryPoints = map.boundary.points.map(point => ({
+            x: point.x,
+            y: point.y
         }));
 
-        const tiles = map.tiles.map(t => ({
-            x: t.x,
-            y: t.y,
-            z: t.z
-        }));
+        const tiles = map.tiles.map((tile, index) => {
+            if (!tile || typeof tile !== 'object') {
+                throw new Error(`MapDTO.fromDomain: tile at index ${index} must be an object`);
+            }
+            const tileData = tile as { x?: unknown; y?: unknown; z?: unknown };
+            if (typeof tileData.x !== 'number' || typeof tileData.y !== 'number') {
+                throw new Error(`MapDTO.fromDomain: tile at index ${index} must have numeric x and y`);
+            }
+            return {
+                x: tileData.x,
+                y: tileData.y,
+                ...(typeof tileData.z === 'number' ? { z: tileData.z } : {})
+            };
+        });
 
         return new MapDTO(
-            map.id,
+            String(map.id),
             map.name,
             boundaryPoints,
             map.continent_id,

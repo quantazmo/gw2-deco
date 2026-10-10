@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/application/handlers/LoadLayoutHandler.js
  * Tests the application layer command handling for layout loading

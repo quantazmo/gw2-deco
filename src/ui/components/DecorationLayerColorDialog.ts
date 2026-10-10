@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * DecorationLayerColorDialog Component
  * Modal dialog for picking a layer color from the predefined palette.
@@ -9,6 +8,15 @@ import { LAYER_COLORS } from '../../config/constants.js';
 let _instanceCount = 0;
 
 export class DecorationLayerColorDialog {
+    private _id: string;
+    private _resolve: ((result: string | null) => void) | null;
+    private _currentColor: string | null;
+    private _selectedColor!: string;
+    private _dialogEl: HTMLDialogElement;
+    private _swatchEls!: HTMLButtonElement[];
+    private _cancelBtn!: HTMLButtonElement;
+    private _saveBtn!: HTMLButtonElement;
+
     constructor() {
         _instanceCount++;
         this._id = `layer-color-dialog-${_instanceCount}`;
@@ -24,7 +32,7 @@ export class DecorationLayerColorDialog {
      * @param {string} options.currentColor - The layer's current color
      * @returns {Promise<string|null>} Resolves to the chosen color, or null if cancelled
      */
-    show({ currentColor }) {
+    show({ currentColor }: { currentColor: string }): Promise<string | null> {
         this._currentColor = currentColor || LAYER_COLORS[0];
         this._selectedColor = this._currentColor;
 
@@ -42,7 +50,7 @@ export class DecorationLayerColorDialog {
         }
 
         // Focus the currently selected swatch, or the first one
-        const selected = this._dialogEl.querySelector('.layer-color-dialog__swatch--selected')
+        const selected = this._dialogEl.querySelector<HTMLButtonElement>('.layer-color-dialog__swatch--selected')
             || this._swatchEls[0];
         if (selected) selected.focus();
 
@@ -52,7 +60,7 @@ export class DecorationLayerColorDialog {
     }
 
     /** @private */
-    _createDialogElement() {
+    _createDialogElement(): HTMLDialogElement {
         const dialog = document.createElement('dialog');
         dialog.classList.add('layer-color-dialog');
         dialog.setAttribute('role', 'dialog');
@@ -124,7 +132,7 @@ export class DecorationLayerColorDialog {
     }
 
     /** @private */
-    _selectColor(color) {
+    _selectColor(color: string): void {
         this._selectedColor = color;
         this._swatchEls.forEach(sw => {
             const isSelected = sw.dataset.color === color;
@@ -134,7 +142,7 @@ export class DecorationLayerColorDialog {
     }
 
     /** @private */
-    _close(result) {
+    _close(result: string | null): void {
         if (typeof this._dialogEl.close === 'function') {
             this._dialogEl.close();
         } else {

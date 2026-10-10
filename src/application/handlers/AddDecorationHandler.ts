@@ -4,14 +4,25 @@
 import { LayerId } from '../../domain/LayerId.js';
 import { Decoration } from '../../domain/Decoration.js';
 import { DecorationAddedEvent } from '../../domain/events/DecorationAddedEvent.js';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
+import { WorldCoordinate, WorldCoordinateLike } from '../../domain/WorldCoordinate.ts';
+
+type AddDecorationPayload = {
+    layerId: string;
+    decorationId: string;
+    name: string;
+    position: WorldCoordinate | WorldCoordinateLike;
+    rotation: number;
+    scale: number;
+};
 
 export class AddDecorationHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      */
-    constructor(layout: unknown) {
+    constructor(layout: HomesteadLayout) {
         this.layout = layout;
     }
 
@@ -20,7 +31,7 @@ export class AddDecorationHandler {
      * @param {AddDecorationCommand} command - The command to execute
      * @returns {Decoration} The created decoration
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: AddDecorationPayload): Decoration {
         const layerId = new LayerId(command.layerId);
 
         const decoration = new Decoration(

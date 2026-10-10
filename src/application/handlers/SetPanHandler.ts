@@ -2,14 +2,15 @@
  * Handler for SetPanCommand
  */
 import { PanChangedEvent } from '../../domain/events/PanChangedEvent.js';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
 
 export class SetPanHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      */
-    constructor(layout: unknown) {
+    constructor(layout: HomesteadLayout) {
         this.layout = layout;
     }
 
@@ -18,7 +19,7 @@ export class SetPanHandler {
      * @param {SetPanCommand|Object} command - The command to execute
      * @returns {Object} Result object with the new pan offset
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: { offset: { x: number; y: number } }): { offset: { x: number; y: number } } {
         const { offset } = command;
 
         // Validate offset

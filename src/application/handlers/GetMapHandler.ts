@@ -1,14 +1,15 @@
-// @ts-nocheck
 /**
  * Handler for GetMapQuery
  */
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
+
 export class GetMapHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      */
-    constructor(layout: unknown) {
+    constructor(layout: HomesteadLayout) {
         this.layout = layout;
     }
 
@@ -17,7 +18,7 @@ export class GetMapHandler {
      * @param {GetMapQuery} query - The query to execute
      * @returns {Object} The map from the layout as a DTO
      */
-    execute(query) {
+    execute(_query: unknown): Record<string, unknown> | null {
         const map = this.layout.map;
         return map ? map.toDTO() : null;
     }

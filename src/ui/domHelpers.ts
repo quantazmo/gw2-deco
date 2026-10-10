@@ -1,22 +1,32 @@
-// @ts-nocheck
+
 /**
  * domHelpers.js
  * Pure utility functions for DOM manipulation
  * No side effects, easy to test
  */
 
+/** Create Element Options */
+class CreateElementOptions<K extends keyof HTMLElementEventMap> {
+    /**  Element ID */
+    id?: string;
+    /** Class name(s) */
+    className?: string | string[];
+    /** Other attributes to set */
+    attributes?: Record<string, string | number | boolean>;
+    /** Inner HTML content */
+    innerHTML?: string;
+    /** Text content */
+    textContent?: string;
+    /** Events */
+    events?: Partial<{ [EventName in K]: (e: HTMLElementEventMap[EventName]) => void }>;
+    /** Parent Element */
+    parent?: HTMLElement;
+}
+
 /**
  * Create an HTML element with optional attributes and classes
- * @param {string} tag - HTML tag name
- * @param {Object} options - Options object
- * @param {string} options.id - Element ID
- * @param {string|string[]} options.className - Class name(s)
- * @param {Object} options.attributes - Other attributes to set
- * @param {string} options.innerHTML - Inner HTML content
- * @param {string} options.textContent - Text content
- * @returns {HTMLElement}
  */
-function createElement(tag, options = {}) {
+function createElement<K1 extends keyof HTMLElementTagNameMap, K2 extends keyof HTMLElementEventMap>(tag: K1, options: CreateElementOptions<K2> = {}): HTMLElementTagNameMap[K1] {
     const element = document.createElement(tag);
 
     if (options.id) {
@@ -24,17 +34,11 @@ function createElement(tag, options = {}) {
     }
 
     if (options.className) {
-        if (Array.isArray(options.className)) {
-            element.classList.add(...options.className);
-        } else {
-            element.className = options.className;
-        }
+        addClass(element, options.className);
     }
 
     if (options.attributes) {
-        Object.entries(options.attributes).forEach(([key, value]) => {
-            element.setAttribute(key, value);
-        });
+        setAttributes(element, options.attributes);
     }
 
     if (options.innerHTML) {
@@ -45,17 +49,26 @@ function createElement(tag, options = {}) {
         element.textContent = options.textContent;
     }
 
+    if (options.events) {
+        for (const [event, handler] of Object.entries(options.events)) {
+            if (handler) {
+                element.addEventListener(event, handler as EventListener);
+            }
+        }
+    }
+
+    if (options.parent) {
+        options.parent.appendChild(element);
+    }
     return element;
 }
 
 /**
  * Add one or more classes to an element
- * @param {HTMLElement} element
- * @param {string|string[]} classNames
  */
-function addClass(element, classNames) {
+function addClass(element: HTMLElement, classNames: string | string[]): void {
     if (Array.isArray(classNames)) {
-        element.classList.add(...classNames);
+        element.classList.add(...classNames.filter(str => str.trim() !== ''));
     } else {
         element.classList.add(classNames);
     }
@@ -63,10 +76,8 @@ function addClass(element, classNames) {
 
 /**
  * Remove one or more classes from an element
- * @param {HTMLElement} element
- * @param {string|string[]} classNames
  */
-function removeClass(element, classNames) {
+function removeClass(element: HTMLElement, classNames: string | string[]): void {
     if (Array.isArray(classNames)) {
         element.classList.remove(...classNames);
     } else {
@@ -80,7 +91,7 @@ function removeClass(element, classNames) {
  * @param {string} className
  * @param {boolean} force - Optional: force add (true) or remove (false)
  */
-function toggleClass(element, className, force) {
+function toggleClass(element: HTMLElement, className: string, force?: boolean): void {
     if (force === undefined) {
         element.classList.toggle(className);
     } else {
@@ -94,18 +105,18 @@ function toggleClass(element, className, force) {
  * @param {string} className
  * @returns {boolean}
  */
-function hasClass(element, className) {
+function hasClass(element: HTMLElement, className: string): boolean {
     return element.classList.contains(className);
 }
 
 /**
  * Set multiple attributes on an element
- * @param {HTMLElement} element
- * @param {Object} attributes - Key-value pairs of attributes
+ * @param element
+ * @param attributes - Key-value pairs of attributes
  */
-function setAttributes(element, attributes) {
+function setAttributes(element: HTMLElement, attributes: Record<string, string | number | boolean>): void {
     Object.entries(attributes).forEach(([key, value]) => {
-        element.setAttribute(key, value);
+        element.setAttribute(key, String(value));
     });
 }
 
@@ -115,7 +126,7 @@ function setAttributes(element, attributes) {
  * @param {string} attributeName
  * @returns {string|null}
  */
-function getAttribute(element, attributeName) {
+function getAttribute(element: Element, attributeName: string): string | null {
     return element.getAttribute(attributeName);
 }
 
@@ -124,7 +135,7 @@ function getAttribute(element, attributeName) {
  * @param {HTMLElement} element
  * @param {string} attributeName
  */
-function removeAttribute(element, attributeName) {
+function removeAttribute(element: Element, attributeName: string): void {
     element.removeAttribute(attributeName);
 }
 
@@ -133,9 +144,9 @@ function removeAttribute(element, attributeName) {
  * @param {HTMLElement} element
  * @param {Object} styles - Key-value pairs of CSS properties
  */
-function setStyles(element, styles) {
+function setStyles(element: HTMLElement, styles: Record<string, string>): void {
     Object.entries(styles).forEach(([property, value]) => {
-        element.style[property] = value;
+        element.style.setProperty(property, value);
     });
 }
 
@@ -145,15 +156,15 @@ function setStyles(element, styles) {
  * @param {string} property
  * @returns {string}
  */
-function getComputedStyle(element, property) {
-    return window.getComputedStyle(element)[property];
+function getComputedStyle(element: Element, property: string): string {
+    return window.getComputedStyle(element).getPropertyValue(property);
 }
 
 /**
  * Show an element (remove display: none)
  * @param {HTMLElement} element
  */
-function show(element) {
+function show(element: HTMLElement): void {
     element.style.display = '';
 }
 
@@ -161,7 +172,7 @@ function show(element) {
  * Hide an element (set display: none)
  * @param {HTMLElement} element
  */
-function hide(element) {
+function hide(element: HTMLElement): void {
     element.style.display = 'none';
 }
 
@@ -170,7 +181,7 @@ function hide(element) {
  * @param {HTMLElement} element
  * @returns {boolean}
  */
-function isVisible(element) {
+function isVisible(element: HTMLElement): boolean {
     return element.style.display !== 'none';
 }
 
@@ -178,7 +189,7 @@ function isVisible(element) {
  * Clear all child elements
  * @param {HTMLElement} element
  */
-function empty(element) {
+function empty(element: Element): void {
     while (element.firstChild) {
         element.removeChild(element.firstChild);
     }
@@ -189,7 +200,7 @@ function empty(element) {
  * @param {HTMLElement} parent
  * @param {HTMLElement|HTMLElement[]} children
  */
-function append(parent, children) {
+function append(parent: HTMLElement, children: HTMLElement | HTMLElement[]): void {
     if (Array.isArray(children)) {
         children.forEach(child => parent.appendChild(child));
     } else {
@@ -202,7 +213,7 @@ function append(parent, children) {
  * @param {HTMLElement} parent
  * @param {HTMLElement|HTMLElement[]} children
  */
-function prepend(parent, children) {
+function prepend(parent: HTMLElement, children: HTMLElement | HTMLElement[]): void {
     if (Array.isArray(children)) {
         children.reverse().forEach(child => {
             parent.insertBefore(child, parent.firstChild);
@@ -217,16 +228,16 @@ function prepend(parent, children) {
  * @param {HTMLElement} newElement
  * @param {HTMLElement} referenceElement
  */
-function insertAfter(newElement, referenceElement) {
-    referenceElement.parentNode.insertBefore(newElement, referenceElement.nextSibling);
+function insertAfter(newElement: HTMLElement, referenceElement: HTMLElement): void {
+    referenceElement.parentNode?.insertBefore(newElement, referenceElement.nextSibling);
 }
 
 /**
  * Remove an element from the DOM
  * @param {HTMLElement} element
  */
-function remove(element) {
-    element.parentNode.removeChild(element);
+function remove(element: HTMLElement): void {
+    element.parentNode?.removeChild(element);
 }
 
 /**
@@ -235,8 +246,8 @@ function remove(element) {
  * @param {HTMLElement} context - Search context (default: document)
  * @returns {HTMLElement|null}
  */
-function query(selector, context = document) {
-    return context.querySelector(selector);
+function query(selector: string, context: ParentNode = document): HTMLElement | null {
+    return context.querySelector<HTMLElement>(selector);
 }
 
 /**
@@ -245,8 +256,8 @@ function query(selector, context = document) {
  * @param {HTMLElement} context - Search context (default: document)
  * @returns {HTMLElement[]}
  */
-function queryAll(selector, context = document) {
-    return Array.from(context.querySelectorAll(selector));
+function queryAll(selector: string, context: ParentNode = document): HTMLElement[] {
+    return Array.from(context.querySelectorAll<HTMLElement>(selector));
 }
 
 /**
@@ -254,7 +265,7 @@ function queryAll(selector, context = document) {
  * @param {string} id
  * @returns {HTMLElement|null}
  */
-function getById(id) {
+function getById(id: string): HTMLElement | null {
     return document.getElementById(id);
 }
 
@@ -264,8 +275,8 @@ function getById(id) {
  * @param {HTMLElement} context - Search context (default: document)
  * @returns {HTMLElement[]}
  */
-function getByClass(className, context = document) {
-    return Array.from(context.getElementsByClassName(className));
+function getByClass(className: string, context: Document | HTMLElement = document): HTMLElement[] {
+    return Array.from(context.getElementsByClassName(className)).filter((element): element is HTMLElement => element instanceof HTMLElement);
 }
 
 /**
@@ -274,8 +285,8 @@ function getByClass(className, context = document) {
  * @param {HTMLElement} context - Search context (default: document)
  * @returns {HTMLElement[]}
  */
-function getByTag(tagName, context = document) {
-    return Array.from(context.getElementsByTagName(tagName));
+function getByTag(tagName: string, context: Document | HTMLElement = document): HTMLElement[] {
+    return Array.from(context.getElementsByTagName(tagName)).filter((element): element is HTMLElement => element instanceof HTMLElement);
 }
 
 /**
@@ -284,8 +295,8 @@ function getByTag(tagName, context = document) {
  * @param {string} selector
  * @returns {HTMLElement|null}
  */
-function closest(element, selector) {
-    return element.closest(selector);
+function closest(element: HTMLElement, selector: string): HTMLElement | null {
+    return element.closest<HTMLElement>(selector);
 }
 
 /**
@@ -293,7 +304,7 @@ function closest(element, selector) {
  * @param {HTMLElement} element
  * @returns {Object} {top, left, width, height}
  */
-function getOffset(element) {
+function getOffset(element: HTMLElement): { top: number; left: number; width: number; height: number } {
     const rect = element.getBoundingClientRect();
     return {
         top: rect.top + window.scrollY,
@@ -308,7 +319,7 @@ function getOffset(element) {
  * @param {HTMLElement} element
  * @returns {Object} {top, left}
  */
-function getPosition(element) {
+function getPosition(element: HTMLElement): { top: number; left: number } {
     return {
         top: element.offsetTop,
         left: element.offsetLeft
@@ -320,7 +331,7 @@ function getPosition(element) {
  * @param {HTMLElement} element
  * @returns {Object} {width, height}
  */
-function getSize(element) {
+function getSize(element: HTMLElement): { width: number; height: number } {
     return {
         width: element.offsetWidth,
         height: element.offsetHeight
@@ -332,7 +343,7 @@ function getSize(element) {
  * @param {HTMLElement} element
  * @returns {boolean}
  */
-function isInViewport(element) {
+function isInViewport(element: HTMLElement): boolean {
     const rect = element.getBoundingClientRect();
     return (
         rect.top >= 0 &&
@@ -350,7 +361,7 @@ function isInViewport(element) {
  * @param {Object} options - Event listener options
  * @returns {Function} Cleanup function
  */
-function on(element, event, handler, options) {
+function on<E extends keyof HTMLElementEventMap>(element: HTMLElement, event: E, handler: (event: HTMLElementEventMap[E]) => void, options?: boolean | AddEventListenerOptions): () => void {
     element.addEventListener(event, handler, options);
     return () => element.removeEventListener(event, handler, options);
 }
@@ -362,8 +373,8 @@ function on(element, event, handler, options) {
  * @param {Function} handler
  * @param {Object} options - Event listener options
  */
-function once(element, event, handler, options) {
-    const wrapper = (evt) => {
+function once<E extends keyof HTMLElementEventMap>(element: HTMLElement, event: E, handler: (event: HTMLElementEventMap[E]) => void, options?: boolean | AddEventListenerOptions): void {
+    const wrapper = (evt: HTMLElementEventMap[E]) => {
         handler(evt);
         element.removeEventListener(event, wrapper, options);
     };
@@ -374,7 +385,7 @@ function once(element, event, handler, options) {
  * Focus an element
  * @param {HTMLElement} element
  */
-function focus(element) {
+function focus(element: HTMLElement): void {
     element.focus();
 }
 
@@ -382,12 +393,12 @@ function focus(element) {
  * Blur an element
  * @param {HTMLElement} element
  */
-function blur(element) {
+function blur(element: HTMLElement): void {
     element.blur();
 }
 
-function addInputElement(element: HTMLElement, placeholder: string, debounce: number, callback: CallableFunction): void {
-    let timerId;
+function addInputElement(element: HTMLElement, placeholder: string, debounce: number, callback: (value?: string) => void): void {
+    let timerId: ReturnType<typeof setTimeout>;
 
     const inputWrapper = createElement('div', {
         className: 'decoration-text-input-wrapper'
@@ -416,13 +427,13 @@ function addInputElement(element: HTMLElement, placeholder: string, debounce: nu
         // Start a brand new timer
         timerId = setTimeout(() => {
             clearButton.style.display = input.value ? '' : 'none';
-            callback.apply(this, [input.value])
+            callback(input.value);
         }, debounce);
     });
 
     clearButton.addEventListener('click', () => {
         input.value = '';
-        callback.apply(this)
+        callback();
         input.focus();
     });
 

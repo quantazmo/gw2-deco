@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration tests for LayoutWorkflow
  * Tests the complete workflow: Load layout → Create layer → Add decoration → Export

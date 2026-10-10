@@ -3,14 +3,15 @@
  */
 import { LayerId } from '../../domain/LayerId.js';
 import { LayerRenamedEvent } from '../../domain/events/LayerRenamedEvent.js';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
 
 export class RenameLayerHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      */
-    constructor(layout: unknown) {
+    constructor(layout: HomesteadLayout) {
         this.layout = layout;
     }
 
@@ -18,7 +19,7 @@ export class RenameLayerHandler {
      * Executes the rename layer command
      * @param {RenameLayerCommand} command - The command to execute
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: { layerId: string; newName: string }): void {
         const layerId = new LayerId(command.layerId);
 
         // Get old name before renaming

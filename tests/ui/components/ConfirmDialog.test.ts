@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for ConfirmDialog component
  * Covers: show/resolve with confirm, show/resolve with cancel,

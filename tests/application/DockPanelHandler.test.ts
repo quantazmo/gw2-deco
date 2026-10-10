@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Unit tests for DockPanelHandler
  * Tests: remove panel from tree, insert SplitNode at appropriate edge,

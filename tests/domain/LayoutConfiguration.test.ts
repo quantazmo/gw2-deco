@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/domain/LayoutConfiguration.js
  * Tests LayoutConfiguration value object: tree validation, factories, and traversal utilities

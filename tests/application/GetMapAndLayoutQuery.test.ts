@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for GetMapQuery and GetLayoutQuery (trivial constructors).
  */

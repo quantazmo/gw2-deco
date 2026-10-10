@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * DockPanelHandler
  * Handles DockPanelCommand: removes a panel from its current position in the
@@ -18,16 +17,18 @@ import {
     removeNode,
 } from '../../domain/DockLayoutConfiguration.js';
 import { LAYOUT } from '../../config/constants.js';
+import { DockPanelLayoutStore } from '../../ui/stores/DockPanelLayoutStore.ts';
+import { DockPanelCommand } from '../commands/DockPanelCommand.ts';
 
 const VALID_EDGES = ['left', 'right', 'top', 'bottom'];
 
 export class DockPanelHandler {
-    layoutStore: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layoutStore: DockPanelLayoutStore;
 
     /**
      * @param {import('../../ui/stores/LayoutStore.js').LayoutStore} layoutStore
      */
-    constructor(layoutStore: unknown) {
+    constructor(layoutStore: DockPanelLayoutStore) {
         this.layoutStore = layoutStore;
     }
 
@@ -35,11 +36,11 @@ export class DockPanelHandler {
      * @param {import('../commands/DockPanelCommand.js').DockPanelCommand} command
      * @returns {DockLayoutConfiguration}
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: DockPanelCommand): DockLayoutConfiguration {
         return this.handle(command);
     }
 
-    handle(command: any) { // TODO: typed command interface pending domain migration
+    handle(command: DockPanelCommand): DockLayoutConfiguration {
         const { panelId, targetEdge } = command;
 
         if (!VALID_EDGES.includes(targetEdge)) {

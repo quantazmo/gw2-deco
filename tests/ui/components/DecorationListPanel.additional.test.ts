@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for DecorationListPanel.
  * Covers: Array/Map decorations (lines 63-66), dragstart/contextmenu events (131,136), 
@@ -7,6 +6,7 @@
 import { DecorationListPanel } from '../../../src/ui/components/DecorationListPanel.js';
 import { SelectionStore } from '../../../src/ui/stores/SelectionStore.js';
 import { EventBus } from '../../../src/ui/EventBus.js';
+import AppService from '../../../src/application/AppService.js';
 
 function createMockAppStore(layers = []) {
     const listeners = [];
@@ -181,7 +181,7 @@ describe('DecorationListPanel — additional coverage', () => {
         const mockAppService = { execute: vi.fn() };
 
         const panel = new DecorationListPanel(container, appStore, selectionStore, eventBus, mockAppService);
-        panel.setContextMenu(mockContextMenu);
+        panel._contextMenu = mockContextMenu;
 
         const item = container.querySelector('.decoration-list__item');
         item.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 100, clientY: 200 }));
@@ -201,25 +201,13 @@ describe('DecorationListPanel — additional coverage', () => {
         const mockAppService = { execute: vi.fn() };
 
         const panel = new DecorationListPanel(container, appStore, selectionStore, eventBus, mockAppService);
-        panel.setContextMenu(mockContextMenu);
+        panel._contextMenu = mockContextMenu;
 
         expect(selectionStore.isSelected('d1')).toBe(false);
         const item = container.querySelector('.decoration-list__item');
         item.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
 
         expect(selectionStore.isSelected('d1')).toBe(true);
-    });
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // setAppService (late binding)
-    // ─────────────────────────────────────────────────────────────────────────
-    test('setAppService sets the appService reference', () => {
-        const appStore = createMockAppStore([]);
-        const panel = new DecorationListPanel(container, appStore, selectionStore, eventBus);
-
-        const mockService = { execute: vi.fn() };
-        panel.setAppService(mockService);
-        expect(panel.appService).toBe(mockService);
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -247,7 +235,7 @@ describe('DecorationListPanel — additional coverage', () => {
         });
 
         const panel = new DecorationListPanel(container, appStore, selectionStore, eventBus, mockAppService);
-        panel.setContextMenu(mockContextMenu);
+        panel._contextMenu = mockContextMenu;
 
         const item = container.querySelector('.decoration-list__item');
         item.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));

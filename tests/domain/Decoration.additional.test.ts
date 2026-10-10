@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for src/domain/Decoration.js
  * Covers: clone, equals, toString, fromDTO, validateState, plain-object position

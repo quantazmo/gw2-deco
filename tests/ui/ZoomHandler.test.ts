@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for container-based zoom calculation (Phase 13 / T114)
  * Covers:

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Handler for MoveDecorationsCommand
  * Moves decorations from their current layers to a target layer.
@@ -7,16 +6,18 @@
  */
 import { DecorationsMovedEvent } from '../../domain/events/DecorationsMovedEvent.js';
 import { UndoRecord } from '../UndoRecord.js';
+import { UndoRedoManager } from '../UndoRedoManager.ts';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
 
 export class MoveDecorationsHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
-    undoRedoManager: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
+    undoRedoManager: UndoRedoManager | null;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      * @param {UndoRedoManager} [undoRedoManager] - Optional undo/redo manager
      */
-    constructor(layout: unknown, undoRedoManager: unknown) {
+    constructor(layout: HomesteadLayout, undoRedoManager: UndoRedoManager | null = null) {
         this.layout = layout;
         this.undoRedoManager = undoRedoManager || null;
     }
@@ -26,7 +27,12 @@ export class MoveDecorationsHandler {
      * @param {Object} command - { decorationIds: string[], targetLayerId: string }
      * @returns {{ success: boolean, moved: number, skipped: number, sourceMapping: Object }}
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: { decorationIds: string[]; targetLayerId: string }): {
+        success: boolean;
+        moved: number;
+        skipped: number;
+        sourceMapping: Record<string, string>;
+    } {
         const { decorationIds, targetLayerId } = command;
 
         if (!Array.isArray(decorationIds) || decorationIds.length === 0) {
@@ -39,7 +45,7 @@ export class MoveDecorationsHandler {
         }
 
         // Capture original indices before moving (for undo order preservation)
-        const originalIndices = {};
+        const originalIndices: Record<string, number> = {};
         for (const decorationId of decorationIds) {
             const sourceLayer = this.layout.getDecorationLayer(decorationId);
             if (sourceLayer && sourceLayer.id !== targetLayerId) {

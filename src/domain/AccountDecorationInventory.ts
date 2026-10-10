@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * AccountDecorationInventory
  *
@@ -6,11 +5,13 @@
  * Provides fast count lookups by decoration id.
  */
 export class AccountDecorationInventory {
+    private readonly _counts: Map<number, number>;
+
     /**
      * @param {Array<{id: number, count: number}>} entries
      */
-    constructor(entries) {
-        this._counts = new Map(entries.map(e => [e.id, e.count]));
+    constructor(entries: Array<{ id: number; count: number }>) {
+        this._counts = new Map(entries.map(entry => [entry.id, entry.count]));
     }
 
     /**
@@ -18,7 +19,7 @@ export class AccountDecorationInventory {
      * @param {number} id
      * @returns {number}
      */
-    getCount(id) {
+    getCount(id: number): number {
         return this._counts.get(id) ?? 0;
     }
 

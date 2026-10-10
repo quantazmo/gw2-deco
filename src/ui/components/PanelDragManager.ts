@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PanelDragManager
  * Controller for panel drag-and-drop interactions.
@@ -18,6 +17,11 @@ import { DockPanelCommand } from '../../application/commands/DockPanelCommand.js
 import { MergePanelToTabCommand } from '../../application/commands/MergePanelToTabCommand.js';
 import { StackPanelCommand } from '../../application/commands/StackPanelCommand.js';
 import { ReorderPanelCommand } from '../../application/commands/ReorderPanelCommand.js';
+import { AppService } from '../../application/AppService.ts';
+import { EventBus } from '../EventBus.ts';
+import { DockPanelLayoutStore } from '../stores/DockPanelLayoutStore.ts';
+import { DockLayoutNode, DockNodePath } from '../../domain/DockLayoutConfiguration.ts';
+import { DockEdge } from '../../application/commands/DockPanelCommand.ts';
 
 /** The center zone covers the inner 60% (20% margin on each side). */
 const CENTER_ZONE_MARGIN = 0.20;
@@ -28,13 +32,28 @@ const PANEL_EDGE_THRESHOLD_PX = 20;
 /** Minimum mouse distance (px) before a mousedown is treated as a real drag. */
 const DRAG_DISTANCE_THRESHOLD = 5;
 
+type DropZone =
+    | { type: 'edge'; edge: DockEdge }
+    | { type: 'tab-merge'; targetPanelId: string }
+    | { type: 'stack'; targetPanelId: string; edge: DockEdge };
+type PendingDrag = { panelId: string; startX: number; startY: number; sourceRect: DOMRect; sourceTabBar: HTMLElement | null };
+type ActiveDrag = { panelId: string };
+type SiblingRelationship = { nodePath: DockNodePath; fromIndex: number; toIndex: number };
+
 export class PanelDragManager {
+    private _appService: Pick<AppService, 'execute'>;
+    private _eventBus: Pick<EventBus, 'publish'>;
+    private _layoutStore: Pick<DockPanelLayoutStore, 'getState'> | null;
+    private _rootElement: HTMLElement | null = null;
+    private _dragging: ActiveDrag | null = null;
+    private _pending: PendingDrag | null = null;
+    private _ghost: HTMLElement | null = null;
     /**
      * @param {object}      appService   AppService with an execute() method
      * @param {object}      eventBus     EventBus with publish() method
      * @param {object|null} layoutStore  LayoutStore for sibling-relationship look-ups
      */
-    constructor(appService, eventBus, layoutStore = null) {
+    constructor(appService: Pick<AppService, 'execute'>, eventBus: Pick<EventBus, 'publish'>, layoutStore: Pick<DockPanelLayoutStore, 'getState'> | null = null) {
         this._appService = appService;
         this._eventBus = eventBus;
         this._layoutStore = layoutStore;
@@ -57,17 +76,18 @@ export class PanelDragManager {
      * Attach to a root element: listen for mousedown on all drag-handle title bars within it.
      * @param {HTMLElement} rootElement
      */
-    attach(rootElement) {
+    attach(rootElement: HTMLElement): void {
         this._rootElement = rootElement;
-        rootElement.addEventListener('mousedown', (e) => {
-            const handle = e.target.closest('[data-drag-handle]');
+        rootElement.addEventListener('mousedown', (e: MouseEvent) => {
+            if (!(e.target instanceof Element)) return;
+            const handle = e.target.closest<HTMLElement>('[data-drag-handle]');
             if (!handle) return;
 
             const panelId = handle.dataset.panelId;
             if (!panelId) return;
 
             // Track whether this drag originates from a tab bar (for reorder vs extraction)
-            const sourceTabBar = handle.closest('.tab-bar');
+            const sourceTabBar = handle.closest<HTMLElement>('.tab-bar');
 
             e.preventDefault();
             this._pending = {
@@ -87,7 +107,7 @@ export class PanelDragManager {
     // Private: drag lifecycle
     // ─────────────────────────────────────────────────────────────────────────
 
-    _startDrag(panelId, sourceRect) {
+    _startDrag(panelId: string, sourceRect: DOMRect): void {
         this._dragging = { panelId };
         this._pending = null;
 
@@ -105,7 +125,7 @@ export class PanelDragManager {
         });
     }
 
-    _onDocumentMouseMove(e) {
+    _onDocumentMouseMove(e: MouseEvent): void {
         // Promote pending mousedown to a real drag once distance threshold is exceeded
         if (this._pending && !this._dragging) {
             const dx = e.clientX - this._pending.startX;
@@ -143,7 +163,7 @@ export class PanelDragManager {
         });
     }
 
-    _onDocumentMouseUp(e) {
+    _onDocumentMouseUp(e: MouseEvent): void {
         // If the mouse was released before exceeding the drag threshold, it's a click — cancel.
         if (this._pending && !this._dragging) {
             this._pending = null;
@@ -161,7 +181,7 @@ export class PanelDragManager {
 
         const cancelled = !dropZone;
 
-        if (!cancelled) {
+        if (dropZone) {
             if (dropZone.type === 'edge') {
                 this._appService.execute(new DockPanelCommand(panelId, dropZone.edge));
             } else if (dropZone.type === 'tab-merge') {
@@ -196,7 +216,7 @@ export class PanelDragManager {
         });
     }
 
-    _endDrag() {
+    _endDrag(): void {
         document.removeEventListener('mousemove', this._onDocumentMouseMove);
         document.removeEventListener('mouseup', this._onDocumentMouseUp);
         this._dragging = null;
@@ -214,7 +234,7 @@ export class PanelDragManager {
      * @returns {HTMLElement}
      * @private
      */
-    _createGhost(panelId, sourceRect) {
+    _createGhost(panelId: string, sourceRect: DOMRect): HTMLElement {
         // Resolve the panel label from the title bar text if available
         const titleEl = this._rootElement
             ? this._rootElement.querySelector(`[data-panel-id="${panelId}"] .dock-region-title-text`)
@@ -239,7 +259,7 @@ export class PanelDragManager {
      * @param {number} clientY
      * @returns {{ type: string, ... } | null}
      */
-    _detectDropZone(clientX, clientY) {
+    _detectDropZone(clientX: number, clientY: number): DropZone | null {
         const edgeZone = this._detectEdgeDropZone(clientX, clientY);
         if (edgeZone) return edgeZone;
 
@@ -257,7 +277,7 @@ export class PanelDragManager {
      * @param {number} clientY
      * @returns {{ type: 'edge', edge: string } | null}
      */
-    _detectEdgeDropZone(clientX, clientY) {
+    _detectEdgeDropZone(clientX: number, clientY: number): Extract<DropZone, { type: 'edge' }> | null {
         const vw = window.innerWidth;
         const vh = window.innerHeight;
         const threshold = LAYOUT.EDGE_THRESHOLD_PX;
@@ -280,14 +300,15 @@ export class PanelDragManager {
      * @param {number} clientY
      * @returns {{ type: 'tab-merge', targetPanelId: string } | null}
      */
-    _detectPanelCenterDropZone(clientX, clientY) {
+    _detectPanelCenterDropZone(clientX: number, clientY: number): Extract<DropZone, { type: 'tab-merge' }> | null {
         if (!this._rootElement || !this._dragging) return null;
 
         // Look for .dock-region elements (individual panels)
-        const panelWrappers = this._rootElement.querySelectorAll('.dock-region[data-panel-id]');
+        const panelWrappers = this._rootElement.querySelectorAll<HTMLElement>('.dock-region[data-panel-id]');
 
         for (const panelEl of panelWrappers) {
             const targetPanelId = panelEl.dataset.panelId;
+            if (!targetPanelId) continue;
 
             // Skip the panel being dragged and the map (main viewport, not a tab-merge target)
             if (targetPanelId === this._dragging.panelId) continue;
@@ -307,9 +328,9 @@ export class PanelDragManager {
 
         // Also check tabbed containers (TabGroupNode renderings) whose members
         // no longer have standalone .dock-region elements.
-        const tabbedContainers = this._rootElement.querySelectorAll('.tabbed-container[data-panel-ids]');
+        const tabbedContainers = this._rootElement.querySelectorAll<HTMLElement>('.tabbed-container[data-panel-ids]');
         for (const container of tabbedContainers) {
-            const panelIds = container.dataset.panelIds.split(',');
+            const panelIds = container.dataset.panelIds?.split(',') ?? [];
             if (panelIds.includes(this._dragging.panelId)) continue;
 
             const rect = container.getBoundingClientRect();
@@ -320,7 +341,7 @@ export class PanelDragManager {
             const inCenterY = clientY >= rect.top + marginY && clientY <= rect.bottom - marginY;
 
             if (inCenterX && inCenterY) {
-                return { type: 'tab-merge', targetPanelId: panelIds[0] };
+                if (panelIds[0]) return { type: 'tab-merge', targetPanelId: panelIds[0] };
             }
         }
 
@@ -336,14 +357,15 @@ export class PanelDragManager {
      * @param {number} clientY
      * @returns {{ type: 'stack', targetPanelId: string, edge: string } | null}
      */
-    _detectPanelEdgeDropZone(clientX, clientY) {
+    _detectPanelEdgeDropZone(clientX: number, clientY: number): Extract<DropZone, { type: 'stack' }> | null {
         if (!this._rootElement || !this._dragging) return null;
 
-        const panelWrappers = this._rootElement.querySelectorAll('.dock-region[data-panel-id]');
+        const panelWrappers = this._rootElement.querySelectorAll<HTMLElement>('.dock-region[data-panel-id]');
         const threshold = PANEL_EDGE_THRESHOLD_PX;
 
         for (const panelEl of panelWrappers) {
             const targetPanelId = panelEl.dataset.panelId;
+            if (!targetPanelId) continue;
 
             if (targetPanelId === this._dragging.panelId) continue;
             if (targetPanelId === PANEL_IDS.MAP) continue;
@@ -363,7 +385,7 @@ export class PanelDragManager {
             const minDist = Math.min(distLeft, distRight, distTop, distBottom);
             if (minDist > threshold) continue;
 
-            let edge;
+            let edge: DockEdge;
             if (minDist === distTop) edge = 'top';
             else if (minDist === distBottom) edge = 'bottom';
             else if (minDist === distLeft) edge = 'left';
@@ -392,7 +414,7 @@ export class PanelDragManager {
      * @param {string} panelId2
      * @returns {{ nodePath: string[], fromIndex: number, toIndex: number } | null}
      */
-    _findSiblingRelationship(panelId1, panelId2) {
+    _findSiblingRelationship(panelId1: string, panelId2: string): SiblingRelationship | null {
         if (!this._layoutStore) return null;
         const tree = this._layoutStore.getState().tree;
         return this._findSiblingInTree(tree, panelId1, panelId2, []);
@@ -406,12 +428,12 @@ export class PanelDragManager {
      * @returns {{ nodePath: string[], fromIndex: number, toIndex: number } | null}
      * @private
      */
-    _findSiblingInTree(node, panelId1, panelId2, path) {
+    _findSiblingInTree(node: DockLayoutNode | null, panelId1: string, panelId2: string, path: DockNodePath): SiblingRelationship | null {
         if (!node || node.type !== 'split') return null;
 
         // Only consider PanelNode children as direct siblings for reordering.
         // TabGroupNode members need extraction (StackPanelCommand), not a simple swap.
-        const isDirectPanel = (child, pid) => {
+        const isDirectPanel = (child: DockLayoutNode, pid: string): boolean => {
             return child.type === 'panel' && child.panelId === pid;
         };
 

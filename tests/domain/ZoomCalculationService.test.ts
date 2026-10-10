@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/domain/ZoomCalculationService.js
  * Tests zoom level calculations and constraints

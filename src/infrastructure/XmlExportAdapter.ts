@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * XmlExportAdapter
  * Pure static utility — serialises Layer[] to a GW2 homestead XML string.
@@ -10,7 +9,26 @@
  * @param {string} value
  * @returns {string}
  */
-function escapeXml(value) {
+interface ExportMap {
+    id: string | number;
+    name: string;
+}
+
+interface ExportDecoration {
+    id: string | number;
+    name: string;
+    position: { x: number; y: number; z: number };
+    rotation: number;
+    scale: number;
+    rotX?: number;
+    rotZ?: number;
+}
+
+interface ExportLayer {
+    getAllDecorations?: () => ExportDecoration[];
+}
+
+function escapeXml(value: string): string {
     return String(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -26,7 +44,7 @@ export class XmlExportAdapter {
      * @param {Array} layers - Ordered Layer instances; decorations are flattened in order
      * @returns {string} Complete XML document string
      */
-    static serialize(map, layers) {
+    static serialize(map: ExportMap, layers: ExportLayer[]): string {
         if (!map) {
             throw new Error('XmlExportAdapter.serialize: map is required');
         }
@@ -37,12 +55,12 @@ export class XmlExportAdapter {
         const mapId = map.id;
         const mapName = escapeXml(map.name ?? '');
 
-        const propLines = [];
+        const propLines: string[] = [];
         for (const layer of layers) {
             const decorations = layer.getAllDecorations ? layer.getAllDecorations() : [];
             for (const d of decorations) {
                 // d.id is the XML prop-type id (e.g. "419") — use it directly.
-                const id = parseInt(d.id, 10) || 0;
+                const id = parseInt(String(d.id), 10) || 0;
                 const name = escapeXml(d.name);
                 const px = d.position.x.toFixed(6);
                 const py = d.position.y.toFixed(6);

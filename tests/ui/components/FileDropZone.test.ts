@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { FileDropZone } from '../../../src/ui/components/FileDropZone.js';
 

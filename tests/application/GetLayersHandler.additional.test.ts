@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for src/application/handlers/GetLayersHandler.js
  * Covers: execute() method (not covered by existing tests which only use handle())

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration tests for PanelDragDrop workflow
  * Tests the full command/handler flow for edge docking without DOM interaction.

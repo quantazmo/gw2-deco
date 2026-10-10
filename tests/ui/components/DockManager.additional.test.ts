@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for DockManager to cover remaining uncovered lines:
  * Lines 80-85  (RibbonToolbar init when appService+appStore+zoomStore provided)

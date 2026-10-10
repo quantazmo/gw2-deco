@@ -1,9 +1,28 @@
-// @ts-nocheck
 /**
  * ZoomHandler - Manages zoom/pan interactions using native events
  * Integrates with ZoomStore for state management
  */
 import { ZOOM } from '../config/constants.js';
+import { ZoomScale, ZoomStore } from './stores/ZoomStore.ts';
+
+type PanZoomTransform = { k: number; x: number; y: number };
+type ZoomCallbackTransform = PanZoomTransform & {
+    rescaleX(baseScale: ZoomScale): ZoomScale;
+    rescaleY(baseScale: ZoomScale): ZoomScale;
+};
+type ZoomHandlerOptions = {
+    minZoom?: number;
+    maxZoom?: number;
+    eventBus?: { publish(eventType: string, data: unknown): void } | null;
+};
+type ZoomHandlerApi = {
+    on(eventType: 'zoom', callback: (transform: ZoomCallbackTransform) => void): ZoomHandlerApi;
+    getTransform(): PanZoomTransform;
+    reset(): void;
+    setTransform(transform: Partial<PanZoomTransform> & Pick<PanZoomTransform, 'k'>): void;
+    destroy(): void;
+    transform: ZoomCallbackTransform;
+};
 
 /**
  * Creates a zoom/pan handler using native mouse and wheel events
@@ -17,7 +36,7 @@ import { ZOOM } from '../config/constants.js';
  * @param {Object} [options.eventBus] - EventBus for publishing zoom events
  * @returns {Object} Zoom handler object with methods and properties
  */
-export function createZoomHandler(svgElement, zoomStore, options = {}) {
+export function createZoomHandler(svgElement: SVGElement, zoomStore: ZoomStore, options: ZoomHandlerOptions = {}): ZoomHandlerApi {
     const {
         minZoom = ZOOM.MIN_LEVEL,
         maxZoom = ZOOM.MAX_LEVEL,
@@ -28,7 +47,7 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
     zoomStore.setZoomLimits(minZoom, maxZoom);
 
     // Current transform state (scale and translation)
-    let transform = {
+    let transform: PanZoomTransform = {
         k: 1,      // scale factor
         x: 0,      // x translation
         y: 0       // y translation
@@ -43,10 +62,12 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
 
     // Throttling for updates
     let pendingUpdate = false;
-    let pendingAnimationFrame = null;
+    let pendingAnimationFrame: number | null = null;
 
     // Callbacks for zoom events
-    const callbacks = {
+    const callbacks: {
+        zoom: Array<(transform: ZoomCallbackTransform) => void>;
+    } = {
         zoom: []
     };
 
@@ -55,12 +76,12 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
      * This is needed for compatibility with the zoom callback API
      * @returns {Object} Transform object with k, x, y and rescaleX/rescaleY methods
      */
-    function createTransformObject() {
+    function createTransformObject(): ZoomCallbackTransform {
         return {
             k: transform.k,
             x: transform.x,
             y: transform.y,
-            rescaleX(baseScale) {
+            rescaleX(baseScale: ZoomScale) {
                 // Apply zoom transform to rescale the x-axis
                 // Goal: compute what data domain is visible after zoom/pan
                 if (!baseScale || typeof baseScale !== 'function') {
@@ -95,7 +116,7 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
                 // Create new scale with the computed domain and SAME range
                 return baseScale.copy().domain([newDomainMin, newDomainMax]);
             },
-            rescaleY(baseScale) {
+            rescaleY(baseScale: ZoomScale) {
                 // Apply zoom transform to rescale the y-axis
                 if (!baseScale || typeof baseScale !== 'function') {
                     return baseScale;
@@ -128,7 +149,7 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
     /**
      * Notify all registered callbacks of transform change
      */
-    function notifyZoomChange() {
+    function notifyZoomChange(): void {
         const transformObj = createTransformObject();
 
         callbacks.zoom.forEach(callback => {
@@ -153,7 +174,7 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
      * Handle wheel scroll zoom events
      * @param {WheelEvent} e - The wheel event
      */
-    function handleWheel(e) {
+    function handleWheel(e: WheelEvent): void {
         e.preventDefault();
 
         // Calculate zoom delta from wheel event
@@ -202,7 +223,7 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
      * Handle mouse down to start panning
      * @param {MouseEvent} e - The mouse event
      */
-    function handleMouseDown(e) {
+    function handleMouseDown(e: MouseEvent): void {
         // Only respond to left (0) and middle (1) mouse buttons
         if (e.button !== 0 && e.button !== 1) {
             return;
@@ -222,7 +243,7 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
      * Handle mouse move for panning
      * @param {MouseEvent} e - The mouse event
      */
-    function handleMouseMove(e) {
+    function handleMouseMove(e: MouseEvent): void {
         if (!isPanning) return;
 
         const deltaX = e.clientX - panStartX;
@@ -249,7 +270,7 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
     /**
      * Handle mouse up to stop panning
      */
-    function handleMouseUp() {
+    function handleMouseUp(): void {
         if (isPanning) {
             isPanning = false;
             svgElement.style.cursor = 'grab';
@@ -276,32 +297,32 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
     svgElement.style.cursor = 'grab';
 
     // Return the zoom handler API
-    const handler = {
+    const handler: Omit<ZoomHandlerApi, 'transform'> = {
         /**
          * Register a callback for zoom/pan events
          * @param {string} eventType - The event type ('zoom')
          * @param {Function} callback - Function to call with (transform) argument
          * @returns {this}
          */
-        on(eventType, callback) {
+        on(eventType: 'zoom', callback: (transform: ZoomCallbackTransform) => void): ZoomHandlerApi {
             if (eventType === 'zoom' && !callbacks.zoom.includes(callback)) {
                 callbacks.zoom.push(callback);
             }
-            return this;
+            return handler as ZoomHandlerApi;
         },
 
         /**
          * Get the current zoom transform state
          * @returns {Object} Transform with k (scale), x, y (translation)
          */
-        getTransform() {
+        getTransform(): PanZoomTransform {
             return { ...transform };
         },
 
         /**
          * Reset zoom to identity transform (no zoom/pan)
          */
-        reset() {
+        reset(): void {
             transform = {
                 k: 1,
                 x: 0,
@@ -314,7 +335,7 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
          * Set transform programmatically
          * @param {Object} newTransform - Transform with k, x, y properties
          */
-        setTransform(newTransform) {
+        setTransform(newTransform: Partial<PanZoomTransform> & Pick<PanZoomTransform, 'k'>): void {
             if (!newTransform || typeof newTransform.k !== 'number') {
                 throw new Error('Invalid transform: must have k, x, y properties');
             }
@@ -331,7 +352,7 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
         /**
          * Cleanup - remove event listeners
          */
-        destroy() {
+        destroy(): void {
             // Cancel any pending animation frames
             if (pendingAnimationFrame !== null) {
                 cancelAnimationFrame(pendingAnimationFrame);
@@ -354,7 +375,7 @@ export function createZoomHandler(svgElement, zoomStore, options = {}) {
         }
     });
 
-    return handler;
+    return handler as ZoomHandlerApi;
 }
 
 export default createZoomHandler;

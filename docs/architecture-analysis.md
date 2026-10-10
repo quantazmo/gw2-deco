@@ -655,7 +655,7 @@ Bootstraps the entire application:
 ### [`index.html`](../index.html)
 Minimal shell. Contains:
 - `<div id="dock-manager-root">` — DockManager renders here
-- Hidden content containers (`#chart-container`, `#layers-list`, `#tool-panel`) that are moved into dock regions at runtime
+- Hidden content containers (`#map-container`, `#layers-list`, `#tool-panel`) that are moved into dock regions at runtime
 
 ### [`script.ts`](../script.ts)
 

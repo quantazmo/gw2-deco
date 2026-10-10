@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for new domain events:
  * DecorationsMovedEvent, DecorationsDeletedEvent, MapSwitchedEvent, AllLayersClearedEvent

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration tests for component communication
  * Tests that components properly communicate through EventBus and Stores

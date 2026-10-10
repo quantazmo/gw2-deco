@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * DecorationListPanel Component
  * Flat scrollable list of decorations from visible layers,
@@ -7,74 +6,80 @@
  * Supports click/Ctrl+Click/Shift+Click selection.
  */
 
-import * as domHelpers from '../domHelpers.js';
+import AppService from '../../application/AppService.js';
+import { Decoration } from '../../domain/Decoration.js';
+import { Layer } from '../../domain/Layer.js';
+import { addClass, addInputElement, createElement, empty } from '../domHelpers.js';
+import { EventBus } from '../EventBus.js';
+import { AppState, AppStore } from '../stores/AppStore.js';
+import { SelectionStore } from '../stores/SelectionStore.js';
 import { ConfirmDialog } from './ConfirmDialog.js';
+import ContextMenu from './ContextMenu.js';
+import { DecorationInfoDialog } from './DecorationInfoDialog.js';
+
+type SortMode = 'oldest' | 'newest' | 'az' | 'za';
 
 class DecorationListPanel {
-    constructor(containerElement, appStore, selectionStore, eventBus, appService) {
+    container: HTMLElement;
+    appStore: AppStore;
+    selectionStore: SelectionStore;
+    eventBus: EventBus;
+    appService?: AppService;
+
+    /** Anchor decoration ID for Shift+Click range */
+    _anchorId?: string;
+    /** Flat ordered list of visible decoration IDs */
+    _orderedIds: string[] = [];
+    /** Shared context menu instance */
+    _contextMenu: ContextMenu = new ContextMenu();
+    /** Dialog for merge confirmation */
+    _confirmDialog: ConfirmDialog = new ConfirmDialog('layerMerge');
+    /** Shared decoration info dialog instance */
+    _decorationInfoDialog: DecorationInfoDialog = new DecorationInfoDialog();
+    /** Layer IDs that are currently collapsed */
+    _collapsedLayers: Set<string> = new Set();
+    /** Current search filter text */
+    _searchText: string = '';
+    /** Search bar container element */
+    _searchBar?: HTMLElement;
+    /** Scrollable list container */
+    _listContainer?: HTMLElement;
+    /** Current sort mode: 'oldest' | 'newest' | 'az' | 'za' */
+    _sortMode: SortMode = 'oldest';
+    /** Listen for toggle events dispatched by DockRegion's search button */
+    _searchToggleHandler: EventListener = () => this._toggleSearch();
+    /** Listen for sort events dispatched by DockRegion's sort button */
+    _sortHandler!: EventListener;
+
+
+    constructor(containerElement: HTMLElement, appStore: AppStore, selectionStore: SelectionStore, eventBus: EventBus, appService?: AppService) {
         this.container = containerElement;
         this.appStore = appStore;
         this.selectionStore = selectionStore;
         this.eventBus = eventBus;
-        this.appService = appService || null;
-
-        /** @type {string|null} Anchor decoration ID for Shift+Click range */
-        this._anchorId = null;
-
-        /** @type {string[]} Flat ordered list of visible decoration IDs */
-        this._orderedIds = [];
-
-        /** @type {ContextMenu|null} Shared context menu instance */
-        this._contextMenu = null;
-
-        /** @type {ConfirmDialog} Dialog for merge confirmation */
-        this._confirmDialog = new ConfirmDialog();
-
-        /** @type {DecorationInfoDialog|null} Shared decoration info dialog instance */
-        this._decorationInfoDialog = null;
-
-        /** @type {Set<string>} Layer IDs that are currently collapsed */
-        this._collapsedLayers = new Set();
-
-        /** @type {string} Current search filter text */
-        this._searchText = '';
-
-        /** @type {HTMLElement|null} Search bar container element */
-        this._searchBar = null;
-
-        /** @type {HTMLElement|null} Scrollable list container */
-        this._listContainer = null;
-
-        /** @type {number|null} Debounce timer ID for search input */
-        this._searchDebounceTimer = null;
-
-        /** @type {string} Current sort mode: 'oldest' | 'newest' | 'az' | 'za' */
-        this._sortMode = 'oldest';
+        this.appService = appService || undefined;
 
         this.initialize();
         this.subscribeToChanges();
     }
 
-    initialize() {
-        domHelpers.addClass(this.container, 'decoration-list-panel');
+    initialize(): void {
+        addClass(this.container, 'decoration-list-panel');
 
         // Search bar (hidden by default)
         this._searchBar = this._createSearchBar();
         this.container.appendChild(this._searchBar);
 
-        // Scrollable list container
-        this._listContainer = domHelpers.createElement('div', {
-            className: 'decoration-list__scroll-container'
+        this._listContainer = createElement('div', {
+            className: 'decoration-list__scroll-container',
+            parent: this.container
         });
-        this.container.appendChild(this._listContainer);
 
-        // Listen for toggle events dispatched by DockRegion's search button
-        this._searchToggleHandler = () => this._toggleSearch();
         document.addEventListener('decoration-list:toggle-search', this._searchToggleHandler);
 
-        // Listen for sort events dispatched by DockRegion's sort button
-        this._sortHandler = (e) => {
-            this._sortMode = e.detail.mode;
+        this._sortHandler = (event) => {
+            const { mode } = (event as CustomEvent<{ mode: SortMode }>).detail;
+            this._sortMode = mode;
             this.render(this.appStore.getState());
         };
         document.addEventListener('decoration-list:set-sort', this._sortHandler);
@@ -96,8 +101,8 @@ class DecorationListPanel {
      * Render the decoration list from current state
      * @param {Object} state - AppStore state with layers array
      */
-    render(state) {
-        domHelpers.empty(this._listContainer);
+    render(state: AppState): void {
+        empty(this._listContainer!);
         this._orderedIds = [];
 
         const layers = state.layers || [];
@@ -106,7 +111,7 @@ class DecorationListPanel {
         for (const layer of layers) {
             if (!layer.isVisible) continue;
 
-            let decorations = [];
+            let decorations: Decoration[] = [];
             if (typeof layer.getAllDecorations === 'function') {
                 decorations = layer.getAllDecorations();
             } else if (Array.isArray(layer.decorations)) {
@@ -121,50 +126,51 @@ class DecorationListPanel {
             if (sortedDecorations.length === 0) continue;
 
             // Layer group header
-            const isCollapsed = this._collapsedLayers.has(layer.id);
-            const header = domHelpers.createElement('div', {
-                className: 'decoration-list__layer-header'
-            });
-            header.setAttribute('data-layer-id', layer.id);
-
-            const chevron = domHelpers.createElement('span', {
-                className: 'decoration-list__layer-chevron'
-            });
-            chevron.textContent = isCollapsed ? '▶' : '▼';
-
-            const nameSpan = domHelpers.createElement('span', {
-                className: 'decoration-list__layer-name',
-                textContent: layer.name || `Layer ${layer.id}`
-            });
-
-            const countSpan = domHelpers.createElement('span', {
-                className: 'decoration-list__layer-count',
-                textContent: `${sortedDecorations.length}`
-            });
-
-            header.appendChild(chevron);
-            header.appendChild(nameSpan);
-            header.appendChild(countSpan);
-
             const layerId = layer.id;
-            header.addEventListener('click', () => {
-                if (this._collapsedLayers.has(layerId)) {
-                    this._collapsedLayers.delete(layerId);
-                } else {
-                    this._collapsedLayers.add(layerId);
+            const isCollapsed = this._collapsedLayers.has(layer.id);
+            const header = createElement('div', {
+                className: 'decoration-list__layer-header',
+                attributes: {
+                    'data-layer-id': layer.id
+                },
+                parent: this._listContainer,
+                events: {
+                    click: () => {
+                        if (this._collapsedLayers.has(layerId)) {
+                            this._collapsedLayers.delete(layerId);
+                        } else {
+                            this._collapsedLayers.add(layerId);
+                        }
+                        this.render(this.appStore.getState());
+                    },
+                    contextmenu: (e: PointerEvent) => {
+                        this._handleLayerHeaderContextMenu(layer, e);
+                    }
                 }
-                this.render(this.appStore.getState());
             });
 
-            header.addEventListener('contextmenu', (e) => {
-                this._handleLayerHeaderContextMenu(layer, e);
+            createElement('span', {
+                className: 'decoration-list__layer-chevron',
+                textContent: isCollapsed ? '▶' : '▼',
+                parent: header
             });
 
-            this._listContainer.appendChild(header);
+            createElement('span', {
+                className: 'decoration-list__layer-name',
+                textContent: layer.name || `Layer ${layer.id}`,
+                parent: header
+            });
+
+            createElement('span', {
+                className: 'decoration-list__layer-count',
+                textContent: `${sortedDecorations.length}`,
+                parent: header
+            });
 
             // Decoration items wrapper
-            const itemsWrapper = domHelpers.createElement('div', {
-                className: 'decoration-list__layer-items' + (isCollapsed ? ' collapsed' : '')
+            const itemsWrapper = createElement('div', {
+                className: 'decoration-list__layer-items' + (isCollapsed ? ' collapsed' : ''),
+                parent: this._listContainer
             });
 
             // Decoration items
@@ -175,8 +181,6 @@ class DecorationListPanel {
                     itemsWrapper.appendChild(item);
                 }
             }
-
-            this._listContainer.appendChild(itemsWrapper);
         }
 
         this._updateSelectionHighlights();
@@ -184,10 +188,8 @@ class DecorationListPanel {
 
     /**
      * Sort a list of decorations according to the current sort mode.
-     * @param {Object[]} decorations
-     * @returns {Object[]}
      */
-    _sortDecorations(decorations) {
+    private _sortDecorations(decorations: Decoration[]): Decoration[] {
         switch (this._sortMode) {
             case 'newest':
                 return [...decorations].reverse();
@@ -202,18 +204,15 @@ class DecorationListPanel {
 
     /**
      * Normalize a string for searching: lowercase and remove non-alpha characters.
-     * @param {string} str
-     * @returns {string}
      */
-    _normalizeForSearch(str) {
+    private _normalizeForSearch(str: string): string {
         return str.toLowerCase().replace(/[^a-z]/g, '');
     }
 
     /**
      * Parse the current search text into normalized fragments.
-     * @returns {string[]}
      */
-    _getSearchFragments() {
+    private _getSearchFragments(): string[] {
         if (!this._searchText) return [];
         return this._searchText
             .split(/\s+/)
@@ -224,11 +223,8 @@ class DecorationListPanel {
     /**
      * Filter a list of decorations by search fragments.
      * A decoration matches if its normalized name contains every fragment.
-     * @param {Object[]} decorations
-     * @param {string[]} fragments
-     * @returns {Object[]}
      */
-    _filterDecorations(decorations, fragments) {
+    private _filterDecorations(decorations: Decoration[], fragments: string[]): Decoration[] {
         if (fragments.length === 0) return decorations;
         return decorations.filter(d => {
             const normalizedName = this._normalizeForSearch(d.name || d.id || '');
@@ -238,14 +234,13 @@ class DecorationListPanel {
 
     /**
      * Create the search bar element.
-     * @returns {HTMLElement}
      */
-    _createSearchBar() {
-        const bar = domHelpers.createElement('div', {
+    private _createSearchBar(): HTMLElement {
+        const bar = createElement('div', {
             className: 'decoration-search-bar'
         });
-        domHelpers.addInputElement(bar, 'Filter decorations', 200, (value: string) => {
-            this._searchText = value;
+        addInputElement(bar, 'Filter decorations', 200, (value?: string) => {
+            this._searchText = value ?? '';
             this.render(this.appStore.getState());
         });
 
@@ -255,69 +250,61 @@ class DecorationListPanel {
     /**
      * Toggle the search bar visibility.
      */
-    _toggleSearch() {
+    private _toggleSearch(): void {
         if (!this._searchBar) return;
         const isVisible = this._searchBar.classList.contains('visible');
         if (isVisible) {
             this._searchBar.classList.remove('visible');
-            if (this._searchDebounceTimer !== null) {
-                clearTimeout(this._searchDebounceTimer);
-                this._searchDebounceTimer = null;
-            }
             this._searchText = '';
-            const input = this._searchBar.querySelector('.decoration-search-bar__input');
-            if (input) input.value = '';
-            const clearBtn = this._searchBar.querySelector('.decoration-search-bar__clear');
-            if (clearBtn) clearBtn.style.display = 'none';
             this.render(this.appStore.getState());
         } else {
-            this._searchBar.classList.add('visible');
-            const input = this._searchBar.querySelector('.decoration-search-bar__input');
-            if (input) input.focus();
+            const input = this._searchBar.querySelector('input');
+            if (input) {
+                input.value = '';
+                this._searchBar.classList.add('visible');
+                input.focus();
+            }
         }
     }
 
     /**
      * Create a single decoration list item element
-     * @param {Object} decoration - Decoration data
-     * @param {string} layerId - Parent layer ID
-     * @returns {HTMLElement}
      */
-    _createDecorationItem(decoration, layerId) {
-        const item = domHelpers.createElement('div', {
-            className: 'decoration-list__item'
+    private _createDecorationItem(decoration: Decoration, layerId: string): HTMLElement {
+        const item = createElement('div', {
+            className: 'decoration-list__item',
+            attributes: {
+                'data-decoration-id': decoration.uid,
+                'data-layer-id': layerId,
+                'draggable': 'true'
+            }
         });
 
-        item.setAttribute('data-decoration-id', decoration.uid);
-        item.setAttribute('data-layer-id', layerId);
-        item.setAttribute('draggable', 'true');
-
-        const nameSpan = domHelpers.createElement('span', {
+        const nameSpan = createElement('span', {
             className: 'decoration-list__item-name',
-            textContent: decoration.name || decoration.id
+            textContent: decoration.name || decoration.id,
+            parent: item
         });
-
-        item.appendChild(nameSpan);
 
         // Click handler for selection
         item.addEventListener('click', (e) => {
-            this._handleItemClick(decoration.uid, e);
+            this._decorationClick(decoration.uid, e);
         });
 
         // Drag start — carry selected decoration IDs
         item.addEventListener('dragstart', (e) => {
-            this._handleDragStart(decoration.uid, e);
+            this._decorationDragStart(decoration.uid, e);
         });
 
         // Context menu handler
         item.addEventListener('contextmenu', (e) => {
-            this._handleContextMenu(decoration.uid, layerId, e);
+            this._decorationContextMenu(decoration.uid, layerId, e);
         });
 
         // Double-click: open decoration info dialog
         item.addEventListener('dblclick', (e) => {
             e.stopPropagation();
-            this._handleDecorationInfoOpen(decoration, layerId);
+            this._decorationDoubleClick(decoration, layerId);
         });
 
         return item;
@@ -325,10 +312,8 @@ class DecorationListPanel {
 
     /**
      * Handle click on a decoration item
-     * @param {string} decorationId - Clicked decoration ID
-     * @param {MouseEvent} event - Mouse event
      */
-    _handleItemClick(decorationId, event) {
+    private _decorationClick(decorationId: string, event: MouseEvent): void {
         if (event.shiftKey && this._anchorId) {
             // Shift+Click: range selection
             this.selectionStore.selectRange(this._anchorId, decorationId, this._orderedIds);
@@ -346,10 +331,11 @@ class DecorationListPanel {
     /**
      * Update selection highlight CSS classes on items
      */
-    _updateSelectionHighlights() {
-        const items = this._listContainer.querySelectorAll('.decoration-list__item');
+    private _updateSelectionHighlights(): void {
+        const items = this._listContainer!.querySelectorAll('.decoration-list__item');
         items.forEach(item => {
             const id = item.getAttribute('data-decoration-id');
+            if (!id) return;
             if (this.selectionStore.isSelected(id)) {
                 item.classList.add('selected');
             } else {
@@ -360,13 +346,12 @@ class DecorationListPanel {
 
     /**
      * Get the flat ordered list of visible decoration IDs
-     * @returns {string[]}
      */
-    getOrderedIds() {
+    getOrderedIds(): string[] {
         return [...this._orderedIds];
     }
 
-    getElement() {
+    getElement(): HTMLElement {
         return this.container;
     }
 
@@ -374,29 +359,29 @@ class DecorationListPanel {
      * Handle drag start on a decoration item.
      * If the dragged item is selected, drag all selected IDs.
      * If not selected, select it first then drag.
-     * @param {string} decorationId - The decoration being dragged
-     * @param {DragEvent} event
      */
-    _handleDragStart(decorationId, event) {
+    private _decorationDragStart(decorationId: string, event: DragEvent): void {
         // If the dragged item is not already selected, select it
         if (!this.selectionStore.isSelected(decorationId)) {
             this.selectionStore.selectDecoration(decorationId);
         }
 
         const selectedIds = this.selectionStore.getSelectedIds();
-        event.dataTransfer.setData('application/x-decoration-ids', JSON.stringify(selectedIds));
-        event.dataTransfer.effectAllowed = 'move';
-
+        if (event.dataTransfer) {
+            event.dataTransfer.setData('application/x-decoration-ids', JSON.stringify(selectedIds));
+            event.dataTransfer.effectAllowed = 'move';
+        }
         // Custom drag image showing count
         const count = selectedIds.length;
         if (count > 1) {
-            const dragImage = document.createElement('div');
-            dragImage.className = 'decoration-drag-image';
-            dragImage.textContent = `${count} decorations`;
+            const dragImage = createElement('div', {
+                className: 'decoration-drag-image',
+                textContent: `${count} decorations`,
+                parent: document.body
+            });
             dragImage.style.position = 'absolute';
             dragImage.style.top = '-9999px';
-            document.body.appendChild(dragImage);
-            event.dataTransfer.setDragImage(dragImage, 0, 0);
+            if (event.dataTransfer) event.dataTransfer.setDragImage(dragImage, 0, 0);
             // Clean up after drag
             setTimeout(() => dragImage.remove(), 0);
         }
@@ -405,22 +390,18 @@ class DecorationListPanel {
     /**
      * Handle right-click context menu on a layer group header.
      * Mirrors the context menu from LayerPanel: Select All + Merge to...
-     * @param {Layer} layer - The layer
-     * @param {MouseEvent} event
      */
-    _handleLayerHeaderContextMenu(layer, event) {
+    _handleLayerHeaderContextMenu(layer: Layer, event: MouseEvent): void {
         event.preventDefault();
         if (!this._contextMenu) return;
 
         this.selectionStore.setActiveLayer(layer.id);
 
-        let decorationIds = [];
+        let decorationIds: string[] = [];
         if (typeof layer.getAllDecorations === 'function') {
             decorationIds = layer.getAllDecorations().map(d => d.uid);
         } else if (layer.decorations instanceof Map) {
             decorationIds = Array.from(layer.decorations.values()).map(d => d.uid);
-        } else if (Array.isArray(layer.decorations)) {
-            decorationIds = layer.decorations.map(d => d.uid);
         }
 
         const state = this.appStore.getState();
@@ -449,10 +430,10 @@ class DecorationListPanel {
 
     /**
      * Show confirmation dialog and execute the merge layer command.
-     * @param {Layer} sourceLayer - The layer to merge from (will be deleted)
-     * @param {Layer} targetLayer - The layer to merge into
+     * @param sourceLayer - The layer to merge from (will be deleted)
+     * @param targetLayer - The layer to merge into
      */
-    async _confirmAndMergeLayer(sourceLayer, targetLayer) {
+    async _confirmAndMergeLayer(sourceLayer: Layer, targetLayer: Layer): Promise<void> {
         const decorationCount = typeof sourceLayer.getAllDecorations === 'function'
             ? sourceLayer.getAllDecorations().length
             : 0;
@@ -468,7 +449,7 @@ class DecorationListPanel {
         if (!confirmed) return;
 
         try {
-            await this.appService.execute({
+            await this.appService!.execute({
                 type: 'MergeLayerCommand',
                 payload: {
                     sourceLayerId: sourceLayer.id,
@@ -483,11 +464,8 @@ class DecorationListPanel {
 
     /**
      * Handle right-click context menu on a decoration item.
-     * @param {string} decorationId - The decoration ID
-     * @param {string} layerId - The layer ID
-     * @param {MouseEvent} event
      */
-    _handleContextMenu(decorationId, layerId, event) {
+    private _decorationContextMenu(decorationId: string, layerId: string, event: MouseEvent): void {
         event.preventDefault();
         if (!this._contextMenu || !this.appService) return;
 
@@ -505,7 +483,7 @@ class DecorationListPanel {
         const allVisibleDecorations = [];
         for (const layer of layers) {
             if (!layer.isVisible) continue;
-            let decs = [];
+            let decs: Decoration[] = [];
             if (typeof layer.getAllDecorations === 'function') {
                 decs = layer.getAllDecorations();
             } else if (Array.isArray(layer.decorations)) {
@@ -529,7 +507,7 @@ class DecorationListPanel {
             .map(l => ({
                 label: l.name || `Layer ${l.id}`,
                 action: () => {
-                    this.appService.execute({
+                    this.appService!.execute({
                         type: 'MoveDecorationsCommand',
                         payload: { decorationIds: selectedIds, targetLayerId: l.id }
                     });
@@ -538,9 +516,9 @@ class DecorationListPanel {
 
         // Collect decoration IDs in the same layer as the right-clicked item, respecting search filter
         const clickedLayer = layers.find(l => l.id === layerId);
-        let layerDecorationIds = [];
+        let layerDecorationIds: string[] = [];
         if (clickedLayer) {
-            let layerDecorations = [];
+            let layerDecorations: Decoration[] = [];
             if (typeof clickedLayer.getAllDecorations === 'function') {
                 layerDecorations = clickedLayer.getAllDecorations();
             } else if (clickedLayer.decorations instanceof Map) {
@@ -591,37 +569,10 @@ class DecorationListPanel {
     }
 
     /**
-     * Set the shared ContextMenu instance
-     * @param {ContextMenu} contextMenu
-     */
-    setContextMenu(contextMenu) {
-        this._contextMenu = contextMenu;
-    }
-
-    /**
-     * Set the AppService reference (for late binding)
-     * @param {AppService} appService
-     */
-    setAppService(appService) {
-        this.appService = appService;
-    }
-
-    /**
-     * Set the shared DecorationInfoDialog instance
-     * @param {DecorationInfoDialog} decorationInfoDialog
-     */
-    setDecorationInfoDialog(decorationInfoDialog) {
-        this._decorationInfoDialog = decorationInfoDialog;
-    }
-
-    /**
      * Open the decoration info dialog for a decoration.
      * Resolves the layer name from the current store state.
-     * @param {Object} decoration
-     * @param {string} layerId
      */
-    _handleDecorationInfoOpen(decoration, layerId) {
-        if (!this._decorationInfoDialog) return;
+    private _decorationDoubleClick(decoration: Decoration, layerId: string): void {
         const state = this.appStore.getState();
         const layers = state.layers || [];
         const layer = layers.find(l => l.id === layerId);

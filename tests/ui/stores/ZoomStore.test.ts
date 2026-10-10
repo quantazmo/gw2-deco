@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/ui/stores/ZoomStore.js
  * Covers: ZoomEventEmitter (on, emit, once) and ZoomStore (initialize, setZoom,

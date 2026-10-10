@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/domain/BoundaryCalculationService.js
  * Tests map boundary calculations and bounds operations

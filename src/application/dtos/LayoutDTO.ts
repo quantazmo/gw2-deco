@@ -3,6 +3,7 @@
  */
 import { MapDTO } from './MapDTO.js';
 import { LayerDTO } from './LayerDTO.js';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
 
 export class LayoutDTO {
     id: string;
@@ -24,9 +25,12 @@ export class LayoutDTO {
      * @param {HomesteadLayout} layout - The domain entity
      * @returns {LayoutDTO}
      */
-    static fromDomain(layout: { id: string; name: string; map: unknown; activeLayerId: string | null; getAllLayers(): Array<{ id: string; name: string; isVisible: boolean; getAllDecorations(): unknown[] }> }): LayoutDTO {
-        const mapDTO = MapDTO.fromDomain(layout.map as any); // JS domain object – narrowed as needed here
-        const layerDTOs = layout.getAllLayers().map(l => LayerDTO.fromDomain(l as any)); // JS domain Layer object
+    static fromDomain(layout: HomesteadLayout): LayoutDTO {
+        if (!layout.map) {
+            throw new Error('LayoutDTO.fromDomain: layout map is required');
+        }
+        const mapDTO = MapDTO.fromDomain(layout.map);
+        const layerDTOs = layout.getAllLayers().map(layer => LayerDTO.fromDomain(layer));
 
         return new LayoutDTO(
             layout.id,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for LoadFromUrlDialog component
  * Covers: DOM structure, sample dropdown, URL input interaction, Load/Cancel resolution.

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/infrastructure/XmlLayoutAdapter.js
  * Covers: validateXmlString, _validatePropElement, parseLayout, _extractLayout

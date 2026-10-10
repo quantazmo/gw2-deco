@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for LayoutRepository — targeting uncovered error paths.
  * Uncovered lines: 43 (save catch/warn), 82 (clear catch/warn)

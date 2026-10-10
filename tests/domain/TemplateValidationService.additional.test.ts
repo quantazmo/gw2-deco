@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for src/domain/LayoutValidationService.js
  * Covers: getValidationSummary, scale warnings, missing validateState, validateLayout

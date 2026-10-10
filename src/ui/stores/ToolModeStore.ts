@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ToolModeStore
  * Tracks the active tool mode (e.g. 'pan' or 'select').
@@ -6,6 +5,9 @@
  * Notifies listeners on mode change.
  */
 export class ToolModeStore {
+    private _mode: 'pan' | 'select' = 'pan';
+    private _listeners: Array<(mode: 'pan' | 'select') => void> = [];
+
     constructor() {
         this._mode = 'pan';
         this._listeners = [];
@@ -15,7 +17,7 @@ export class ToolModeStore {
      * Get the current tool mode.
      * @returns {'pan'|'select'}
      */
-    getMode() {
+    getMode(): 'pan' | 'select' {
         return this._mode;
     }
 
@@ -23,7 +25,7 @@ export class ToolModeStore {
      * Set the tool mode.
      * @param {'pan'|'select'} mode
      */
-    setMode(mode) {
+    setMode(mode: 'pan' | 'select'): void {
         if (mode !== 'pan' && mode !== 'select') {
             throw new Error(`Invalid tool mode: "${mode}". Must be 'pan' or 'select'.`);
         }
@@ -38,7 +40,7 @@ export class ToolModeStore {
      * @param {Function} listener - Called with the new mode string.
      * @returns {Function} Unsubscribe function.
      */
-    subscribe(listener) {
+    subscribe(listener: (mode: 'pan' | 'select') => void): () => void {
         this._listeners.push(listener);
         return () => {
             this._listeners = this._listeners.filter(l => l !== listener);
@@ -46,7 +48,7 @@ export class ToolModeStore {
     }
 
     /** @private */
-    _notify() {
+    _notify(): void {
         for (const listener of this._listeners) {
             listener(this._mode);
         }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for src/application/handlers/LoadLayoutHandler.js
  * Covers: execute() async method (layoutId+repository, xmlContent, no args error)

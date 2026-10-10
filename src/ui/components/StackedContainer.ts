@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * StackedContainer
  * Renders a SplitNode as two panels with a DividerResizer between them.
@@ -13,8 +12,18 @@
  */
 
 import { DividerResizer } from './DividerResizer.js';
+import { SplitNode } from '../../domain/DockLayoutConfiguration.ts';
+
+type DividerOptions = { minRatio?: number; maxRatio?: number };
 
 export class StackedContainer {
+    private _node: SplitNode;
+    private _firstEl: HTMLElement;
+    private _secondEl: HTMLElement;
+    private _onRatioChange: (ratio: number) => void;
+    private _dividerOptions: DividerOptions;
+    private _element: HTMLElement;
+
     /**
      * @param {object}      node           The SplitNode being rendered
      * @param {HTMLElement} firstEl        Rendered DOM element for node.first
@@ -23,7 +32,7 @@ export class StackedContainer {
      * @param {object}      [dividerOptions={}]  Options forwarded to DividerResizer
      *   (e.g. { minRatio, maxRatio } for map-minimum enforcement)
      */
-    constructor(node, firstEl, secondEl, onRatioChange, dividerOptions = {}) {
+    constructor(node: SplitNode, firstEl: HTMLElement, secondEl: HTMLElement, onRatioChange: (ratio: number) => void, dividerOptions: DividerOptions = {}) {
         this._node = node;
         this._firstEl = firstEl;
         this._secondEl = secondEl;
@@ -33,7 +42,7 @@ export class StackedContainer {
     }
 
     /** @returns {HTMLElement} */
-    getElement() {
+    getElement(): HTMLElement {
         return this._element;
     }
 
@@ -41,7 +50,7 @@ export class StackedContainer {
     // Private
     // ─────────────────────────────────────────────────────────────────────────
 
-    _createElement() {
+    _createElement(): HTMLElement {
         const container = document.createElement('div');
         container.className = `stacked-container stacked-${this._node.direction}`;
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for abstract base classes: MapRepository and LayoutRepository
  * Each method must throw "must be implemented by subclass"

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for src/domain/Coordinate.js
  * Covers: fromArray, fromObject, toArray, toObject, translate, scale

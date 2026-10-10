@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * DockManager
  * Top-level orchestrator for the panel layout system.
@@ -18,17 +17,43 @@ import { DockLayoutConfiguration, replaceNode, createTabGroupNode, createSplitNo
 import { ReorderPanelCommand } from '../../application/commands/ReorderPanelCommand.js';
 import { ResizeDockCommand } from '../../application/commands/ResizeDockCommand.js';
 import { LAYOUT, PANEL_IDS } from '../../config/constants.js';
+import type { DockLayoutNode, DockNodePath, PanelNode, SplitNode, TabGroupNode } from '../../domain/DockLayoutConfiguration.js';
+import type { AppService } from '../../application/AppService.js';
+import type { AppStore } from '../stores/AppStore.js';
+import type { ZoomStore } from '../stores/ZoomStore.js';
+import type { EventBus } from '../EventBus.js';
+import type { UndoRedoManager } from '../../application/UndoRedoManager.js';
+import type { ToolModeStore } from '../stores/ToolModeStore.js';
+import type { DockPanelLayoutStore } from '../stores/DockPanelLayoutStore.js';
 
 /** Minimum interval (ms) between resize re-renders to avoid layout thrashing. */
 const RESIZE_DEBOUNCE_MS = 150;
 
-const PANEL_LABELS = {
+const PANEL_LABELS: Record<string, string> = {
     map: 'Map',
     layers: 'Layers',
     decorationList: 'Decoration List'
 };
 
 export class DockManager {
+    private rootElement: HTMLElement;
+    private layoutStore: DockPanelLayoutStore;
+    private panelContentMap: Record<string, HTMLElement>;
+    private _appService: AppService | null;
+    private _eventBus: EventBus | null;
+    private _appStore: AppStore | null;
+    private _zoomStore: ZoomStore | null;
+    private _undoRedoManager: UndoRedoManager | null;
+    private _toolModeStore: ToolModeStore | null;
+    private _unsubscribe: (() => void) | null;
+    private _panelDragManager: PanelDragManager | null;
+    private _dropZoneOverlay: DropZoneOverlay | null;
+    private _treeContainer: HTMLDivElement | null;
+    private _ribbon: RibbonToolbar | null;
+    private _resizeHandler: (() => void) | null;
+    private _resizeTimer: ReturnType<typeof setTimeout> | null;
+    private _currentMapName: string | null;
+
     /**
      * @param {HTMLElement} rootElement     Container div (#dock-manager-root)
      * @param {LayoutStore} layoutStore     LayoutStore instance
@@ -41,7 +66,17 @@ export class DockManager {
      * @param {object} [undoRedoManager]    UndoRedoManager for ribbon undo/redo (optional)
      * @param {object} [toolModeStore]      ToolModeStore for ribbon tool mode buttons (optional)
      */
-    constructor(rootElement, layoutStore, panelContentMap, appService = null, eventBus = null, appStore = null, zoomStore = null, undoRedoManager = null, toolModeStore = null) {
+    constructor(
+        rootElement: HTMLElement,
+        layoutStore: DockPanelLayoutStore,
+        panelContentMap: Record<string, HTMLElement>,
+        appService: AppService | null = null,
+        eventBus: EventBus | null = null,
+        appStore: AppStore | null = null,
+        zoomStore: ZoomStore | null = null,
+        undoRedoManager: UndoRedoManager | null = null,
+        toolModeStore: ToolModeStore | null = null
+    ) {
         this.rootElement = rootElement;
         this.layoutStore = layoutStore;
         this.panelContentMap = panelContentMap || {};
@@ -66,7 +101,7 @@ export class DockManager {
      * Also initialises PanelDragManager, DropZoneOverlay and RibbonToolbar if the
      * appropriate dependencies were provided.
      */
-    mount() {
+    mount(): void {
         // Create a stable sub-container for the layout tree so that the ribbon
         // toolbar and reset button persist across re-renders.
         this._treeContainer = document.createElement('div');
@@ -97,7 +132,8 @@ export class DockManager {
 
         // Subscribe to tab activation events and update the layout tree activeIndex
         if (this._eventBus) {
-            this._eventBus.subscribe('layout:tab-activated', ({ panels, activeIndex }) => {
+            this._eventBus.subscribe('layout:tab-activated', (data: { panels: string[]; activeIndex: number }) => {
+                const { panels, activeIndex } = data;
                 this._onTabActivated(panels, activeIndex);
             });
         }
@@ -124,7 +160,7 @@ export class DockManager {
     /**
      * Unmount DockManager: unsubscribe from store and clean up ribbon.
      */
-    unmount() {
+    unmount(): void {
         if (this._unsubscribe) {
             this._unsubscribe();
             this._unsubscribe = null;
@@ -148,7 +184,7 @@ export class DockManager {
      * Only the tree container is cleared; ribbon and reset button persist.
      * @private
      */
-    _render() {
+    _render(): void {
         const container = this._treeContainer || this.rootElement;
         while (container.firstChild) {
             container.removeChild(container.firstChild);
@@ -166,7 +202,7 @@ export class DockManager {
      * @returns {HTMLElement}
      * @private
      */
-    _renderNode(node, path) {
+    _renderNode(node: DockLayoutNode, path: DockNodePath): HTMLElement {
         if (node.type === 'panel') {
             return this._renderPanelNode(node);
         }
@@ -184,7 +220,7 @@ export class DockManager {
     }
 
     /** @private */
-    _renderPanelNode(node) {
+    _renderPanelNode(node: PanelNode): HTMLElement {
         const contentEl = this.panelContentMap[node.panelId] || null;
         const baseLabel = PANEL_LABELS[node.panelId] || node.panelId;
         const label = (node.panelId === 'map' && this._currentMapName)
@@ -200,7 +236,7 @@ export class DockManager {
     }
 
     /** @private */
-    _renderSplitNode(node, path) {
+    _renderSplitNode(node: SplitNode, path: DockNodePath): HTMLElement {
         const firstEl = this._renderNode(node.first, [...path, 'first']);
         const secondEl = this._renderNode(node.second, [...path, 'second']);
 
@@ -211,26 +247,28 @@ export class DockManager {
         const mapInSecond = !mapInFirst &&
             findNode(node.second, n => n.type === 'panel' && n.panelId === PANEL_IDS.MAP) !== null;
 
-        const dividerOptions = {};
+        const dividerOptions: { minRatio?: number; maxRatio?: number } = {};
         if (mapInFirst) {
             dividerOptions.minRatio = Math.max(LAYOUT.SPLIT_RATIO_MIN, LAYOUT.MAP_MIN_RATIO);
         } else if (mapInSecond) {
             dividerOptions.maxRatio = Math.min(LAYOUT.SPLIT_RATIO_MAX, 1 - LAYOUT.MAP_MIN_RATIO);
         }
 
-        const onRatioChange = this._appService
-            ? (newRatio) => this._appService.execute(new ResizeDockCommand(path, newRatio))
-            : (newRatio) => this._onDividerMoved(node, newRatio);
+        const appService = this._appService;
+        const onRatioChange = appService
+            ? (newRatio: number) => { void appService.execute(new ResizeDockCommand(path, newRatio)); }
+            : (newRatio: number) => this._onDividerMoved(node, newRatio);
 
         const stacked = new StackedContainer(node, firstEl, secondEl, onRatioChange, dividerOptions);
         return stacked.getElement();
     }
 
     /** @private */
-    _renderTabGroupNode(node, path) {
-        const onReorder = this._appService
-            ? (fromIndex, toIndex) => {
-                this._appService.execute(
+    _renderTabGroupNode(node: TabGroupNode, path: DockNodePath): HTMLElement {
+        const appService = this._appService;
+        const onReorder = appService
+            ? (fromIndex: number, toIndex: number) => {
+                void appService.execute(
                     new ReorderPanelCommand('tab', path, fromIndex, toIndex)
                 );
             }
@@ -253,7 +291,7 @@ export class DockManager {
      * redistribute space.
      * @private
      */
-    _onWindowResize() {
+    _onWindowResize(): void {
         if (this._resizeTimer) clearTimeout(this._resizeTimer);
         this._resizeTimer = setTimeout(() => {
             this._resizeTimer = null;
@@ -268,7 +306,7 @@ export class DockManager {
      * re-expanded when space allows.
      * @private
      */
-    _enforceMinimumSizes() {
+    _enforceMinimumSizes(): void {
         const container = this._treeContainer || this.rootElement;
         const panels = container.querySelectorAll('.panel-wrapper');
 
@@ -278,8 +316,8 @@ export class DockManager {
             const tooShort = rect.height > 0 && rect.height < LAYOUT.MIN_PANEL_HEIGHT;
 
             const contentArea =
-                panel.querySelector('.dock-region-content') ||
-                panel.querySelector('.tab-content-area');
+                panel.querySelector<HTMLElement>('.dock-region-content') ||
+                panel.querySelector<HTMLElement>('.tab-content-area');
 
             if (contentArea) {
                 if (tooNarrow || tooShort) {
@@ -301,7 +339,7 @@ export class DockManager {
      * @param {number}   activeIndex New active index
      * @private
      */
-    _onTabActivated(panels, activeIndex) {
+    _onTabActivated(panels: string[], activeIndex: number): void {
         const layout = this.layoutStore.getState();
         const newTree = replaceNode(
             layout.tree,
@@ -310,7 +348,7 @@ export class DockManager {
                 node.panels.every((p, i) => p === panels[i]),
             createTabGroupNode(panels, activeIndex)
         );
-        const newLayout = new DockLayoutConfiguration(newTree, layout.version);
+        const newLayout = new DockLayoutConfiguration(newTree ?? layout.tree, layout.version);
         this.layoutStore.setState(newLayout);
     }
 
@@ -322,14 +360,14 @@ export class DockManager {
      * @param {number} newRatio   New ratio value (already clamped by DividerResizer)
      * @private
      */
-    _onDividerMoved(splitNode, newRatio) {
+    _onDividerMoved(splitNode: SplitNode, newRatio: number): void {
         const layout = this.layoutStore.getState();
         const newTree = replaceNode(
             layout.tree,
             node => node === splitNode,
             createSplitNode(splitNode.direction, newRatio, splitNode.first, splitNode.second)
         );
-        const newLayout = new DockLayoutConfiguration(newTree, layout.version);
+        const newLayout = new DockLayoutConfiguration(newTree ?? layout.tree, layout.version);
         this.layoutStore.setState(newLayout);
     }
 }

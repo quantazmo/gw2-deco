@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * DecorationInfoDialog Component
  * Modal dialog that displays all information about a single decoration.
@@ -8,7 +7,25 @@
 
 let _instanceCount = 0;
 
+interface DecorationInfo {
+    name: string;
+    id: string;
+    uid: string;
+    position?: { x: number; y: number; z?: number };
+    rotation?: number;
+    rotX?: number;
+    rotZ?: number;
+    scale?: number;
+}
+
 export class DecorationInfoDialog {
+    private _id: string;
+    private _resolve: (() => void) | null;
+    private _dialogEl: HTMLDialogElement;
+    private _titleEl!: HTMLHeadingElement;
+    private _bodyEl!: HTMLDivElement;
+    private _okBtn!: HTMLButtonElement;
+
     constructor() {
         _instanceCount++;
         this._id = `decoration-info-dialog-${_instanceCount}`;
@@ -24,7 +41,7 @@ export class DecorationInfoDialog {
      * @param {string} [options.layerName] - Optional name of the layer containing this decoration
      * @returns {Promise<void>} Resolves when the dialog is closed
      */
-    show({ decoration, layerName }) {
+    show({ decoration, layerName }: { decoration: DecorationInfo; layerName?: string | null }): Promise<void> {
         this._populate(decoration, layerName);
 
         if (typeof this._dialogEl.showModal === 'function') {
@@ -41,7 +58,7 @@ export class DecorationInfoDialog {
     }
 
     /** @private */
-    _populate(decoration, layerName) {
+    _populate(decoration: DecorationInfo, layerName?: string | null): void {
         this._titleEl.textContent = decoration.name || decoration.id;
 
         // Clear previous rows
@@ -49,7 +66,7 @@ export class DecorationInfoDialog {
             this._bodyEl.removeChild(this._bodyEl.firstChild);
         }
 
-        const rows = [];
+        const rows: Array<{ label: string; value: string }> = [];
 
         if (layerName !== undefined && layerName !== null) {
             rows.push({ label: 'Layer', value: layerName });
@@ -58,10 +75,10 @@ export class DecorationInfoDialog {
         rows.push({ label: 'Type ID', value: decoration.id });
         rows.push({ label: 'Instance UID', value: decoration.uid });
 
-        const pos = decoration.position || {};
-        rows.push({ label: 'Position X', value: pos.x !== undefined ? String(pos.x) : '—' });
-        rows.push({ label: 'Position Y', value: pos.y !== undefined ? String(pos.y) : '—' });
-        rows.push({ label: 'Position Z', value: pos.z !== undefined ? String(pos.z) : '—' });
+        const pos = decoration.position;
+        rows.push({ label: 'Position X', value: pos?.x !== undefined ? String(pos.x) : '—' });
+        rows.push({ label: 'Position Y', value: pos?.y !== undefined ? String(pos.y) : '—' });
+        rows.push({ label: 'Position Z', value: pos?.z !== undefined ? String(pos.z) : '—' });
 
         rows.push({ label: 'Rotation Y', value: String(decoration.rotation ?? '—') });
         rows.push({ label: 'Rotation X', value: String(decoration.rotX ?? '—') });
@@ -87,7 +104,7 @@ export class DecorationInfoDialog {
     }
 
     /** @private */
-    _createDialogElement() {
+    _createDialogElement(): HTMLDialogElement {
         const dialog = document.createElement('dialog');
         dialog.classList.add('decoration-info-dialog');
         dialog.setAttribute('role', 'dialog');
@@ -134,7 +151,7 @@ export class DecorationInfoDialog {
     }
 
     /** @private */
-    _close() {
+    _close(): void {
         if (typeof this._dialogEl.close === 'function') {
             this._dialogEl.close();
         } else {

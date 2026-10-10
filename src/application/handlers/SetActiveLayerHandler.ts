@@ -3,14 +3,15 @@
  */
 import { LayerId } from '../../domain/LayerId.js';
 import { LayerSelectedEvent } from '../../domain/events/LayerSelectedEvent.js';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
 
 export class SetActiveLayerHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      */
-    constructor(layout: unknown) {
+    constructor(layout: HomesteadLayout) {
         this.layout = layout;
     }
 
@@ -19,7 +20,7 @@ export class SetActiveLayerHandler {
      * @param {SetActiveLayerCommand|Object} command - The command to execute
      * @returns {Object} Result object with the layer id
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: { layerId: string | null }): { layerId: string | null } {
         // Allow null for deselecting all layers
         const layerIdValue = command.layerId;
 

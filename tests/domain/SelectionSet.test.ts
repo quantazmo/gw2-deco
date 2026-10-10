@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/domain/SelectionSet.js
  * Tests SelectionSet value object — immutability, all methods, edge cases

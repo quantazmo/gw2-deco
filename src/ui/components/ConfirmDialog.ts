@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ConfirmDialog Component
  * Modal confirmation dialog using native <dialog> element.
@@ -7,10 +6,21 @@
  * ARIA attributes for accessibility.
  */
 
+import { createElement } from "../domHelpers";
+
 let _instanceCount = 0;
 
 export class ConfirmDialog {
-    constructor(type) {
+    _dialogEl: HTMLDialogElement;
+    _titleEl!: HTMLHeadingElement;
+    _messageEl!: HTMLParagraphElement;
+    _confirmBtn!: HTMLButtonElement;
+    _cancelBtn!: HTMLButtonElement;
+    private _id: string;
+
+    _resolve: ((value: boolean) => void) | null;
+
+    constructor(type?: string) {
         _instanceCount++;
         this._id = `confirm-dialog-${_instanceCount}`;
         this._resolve = null;
@@ -30,7 +40,9 @@ export class ConfirmDialog {
      * @param {string} [options.cancelLabel='Cancel'] - Cancel button text
      * @returns {Promise<boolean>} Resolves true if confirmed, false if cancelled
      */
-    show({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel' }) {
+    show({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel' }: {
+        title: string; message: string; confirmLabel?: string; cancelLabel?: string;
+    }): Promise<boolean> {
         // Update content
         this._titleEl.textContent = title;
         this._messageEl.textContent = message;
@@ -48,72 +60,74 @@ export class ConfirmDialog {
         // Focus cancel button by default (safe choice)
         this._cancelBtn.focus();
 
-        return new Promise((resolve) => {
+        return new Promise<boolean>((resolve) => {
             this._resolve = resolve;
         });
     }
 
-    /**
-     * @private
-     */
-    _createDialogElement() {
-        const dialog = document.createElement('dialog');
-        dialog.classList.add('confirm-dialog');
-        dialog.setAttribute('role', 'alertdialog');
-        dialog.setAttribute('aria-modal', 'true');
-
+    private _createDialogElement(): HTMLDialogElement {
         const titleId = `${this._id}-title`;
         const messageId = `${this._id}-message`;
 
-        dialog.setAttribute('aria-labelledby', titleId);
-        dialog.setAttribute('aria-describedby', messageId);
+        const dialog = createElement('dialog', {
+            className: 'confirm-dialog',
+            attributes: {
+                role: 'alertdialog',
+                'aria-modal': 'true',
+                'aria-labelledby': titleId,
+                'aria-describedby': messageId
+            },
+            events: {
+                // Handle native cancel (Escape key)
+                cancel: (e) => {
+                    e.preventDefault();
+                    this._close(false);
+                }
+            }
+        });
 
         // Title
-        this._titleEl = document.createElement('h2');
-        this._titleEl.classList.add('confirm-dialog__title');
-        this._titleEl.id = titleId;
+        this._titleEl = createElement('h2', {
+            className: 'confirm-dialog__title',
+            id: titleId,
+            parent: dialog
+        });
 
         // Message
-        this._messageEl = document.createElement('p');
-        this._messageEl.classList.add('confirm-dialog__message');
-        this._messageEl.id = messageId;
+        this._messageEl = createElement('p', {
+            className: 'confirm-dialog__message',
+            id: messageId,
+            parent: dialog
+        });
 
         // Actions container
-        const actions = document.createElement('div');
-        actions.classList.add('confirm-dialog__actions');
-
-        // Cancel button (comes first in DOM for tab order, but visually can be second)
-        this._cancelBtn = document.createElement('button');
-        this._cancelBtn.type = 'button';
-        this._cancelBtn.classList.add('confirm-dialog__cancel');
-        this._cancelBtn.addEventListener('click', () => this._close(false));
+        const actions = createElement('div', {
+            className: 'confirm-dialog__actions',
+            parent: dialog
+        });
 
         // Confirm button
-        this._confirmBtn = document.createElement('button');
-        this._confirmBtn.type = 'button';
-        this._confirmBtn.classList.add('confirm-dialog__confirm');
-        this._confirmBtn.addEventListener('click', () => this._close(true));
+        this._confirmBtn = createElement('button', {
+            className: 'confirm-dialog__confirm',
+            parent: actions,
+            events: {
+                click: () => this._close(true)
+            }
+        });
 
-        actions.appendChild(this._confirmBtn);
-        actions.appendChild(this._cancelBtn);
-
-        dialog.appendChild(this._titleEl);
-        dialog.appendChild(this._messageEl);
-        dialog.appendChild(actions);
-
-        // Handle native cancel (Escape key)
-        dialog.addEventListener('cancel', (e) => {
-            e.preventDefault();
-            this._close(false);
+        // Cancel button
+        this._cancelBtn = createElement('button', {
+            className: 'confirm-dialog__cancel',
+            parent: actions,
+            events: {
+                click: () => this._close(false)
+            }
         });
 
         return dialog;
     }
 
-    /**
-     * @private
-     */
-    _close(result) {
+    private _close(result: boolean): void {
         if (typeof this._dialogEl.close === 'function') {
             this._dialogEl.close();
         } else {
@@ -128,7 +142,7 @@ export class ConfirmDialog {
     /**
      * Remove the dialog element from the DOM.
      */
-    destroy() {
+    destroy(): void {
         if (this._dialogEl && this._dialogEl.parentNode) {
             this._dialogEl.parentNode.removeChild(this._dialogEl);
         }

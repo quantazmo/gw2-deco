@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { DropZoneOverlay } from '../../../src/ui/components/DropZoneOverlay.js';
 
 function makeMockEventBus() {

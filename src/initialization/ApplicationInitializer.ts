@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ApplicationInitializer
  * Bootstraps the refactored architecture
@@ -47,12 +46,59 @@ import { Layer } from '../domain/Layer.js';
 import { Decoration } from '../domain/Decoration.js';
 import { WorldCoordinate } from '../domain/WorldCoordinate.js';
 import { AccountDecorationInventory } from '../domain/AccountDecorationInventory.js';
+import type { UndoRecord } from '../application/UndoRecord.js';
+
+declare global {
+    interface Window {
+        requireCommand?: (name: string) => new (data: Record<string, unknown>) => { constructor: { name: string } };
+        requireQuery?: (name: string) => new (data: Record<string, unknown>) => { constructor: { name: string } };
+    }
+}
+
+type UndoExecutor = { undo(record: UndoRecord): void; redo(record: UndoRecord): void };
+
+interface ApplicationContext {
+    appService: AppService;
+    infrastructure: InfrastructureFactory;
+    mapRepository: ReturnType<InfrastructureFactory['getMapRepository']>;
+    appStore: AppStore;
+    zoomStore: ZoomStore;
+    selectionStore: SelectionStore;
+    eventBus: EventBus;
+    homesteadLayout: HomesteadLayout;
+    xmlAdapter: ReturnType<InfrastructureFactory['getLayoutAdapter']>;
+    layoutStore?: DockPanelLayoutStore;
+    panelLayoutRepository?: PanelLayoutRepository;
+    undoRedoManager?: UndoRedoManager;
+    undoExecutors?: Record<string, UndoExecutor>;
+    contextMenu?: ContextMenu;
+    _keydownHandler?: (event: KeyboardEvent) => void;
+    exportDialog?: ExportDialog;
+    decorationReportDialog?: DecorationReportDialog;
+    settingsRepository?: SettingsRepository;
+    settingsDialog?: SettingsDialog;
+    themeManager?: ThemeManager;
+    accountDecorationInventory?: AccountDecorationInventory | null;
+    confirmDialog?: ConfirmDialog;
+    toolModeStore?: ToolModeStore;
+    dockManager?: DockManager;
+    decorationListPanel?: DecorationListPanel;
+}
+
+interface DecorationUndoDTO {
+    id: string | number;
+    uid?: string;
+    name: string;
+    position: { x: number; y: number; z?: number; rotation?: number };
+    rotation: number;
+    scale: number;
+}
 
 /**
  * Initialize the entire application with refactored architecture
  * Async function that initializes AppService and all stores
  */
-export async function initializeApplication() {
+export async function initializeApplication(): Promise<ApplicationContext> {
     console.log('[ApplicationInitializer] 🚀 Starting application initialization...');
 
     // Create infrastructure factory
@@ -87,7 +133,7 @@ export async function initializeApplication() {
     appService.registerCommandHandler('ToggleLayerVisibilityCommand', new ToggleLayerVisibilityHandler(homesteadLayout, selectionStore));
 
     // Create application context
-    const context = {
+    const context: ApplicationContext = {
         appService, // Now properly initialized
         infrastructure, // Infrastructure factory for accessing repositories
         mapRepository,
@@ -161,10 +207,12 @@ export async function initializeApplication() {
     // When undo returns a DELETE_LAYER record, re-add the deleted layer with its decorations.
     // When redo returns a DELETE_LAYER record, re-delete the layer.
     console.log('[ApplicationInitializer]   ↳ Registering undo executors...');
-    const undoExecutors = {
+    const undoExecutors: Record<string, UndoExecutor> = {
         DeleteLayerCommand: {
             undo(record) {
-                const { layerId, layerName, isVisible, wasActive, decorations } = record.reverseData;
+                const { layerId, layerName, isVisible, wasActive, decorations } = record.reverseData as unknown as {
+                    layerId: string; layerName: string; isVisible: boolean; wasActive: boolean; decorations: DecorationUndoDTO[];
+                };
                 const layer = new Layer(layerId, layerName, isVisible);
                 for (const dto of decorations) {
                     const position = new WorldCoordinate(
@@ -182,7 +230,7 @@ export async function initializeApplication() {
                 appStoreInstance.dispatch('CREATE_LAYER', layer);
             },
             redo(record) {
-                const { layerId } = record.forwardData;
+                const { layerId } = record.forwardData as { layerId: string };
                 appService.execute({ type: 'DeleteLayerCommand', payload: { layerId } });
             }
         },
@@ -190,7 +238,9 @@ export async function initializeApplication() {
             undo(record) {
                 // reverseData.sourceMapping is { decorationId: sourceLayerId }
                 // reverseData.originalIndices is { decorationId: index }
-                const { sourceMapping, originalIndices } = record.reverseData;
+                const { sourceMapping, originalIndices } = record.reverseData as unknown as {
+                    sourceMapping: Record<string, string>; originalIndices?: Record<string, number>;
+                };
                 // Sort by original index descending so earlier inserts don't shift later ones
                 const entries = Object.entries(sourceMapping)
                     .map(([id, layerId]) => ({ id, layerId, index: (originalIndices && originalIndices[id] !== undefined) ? originalIndices[id] : -1 }))
@@ -200,6 +250,7 @@ export async function initializeApplication() {
                     const currentLayer = homesteadLayout.getDecorationLayer(id);
                     if (currentLayer) {
                         const decoration = currentLayer.getDecoration(id);
+                        if (!decoration) continue;
                         currentLayer.removeDecoration(id);
                         const targetLayer = homesteadLayout.getLayer(layerId);
                         if (targetLayer) {
@@ -214,19 +265,19 @@ export async function initializeApplication() {
                 appStoreInstance.dispatch('MOVE_DECORATIONS', { sourceMapping });
             },
             redo(record) {
-                const { decorationIds, targetLayerId } = record.forwardData;
+                const { decorationIds, targetLayerId } = record.forwardData as { decorationIds: string[]; targetLayerId: string };
                 homesteadLayout.moveDecorations(decorationIds, targetLayerId);
                 appStoreInstance.dispatch('MOVE_DECORATIONS', { decorationIds, targetLayerId });
             }
         },
         CreateLayerCommand: {
             undo(record) {
-                const { layerId } = record.reverseData;
+                const { layerId } = record.reverseData as { layerId: string };
                 homesteadLayout.removeLayer(layerId);
                 appStoreInstance.dispatch('DELETE_LAYER', layerId);
             },
             redo(record) {
-                const { layerId, layerName, isVisible } = record.forwardData;
+                const { layerId, layerName, isVisible } = record.forwardData as { layerId: string; layerName: string; isVisible: boolean };
                 const layer = new Layer(layerId, layerName, isVisible);
                 homesteadLayout.addLayer(layer);
                 appStoreInstance.dispatch('CREATE_LAYER', layer);
@@ -235,7 +286,9 @@ export async function initializeApplication() {
         DeleteDecorationsCommand: {
             undo(record) {
                 // Restore deleted decorations to their original layers at original indices
-                const { removedData } = record.reverseData;
+                const { removedData } = record.reverseData as unknown as {
+                    removedData: Record<string, { sourceLayerId: string; decoration: DecorationUndoDTO; originalIndex: number }>;
+                };
                 // Sort by original index ascending so earlier positions are inserted first
                 const entries = Object.entries(removedData)
                     .map(([id, data]) => ({ id, ...data }))
@@ -259,7 +312,7 @@ export async function initializeApplication() {
                 appStoreInstance.dispatch('DELETE_DECORATIONS', { restored: true });
             },
             redo(record) {
-                const { decorationIds } = record.forwardData;
+                const { decorationIds } = record.forwardData as { decorationIds: string[] };
                 homesteadLayout.removeDecorations(decorationIds);
                 appStoreInstance.dispatch('DELETE_DECORATIONS', { decorationIds });
             }
@@ -268,7 +321,10 @@ export async function initializeApplication() {
             undo(record) {
                 // Re-create the source layer with its original decorations,
                 // removing those decorations from the target layer first.
-                const { sourceLayerId, sourceLayerName, sourceLayerIsVisible, wasActive, targetLayerId, decorationDTOs } = record.reverseData;
+                const { sourceLayerId, sourceLayerName, sourceLayerIsVisible, wasActive, targetLayerId, decorationDTOs } = record.reverseData as unknown as {
+                    sourceLayerId: string; sourceLayerName: string; sourceLayerIsVisible: boolean; wasActive: boolean;
+                    targetLayerId: string; decorationDTOs: DecorationUndoDTO[];
+                };
                 const layer = new Layer(sourceLayerId, sourceLayerName, sourceLayerIsVisible);
                 for (const dto of decorationDTOs) {
                     const position = new WorldCoordinate(
@@ -279,9 +335,9 @@ export async function initializeApplication() {
                     if (dto.uid) decoration.uid = dto.uid;
                     // Remove from target layer if present (use uid — the Layer Map key)
                     const targetLayer = homesteadLayout.getLayer(targetLayerId);
-                    const lookupKey = dto.uid || dto.id;
+                    const lookupKey = String(dto.uid || dto.id);
                     if (targetLayer && targetLayer.getDecoration(lookupKey)) {
-                        targetLayer.removeDecoration(lookupKey);
+                        targetLayer.removeDecoration(String(lookupKey));
                     }
                     layer.addDecoration(decoration);
                 }
@@ -292,7 +348,7 @@ export async function initializeApplication() {
                 appStoreInstance.dispatch('CREATE_LAYER', layer);
             },
             redo(record) {
-                const { sourceLayerId, targetLayerId } = record.forwardData;
+                const { sourceLayerId, targetLayerId } = record.forwardData as { sourceLayerId: string; targetLayerId: string };
                 appService.execute({ type: 'MergeLayerCommand', payload: { sourceLayerId, targetLayerId } });
             }
         }
@@ -318,10 +374,11 @@ export async function initializeApplication() {
 
     // Centralized keyboard shortcut handler (T056)
     console.log('[ApplicationInitializer]   ↳ Setting up centralized keyboard shortcuts...');
-    const keydownHandler = (e) => {
+    const keydownHandler = (e: KeyboardEvent) => {
         // Skip when focus is in input, textarea, or contenteditable
-        const tag = e.target.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) {
+        const target = e.target;
+        if (target instanceof HTMLElement &&
+            (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
             return;
         }
 
@@ -409,7 +466,7 @@ export async function initializeApplication() {
     console.log('[ApplicationInitializer]   ↳ Creating DecorationReportDialog...');
     const decorationReportDialog = new DecorationReportDialog();
     context.decorationReportDialog = decorationReportDialog;
-    eventBus.subscribe('ribbon:report-requested', async ({ layout }) => {
+    eventBus.subscribe<{ layout: HomesteadLayout | null }>('ribbon:report-requested', async ({ layout }) => {
         if (!layout) return;
         const mapName = layout.map?.name ?? '—';
         const layers = layout.layers ? Array.from(layout.layers.values()) : [];
@@ -441,7 +498,7 @@ export async function initializeApplication() {
                 console.log(`[ApplicationInitializer]   ↳ Account inventory loaded: ${context.accountDecorationInventory.size} decoration type(s)`);
             }
         } catch (err) {
-            console.warn('[ApplicationInitializer] ⚠️  Failed to load account decoration inventory:', err.message);
+            console.warn('[ApplicationInitializer] ⚠️  Failed to load account decoration inventory:', err instanceof Error ? err.message : String(err));
         }
     }
 
@@ -459,7 +516,7 @@ export async function initializeApplication() {
     context.confirmDialog = confirmDialog;
 
     // Wire confirm:mapSwitch event from FileDropZone to ConfirmDialog
-    eventBus.subscribe('confirm:mapSwitch', async (data) => {
+    eventBus.subscribe<{ currentMapName: string; newMapName: string; xmlContent: string; fileName: string }>('confirm:mapSwitch', async (data) => {
         const confirmed = await confirmDialog.show({
             title: 'Switch Map?',
             message: `Switching from "${data.currentMapName}" to "${data.newMapName}" will remove all existing layers. This cannot be undone.`,
@@ -487,7 +544,7 @@ export async function initializeApplication() {
     });
 
     // Wire confirm:deleteDecorations event to ConfirmDialog
-    eventBus.subscribe('confirm:deleteDecorations', async (data) => {
+    eventBus.subscribe<{ decorationIds: string[] }>('confirm:deleteDecorations', async (data) => {
         const { decorationIds } = data;
         const count = decorationIds.length;
         const confirmed = await confirmDialog.show({
@@ -513,11 +570,13 @@ export async function initializeApplication() {
     const dockManagerRoot = document.getElementById('dock-manager-root');
     if (dockManagerRoot) {
         console.log('[ApplicationInitializer]   ↳ Creating and mounting DockManager...');
-        const panelContentMap = {
-            map: document.getElementById('chart-container'),
-            layers: document.getElementById('panel-content-layers'),
-            decorationList: document.getElementById('panel-content-decoration-list')
-        };
+        const panelContentMap: Record<string, HTMLElement> = {};
+        const mapContent = document.getElementById('map-container');
+        const layersContent = document.getElementById('panel-content-layers');
+        const decorationListContent = document.getElementById('panel-content-decoration-list');
+        if (mapContent) panelContentMap.map = mapContent;
+        if (layersContent) panelContentMap.layers = layersContent;
+        if (decorationListContent) panelContentMap.decorationList = decorationListContent;
         const dockManager = new DockManager(dockManagerRoot, layoutStore, panelContentMap, appService, eventBus, appStoreInstance, zoomStoreInstance, undoRedoManager, toolModeStore);
         dockManager.mount();
         context.dockManager = dockManager;
@@ -533,24 +592,6 @@ export async function initializeApplication() {
         context.decorationListPanel = decorationListPanel;
     }
 
-    // Create shared ContextMenu instance
-    console.log('[ApplicationInitializer]   ↳ Creating shared ContextMenu...');
-    const contextMenu = new ContextMenu();
-    context.contextMenu = contextMenu;
-
-    // Wire ContextMenu into components that use it
-    if (context.decorationListPanel) {
-        context.decorationListPanel.setContextMenu(contextMenu);
-    }
-
-    // Create DecorationInfoDialog and wire into DecorationListPanel
-    console.log('[ApplicationInitializer]   ↳ Creating DecorationInfoDialog...');
-    const decorationInfoDialog = new DecorationInfoDialog();
-    context.decorationInfoDialog = decorationInfoDialog;
-    if (context.decorationListPanel) {
-        context.decorationListPanel.setDecorationInfoDialog(decorationInfoDialog);
-    }
-
     // Set up event flow: Stores -> Event Bus
     console.log('[ApplicationInitializer]   ↳ Setting up event bindings...');
     setupEventBindings(context);
@@ -562,7 +603,7 @@ export async function initializeApplication() {
     // Wire screen-reader announcements for selection changes
     const announcer = document.getElementById('selection-announcer');
     if (announcer) {
-        eventBus.subscribe('selection:changed', (data) => {
+        eventBus.subscribe<{ selectedIds?: string[] }>('selection:changed', (data) => {
             const count = data.selectedIds ? data.selectedIds.length : 0;
             if (count === 0) {
                 announcer.textContent = 'Selection cleared';
@@ -584,7 +625,7 @@ export async function initializeApplication() {
  * @param {Object} context - Application context from initializeApplication()
  * @param {AppService} appServiceInstance - Instance of AppService from server/loader
  */
-export function deferredInitialize(context, appServiceInstance) {
+export function deferredInitialize(context: ApplicationContext, appServiceInstance: AppService): void {
     context.appService = appServiceInstance;
 
     // Connect AppService events to AppStore (if not already done)
@@ -597,7 +638,7 @@ export function deferredInitialize(context, appServiceInstance) {
  * @param {Object} context - Application context with all services
  * @private
  */
-function setupEventBindings(context) {
+function setupEventBindings(context: ApplicationContext): void {
     console.log('[ApplicationInitializer] ⚡ Setting up event bindings...');
     const { appStore, zoomStore, selectionStore, eventBus } = context;
 
@@ -612,7 +653,7 @@ function setupEventBindings(context) {
     console.log('[ApplicationInitializer]   ↳ Binding ZoomStore to EventBus (zoom:changed, pan:changed)...');
     const zoomEmitter = zoomStore.getEmitter();
     if (zoomEmitter) {
-        zoomEmitter.on('change', (zoomState) => {
+        zoomEmitter.on('change', (zoomState: Record<string, unknown>) => {
             console.log('[ApplicationInitializer] 🔄 ZoomStore state changed, publishing to EventBus');
             eventBus.publish('zoom:changed', zoomState);
             eventBus.publish('pan:changed', zoomState);
@@ -624,7 +665,7 @@ function setupEventBindings(context) {
     // Subscribe to SelectionStore changes
     console.log('[ApplicationInitializer]   ↳ Binding SelectionStore to EventBus (selection:changed)...');
     if (selectionStore && selectionStore.on && typeof selectionStore.on === 'function') {
-        selectionStore.on('change', (selection) => {
+        selectionStore.on('change', (selection: Record<string, unknown>) => {
             console.log('[ApplicationInitializer] 🔄 SelectionStore state changed, publishing to EventBus');
             eventBus.publish('selection:changed', selection);
         });
@@ -641,7 +682,7 @@ function setupEventBindings(context) {
  * @param {Object} context - Application context with all services
  * @private
  */
-function setupAppServiceEventBindings(context) {
+function setupAppServiceEventBindings(context: ApplicationContext): void {
     console.log('[ApplicationInitializer] ⚡ Setting up AppService event bindings...');
     const { appService, appStore, eventBus } = context;
 
@@ -651,28 +692,28 @@ function setupAppServiceEventBindings(context) {
     }
 
     // When a layout is loaded, update AppStore
-    appService.subscribe('LayoutLoadedEvent', (event) => {
+    appService.subscribe<{ layout: HomesteadLayout }>('LayoutLoadedEvent', (event) => {
         console.log('[Event Flow] LayoutLoadedEvent → AppStore.dispatch + EventBus.publish');
         appStore.dispatch('LOAD_LAYOUT', event.layout);
         eventBus.publish('layout:loaded', event);
     });
 
     // When a layer is created, update AppStore
-    appService.subscribe('LayerCreatedEvent', (event) => {
+    appService.subscribe<{ layer: Layer }>('LayerCreatedEvent', (event) => {
         console.log('[Event Flow] LayerCreatedEvent → AppStore.dispatch + EventBus.publish');
         appStore.dispatch('CREATE_LAYER', event.layer);
         eventBus.publish('layer:created', event);
     });
 
     // When a layer is deleted, update AppStore
-    appService.subscribe('LayerDeletedEvent', (event) => {
+    appService.subscribe<{ layerId: string }>('LayerDeletedEvent', (event) => {
         console.log('[Event Flow] LayerDeletedEvent → AppStore.dispatch + EventBus.publish');
         appStore.dispatch('DELETE_LAYER', event.layerId);
         eventBus.publish('layer:deleted', event);
     });
 
     // When a layer is renamed, update AppStore
-    appService.subscribe('LayerRenamedEvent', (event) => {
+    appService.subscribe<{ layerId: string; newName: string }>('LayerRenamedEvent', (event) => {
         console.log('[Event Flow] LayerRenamedEvent → AppStore.dispatch + EventBus.publish');
         appStore.dispatch('RENAME_LAYER', {
             layerId: event.layerId,
@@ -682,7 +723,7 @@ function setupAppServiceEventBindings(context) {
     });
 
     // When a decoration is added, update AppStore
-    appService.subscribe('DecorationAddedEvent', (event) => {
+    appService.subscribe<{ layerId: string; decoration: Decoration }>('DecorationAddedEvent', (event) => {
         console.log('[Event Flow] DecorationAddedEvent → AppStore.dispatch + EventBus.publish');
         appStore.dispatch('ADD_DECORATION', {
             layerId: event.layerId,
@@ -692,7 +733,7 @@ function setupAppServiceEventBindings(context) {
     });
 
     // When a decoration is deleted, update AppStore
-    appService.subscribe('DecorationDeletedEvent', (event) => {
+    appService.subscribe<{ layerId: string; decorationId: string }>('DecorationDeletedEvent', (event) => {
         console.log('[Event Flow] DecorationDeletedEvent → AppStore.dispatch + EventBus.publish');
         appStore.dispatch('DELETE_DECORATION', {
             layerId: event.layerId,
@@ -702,14 +743,14 @@ function setupAppServiceEventBindings(context) {
     });
 
     // When a layer is selected, update SelectionStore
-    appService.subscribe('LayerSelectedEvent', (event) => {
+    appService.subscribe<{ layerId: string }>('LayerSelectedEvent', (event) => {
         console.log('[Event Flow] LayerSelectedEvent → SelectionStore.setActiveLayer + EventBus.publish');
         context.selectionStore.setActiveLayer(event.layerId);
         eventBus.publish('layer:selected', event);
     });
 
     // When a decoration is updated, update AppStore
-    appService.subscribe('DecorationUpdatedEvent', (event) => {
+    appService.subscribe<{ layerId: string; decoration: Decoration }>('DecorationUpdatedEvent', (event) => {
         console.log('[Event Flow] DecorationUpdatedEvent → AppStore.dispatch + EventBus.publish');
         appStore.dispatch('UPDATE_DECORATION', {
             layerId: event.layerId,
@@ -719,7 +760,7 @@ function setupAppServiceEventBindings(context) {
     });
 
     // When layer visibility is toggled, update AppStore
-    appService.subscribe('LayerVisibilityToggledEvent', (event) => {
+    appService.subscribe<{ layerId: string; isVisible: boolean }>('LayerVisibilityToggledEvent', (event) => {
         console.log('[Event Flow] LayerVisibilityToggledEvent → AppStore.dispatch + EventBus.publish');
         appStore.dispatch('TOGGLE_LAYER_VISIBILITY', {
             layerId: event.layerId,
@@ -729,7 +770,7 @@ function setupAppServiceEventBindings(context) {
     });
 
     // When layer color is changed, update AppStore
-    appService.subscribe('LayerColorChangedEvent', (event) => {
+    appService.subscribe<{ layerId: string; color: string }>('LayerColorChangedEvent', (event) => {
         console.log('[Event Flow] LayerColorChangedEvent → AppStore.dispatch + EventBus.publish');
         appStore.dispatch('SET_LAYER_COLOR', {
             layerId: event.layerId,
@@ -739,7 +780,7 @@ function setupAppServiceEventBindings(context) {
     });
 
     // When decorations are moved between layers, update AppStore
-    appService.subscribe('DecorationsMovedEvent', (event) => {
+    appService.subscribe<{ decorationIds: string[]; targetLayerId: string; sourceMapping: Record<string, string> }>('DecorationsMovedEvent', (event) => {
         console.log('[Event Flow] DecorationsMovedEvent → AppStore.dispatch + EventBus.publish');
         appStore.dispatch('MOVE_DECORATIONS', {
             decorationIds: event.decorationIds,
@@ -750,7 +791,7 @@ function setupAppServiceEventBindings(context) {
     });
 
     // When decorations are deleted, update AppStore
-    appService.subscribe('DecorationsDeletedEvent', (event) => {
+    appService.subscribe<{ decorationIds: string[]; sourceMapping: Record<string, string> }>('DecorationsDeletedEvent', (event) => {
         console.log('[Event Flow] DecorationsDeletedEvent → AppStore.dispatch + EventBus.publish');
         appStore.dispatch('DELETE_DECORATIONS', {
             decorationIds: event.decorationIds,
@@ -760,16 +801,17 @@ function setupAppServiceEventBindings(context) {
     });
 
     // When zoom is changed, update ZoomStore
-    appService.subscribe('ZoomChangedEvent', (event) => {
+    appService.subscribe<{ newZoom: number }>('ZoomChangedEvent', (event) => {
         console.log('[Event Flow] ZoomChangedEvent → ZoomStore.setZoom + EventBus.publish');
-        context.zoomStore.setZoom(event.zoomLevel);
+        const currentZoom = context.zoomStore.transform.scaleX;
+        context.zoomStore.zoom(event.newZoom / currentZoom);
         eventBus.publish('zoom:changed', event);
     });
 
     // When pan is changed, update ZoomStore
-    appService.subscribe('PanChangedEvent', (event) => {
+    appService.subscribe<{ newPan: { x: number; y: number } }>('PanChangedEvent', (event) => {
         console.log('[Event Flow] PanChangedEvent → ZoomStore.setPan + EventBus.publish');
-        context.zoomStore.setPan(event.panX, event.panY);
+        context.zoomStore.pan(event.newPan.x, event.newPan.y);
         eventBus.publish('pan:changed', event);
     });
 }
@@ -782,7 +824,7 @@ function setupAppServiceEventBindings(context) {
  * @param {Object} commandData - Command data/payload
  * @returns {*} Result from command execution
  */
-export function executeCommand(context, commandName, commandData) {
+export function executeCommand(context: ApplicationContext, commandName: string, commandData: Record<string, unknown>): unknown {
     const { appService } = context;
 
     if (!appService) {
@@ -814,7 +856,7 @@ export function executeCommand(context, commandName, commandData) {
  * @param {Object} queryData - Query data/payload
  * @returns {*} Result from query execution
  */
-export function executeQuery(context, queryName, queryData) {
+export function executeQuery(context: ApplicationContext, queryName: string, queryData: Record<string, unknown>): unknown {
     const { appService } = context;
 
     if (!appService) {

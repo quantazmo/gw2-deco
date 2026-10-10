@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * StackPanelHandler
  * Handles StackPanelCommand: removes the dragged panel from its current position
@@ -19,17 +18,19 @@ import {
     removeNode,
     replaceNode,
 } from '../../domain/DockLayoutConfiguration.js';
+import { DockPanelLayoutStore } from '../../ui/stores/DockPanelLayoutStore.ts';
+import { StackPanelCommand } from '../commands/StackPanelCommand.ts';
 
 const VALID_EDGES = ['top', 'bottom', 'left', 'right'];
 const DEFAULT_SPLIT_RATIO = 0.5;
 
 export class StackPanelHandler {
-    layoutStore: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layoutStore: DockPanelLayoutStore;
 
     /**
      * @param {import('../../ui/stores/LayoutStore.js').LayoutStore} layoutStore
      */
-    constructor(layoutStore: unknown) {
+    constructor(layoutStore: DockPanelLayoutStore) {
         this.layoutStore = layoutStore;
     }
 
@@ -37,11 +38,11 @@ export class StackPanelHandler {
      * @param {import('../commands/StackPanelCommand.js').StackPanelCommand} command
      * @returns {DockLayoutConfiguration}
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: StackPanelCommand): DockLayoutConfiguration {
         return this.handle(command);
     }
 
-    handle(command: any) { // TODO: typed command interface pending domain migration
+    handle(command: StackPanelCommand): DockLayoutConfiguration {
         const { draggedPanelId, targetPanelId, edge } = command;
 
         if (draggedPanelId === targetPanelId) {
@@ -97,6 +98,9 @@ export class StackPanelHandler {
             n => n === targetNode,
             replacementNode
         );
+        if (!newTree) {
+            throw new Error(`StackPanelHandler: failed to replace target panel "${targetPanelId}"`);
+        }
 
         // 5. Validate and commit
         const newLayout = new DockLayoutConfiguration(newTree, currentLayout.version);

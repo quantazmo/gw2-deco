@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ResizeDockHandler
  * Handles ResizeDockCommand: finds a SplitNode by path, updates its ratio with
@@ -13,6 +12,9 @@
 
 import {
     DockLayoutConfiguration,
+    DockLayoutNode,
+    DockNodePath,
+    SplitNode,
     createSplitNode,
     findNode,
 } from '../../domain/DockLayoutConfiguration.js';
@@ -30,7 +32,7 @@ import { LAYOUT, PANEL_IDS } from '../../config/constants.js';
  * @param {string[]} path  e.g. ['second', 'first']
  * @returns {object|null}
  */
-function findNodeAtPath(tree, path) {
+function findNodeAtPath(tree: DockLayoutNode, path: DockNodePath): DockLayoutNode | null {
     let node = tree;
     for (const segment of path) {
         if (!node || node.type !== 'split') return null;
@@ -48,8 +50,10 @@ function findNodeAtPath(tree, path) {
  * @param {Function} updater
  * @returns {object} New tree with the updated node
  */
-function updateNodeAtPath(tree, path, updater) {
-    if (path.length === 0) return updater(tree);
+function updateNodeAtPath(tree: DockLayoutNode, path: DockNodePath, updater: (node: SplitNode) => SplitNode): DockLayoutNode {
+    if (path.length === 0) {
+        return tree.type === 'split' ? updater(tree) : tree;
+    }
 
     const [head, ...rest] = path;
     if (!tree || tree.type !== 'split') return tree;
@@ -76,7 +80,7 @@ function updateNodeAtPath(tree, path, updater) {
  * @param {object} subtree
  * @returns {boolean}
  */
-function containsMap(subtree) {
+function containsMap(subtree: DockLayoutNode): boolean {
     return findNode(subtree, n => n.type === 'panel' && n.panelId === PANEL_IDS.MAP) !== null;
 }
 
@@ -85,12 +89,12 @@ function containsMap(subtree) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export class ResizeDockHandler {
-    layoutStore: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layoutStore: import('../../ui/stores/DockPanelLayoutStore.ts').DockPanelLayoutStore;
 
     /**
      * @param {import('../../ui/stores/LayoutStore.js').LayoutStore} layoutStore
      */
-    constructor(layoutStore: unknown) {
+    constructor(layoutStore: import('../../ui/stores/DockPanelLayoutStore.ts').DockPanelLayoutStore) {
         this.layoutStore = layoutStore;
     }
 
@@ -98,11 +102,11 @@ export class ResizeDockHandler {
      * @param {import('../commands/ResizeDockCommand.js').ResizeDockCommand} command
      * @returns {DockLayoutConfiguration}
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: import('../commands/ResizeDockCommand.ts').ResizeDockCommand): DockLayoutConfiguration {
         return this.handle(command);
     }
 
-    handle(command: any) { // TODO: typed command interface pending domain migration
+    handle(command: import('../commands/ResizeDockCommand.ts').ResizeDockCommand): DockLayoutConfiguration {
         const { splitNodePath, newRatio } = command;
         const currentLayout = this.layoutStore.getState();
 

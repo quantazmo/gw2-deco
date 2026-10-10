@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for ContextMenu — targeting uncovered branches.
  * Uncovered lines: 37 (left overflow clamp), 40 (top overflow clamp),

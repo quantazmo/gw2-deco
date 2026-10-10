@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for src/domain/HomesteadLayout.js
  * Covers: validateState, toDTO, fromDTO, clone, equals, toString,

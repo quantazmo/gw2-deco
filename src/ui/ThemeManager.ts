@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ThemeManager
  * Applies the user's preferred color theme to the document root element
@@ -15,7 +14,7 @@ export class ThemeManager {
      * Apply the given theme preference.
      * @param {'light'|'dark'|'system'} theme
      */
-    apply(theme) {
+    apply(theme: 'light' | 'dark' | 'system'): void {
         if (theme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
         } else if (theme === 'light') {
@@ -31,7 +30,7 @@ export class ThemeManager {
      * Returns 'dark' when dark mode is active, 'light' otherwise.
      * @returns {'light'|'dark'}
      */
-    getEffective() {
+    getEffective(): 'dark' | 'light' {
         const attr = document.documentElement.getAttribute('data-theme');
         if (attr === 'dark') return 'dark';
         if (attr === 'light') return 'light';

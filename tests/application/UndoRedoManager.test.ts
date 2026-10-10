@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/application/UndoRedoManager.js
  * Tests push/undo/redo cycles, redo-clear-on-new-action, max size eviction,

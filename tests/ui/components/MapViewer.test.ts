@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 vi.mock('../../../src/ui/renderHelpers.js', () => ({
     createGroup: (opts) => {

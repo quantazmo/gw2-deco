@@ -3,6 +3,11 @@
         "target": "ES2025",
         "module": "ESNext",
         "moduleResolution": "bundler",
+        "types": [
+            "vitest/globals",
+            "node",
+            "vite/client"
+        ],
         "lib": [
             "ES2025",
             "DOM",

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for ConfirmDialog — targeting uncovered branches.
  * Uncovered lines: 38 (showModal fallback), 114 (close fallback), 128-129 (destroy)

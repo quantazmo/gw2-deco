@@ -4,12 +4,16 @@
  */
 import { MapBoundary } from './MapBoundary.ts';
 
+export type MapTile =
+    | { mapCoords: { x: number; y: number }; tileSize: number; url: string; mapTile?: { x: number; y: number } }
+    | { x: number; y: number; z?: number; mapCoords?: { x: number; y: number }; tileSize?: number; url?: string; mapTile?: { x: number; y: number } };
+
 export class GW2Map {
     id: number;
     name: string;
     continent_id: number;
     floor: number;
-    tiles: unknown[];
+    tiles: MapTile[];
     boundary: MapBoundary | null;
     rect: { min: { x: number; y: number }; max: { x: number; y: number }; width: number; height: number } | null;
 
@@ -52,7 +56,7 @@ export class GW2Map {
     /**
      * Set the tiles for this map
      */
-    setTiles(tiles: unknown[]): void {
+    setTiles(tiles: MapTile[]): void {
         if (!Array.isArray(tiles)) {
             throw new Error('GW2Map.setTiles: tiles must be an array');
         }
@@ -62,7 +66,7 @@ export class GW2Map {
     /**
      * Add a tile to the map
      */
-    addTile(tile: unknown): void {
+    addTile(tile: MapTile): void {
         if (!tile) {
             throw new Error('GW2Map.addTile: tile cannot be null');
         }
@@ -189,7 +193,7 @@ export class GW2Map {
         const map = new GW2Map(dto.id as number, dto.name as string, dto.continent_id as number, (dto.floor as number) ?? 0);
 
         if (dto.tiles) {
-            map.setTiles(dto.tiles as unknown[]);
+            map.setTiles(dto.tiles as MapTile[]);
         }
 
         if (dto.boundary) {

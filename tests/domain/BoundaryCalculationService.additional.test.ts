@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for src/domain/BoundaryCalculationService.js
  * Covers: expandBoundsToAspectRatio, centerBoundsInViewport, calculateCenteringPadding,

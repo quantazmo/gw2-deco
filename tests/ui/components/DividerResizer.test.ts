@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for DividerResizer — covers mouse-drag interaction (lines 58-122).
  */

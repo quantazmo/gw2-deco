@@ -1,9 +1,22 @@
-// @ts-nocheck
 /**
  * renderHelpers.js
  * SVG rendering utilities for map visualization
  * Functions for creating SVG elements with proper scaling and positioning
  */
+
+type SvgAttributeValue = string | number;
+type SvgAttributes = Record<string, SvgAttributeValue>;
+type SvgStyleOptions = {
+    fill?: string;
+    stroke?: string;
+    strokeWidth?: number;
+    className?: string;
+    opacity?: number;
+};
+type SvgTextOptions = SvgStyleOptions & { fontSize?: string; textAnchor?: string };
+type SvgGroupOptions = { className?: string; id?: string };
+type SvgTransform = { tx?: number; ty?: number; sx?: number; sy?: number; rotation?: number };
+type CoordinateTransform = { sx: number; sy: number; tx: number; ty: number };
 
 /**
  * Create an SVG element
@@ -11,14 +24,14 @@
  * @param {Object} attributes - Attributes to set
  * @returns {SVGElement}
  */
-function createSvgElement(tagName, attributes = {}) {
+function createSvgElement<K extends keyof SVGElementTagNameMap>(tagName: K, attributes: SvgAttributes = {}): SVGElementTagNameMap[K] {
     const element = document.createElementNS('http://www.w3.org/2000/svg', tagName);
 
     Object.entries(attributes).forEach(([key, value]) => {
-        element.setAttribute(key, value);
+        element.setAttribute(key, String(value));
     });
 
-    return element;
+    return element as SVGElementTagNameMap[K];
 }
 
 /**
@@ -34,8 +47,8 @@ function createSvgElement(tagName, attributes = {}) {
  * @param {number} options.opacity - Opacity (0-1)
  * @returns {SVGCircleElement}
  */
-function createCircle(cx, cy, radius, options = {}) {
-    const attributes = {
+function createCircle(cx: number, cy: number, radius: number, options: SvgStyleOptions = {}): SVGCircleElement {
+    const attributes: SvgAttributes = {
         cx,
         cy,
         r: radius
@@ -61,10 +74,10 @@ function createCircle(cx, cy, radius, options = {}) {
  * @param {number} options.opacity - Opacity (0-1)
  * @returns {SVGPolygonElement}
  */
-function createPolygon(points, options = {}) {
+function createPolygon(points: Array<[number, number]>, options: SvgStyleOptions = {}): SVGPolygonElement {
     const pointsString = points.map(([x, y]) => `${x},${y}`).join(' ');
 
-    const attributes = {
+    const attributes: SvgAttributes = {
         points: pointsString
     };
 
@@ -87,10 +100,10 @@ function createPolygon(points, options = {}) {
  * @param {number} options.opacity - Opacity (0-1)
  * @returns {SVGPolylineElement}
  */
-function createPolyline(points, options = {}) {
+function createPolyline(points: Array<[number, number]>, options: SvgStyleOptions = {}): SVGPolylineElement {
     const pointsString = points.map(([x, y]) => `${x},${y}`).join(' ');
 
-    const attributes = {
+    const attributes: SvgAttributes = {
         points: pointsString,
         fill: 'none'
     };
@@ -116,8 +129,8 @@ function createPolyline(points, options = {}) {
  * @param {string} options.className - CSS class
  * @returns {SVGRectElement}
  */
-function createRect(x, y, width, height, options = {}) {
-    const attributes = {
+function createRect(x: number, y: number, width: number, height: number, options: SvgStyleOptions = {}): SVGRectElement {
+    const attributes: SvgAttributes = {
         x,
         y,
         width,
@@ -144,8 +157,8 @@ function createRect(x, y, width, height, options = {}) {
  * @param {string} options.className - CSS class
  * @returns {SVGLineElement}
  */
-function createLine(x1, y1, x2, y2, options = {}) {
-    const attributes = {
+function createLine(x1: number, y1: number, x2: number, y2: number, options: SvgStyleOptions = {}): SVGLineElement {
+    const attributes: SvgAttributes = {
         x1,
         y1,
         x2,
@@ -171,8 +184,8 @@ function createLine(x1, y1, x2, y2, options = {}) {
  * @param {string} options.className - CSS class
  * @returns {SVGTextElement}
  */
-function createText(text, x, y, options = {}) {
-    const attributes = {
+function createText(text: string, x: number, y: number, options: SvgTextOptions = {}): SVGTextElement {
+    const attributes: SvgAttributes = {
         x,
         y
     };
@@ -195,8 +208,8 @@ function createText(text, x, y, options = {}) {
  * @param {string} options.id - Element ID
  * @returns {SVGGElement}
  */
-function createGroup(options = {}) {
-    const attributes = {};
+function createGroup(options: SvgGroupOptions = {}): SVGGElement {
+    const attributes: SvgAttributes = {};
 
     if (options.className) attributes.class = options.className;
     if (options.id) attributes.id = options.id;
@@ -214,8 +227,8 @@ function createGroup(options = {}) {
  * @param {string} options.className - CSS class
  * @returns {SVGPathElement}
  */
-function createPath(d, options = {}) {
-    const attributes = {
+function createPath(d: string, options: SvgStyleOptions = {}): SVGPathElement {
+    const attributes: SvgAttributes = {
         d
     };
 
@@ -232,9 +245,9 @@ function createPath(d, options = {}) {
  * @param {SVGElement} element
  * @param {Object} attributes
  */
-function setSvgAttributes(element, attributes) {
+function setSvgAttributes(element: SVGElement, attributes: SvgAttributes): void {
     Object.entries(attributes).forEach(([key, value]) => {
-        element.setAttribute(key, value);
+        element.setAttribute(key, String(value));
     });
 }
 
@@ -244,7 +257,7 @@ function setSvgAttributes(element, attributes) {
  * @param {string} attributeName
  * @returns {string|null}
  */
-function getSvgAttribute(element, attributeName) {
+function getSvgAttribute(element: SVGElement, attributeName: string): string | null {
     return element.getAttribute(attributeName);
 }
 
@@ -258,7 +271,7 @@ function getSvgAttribute(element, attributeName) {
  * @param {number} transform.sy - Scale y
  * @param {number} transform.rotation - Rotation in degrees
  */
-function transformElement(element, transform = {}) {
+function transformElement(element: SVGElement, transform: SvgTransform = {}): void {
     const parts = [];
 
     if (transform.tx !== undefined || transform.ty !== undefined) {
@@ -285,10 +298,10 @@ function transformElement(element, transform = {}) {
  * @param {number} cy - Center y
  * @param {number} radius - Radius
  */
-function updateCircle(circle, cx, cy, radius) {
-    circle.setAttribute('cx', cx);
-    circle.setAttribute('cy', cy);
-    circle.setAttribute('r', radius);
+function updateCircle(circle: SVGCircleElement, cx: number, cy: number, radius: number): void {
+    circle.setAttribute('cx', String(cx));
+    circle.setAttribute('cy', String(cy));
+    circle.setAttribute('r', String(radius));
 }
 
 /**
@@ -296,7 +309,7 @@ function updateCircle(circle, cx, cy, radius) {
  * @param {SVGPolygonElement} polygon
  * @param {Array<[number, number]>} points - Array of [x, y] coordinates
  */
-function updatePolygon(polygon, points) {
+function updatePolygon(polygon: SVGPolygonElement, points: Array<[number, number]>): void {
     const pointsString = points.map(([x, y]) => `${x},${y}`).join(' ');
     polygon.setAttribute('points', pointsString);
 }
@@ -308,7 +321,7 @@ function updatePolygon(polygon, points) {
  * @param {Object} transform - Transform object with sx, sy, tx, ty
  * @returns {Object} {x, y} screen coordinates
  */
-function worldToScreen(x, y, transform) {
+function worldToScreen(x: number, y: number, transform: CoordinateTransform): { x: number; y: number } {
     return {
         x: x * transform.sx + transform.tx,
         y: y * transform.sy + transform.ty
@@ -322,7 +335,7 @@ function worldToScreen(x, y, transform) {
  * @param {Object} transform - Transform object with sx, sy, tx, ty
  * @returns {Object} {x, y} world coordinates
  */
-function screenToWorld(screenX, screenY, transform) {
+function screenToWorld(screenX: number, screenY: number, transform: CoordinateTransform): { x: number; y: number } {
     return {
         x: (screenX - transform.tx) / transform.sx,
         y: (screenY - transform.ty) / transform.sy

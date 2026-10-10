@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Handler for DeleteLayerCommand
  * Produces an UndoRecord containing the deleted layer and all its decorations for undo.
@@ -7,18 +6,24 @@
 import { LayerId } from '../../domain/LayerId.js';
 import { LayerDeletedEvent } from '../../domain/events/LayerDeletedEvent.js';
 import { UndoRecord } from '../UndoRecord.js';
+import { UndoRedoManager } from '../UndoRedoManager.ts';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
+
+type LayerSelectionStore = {
+    deselectByLayer(layerId: string, decorationBelongsToLayer: (id: string) => boolean): void;
+};
 
 export class DeleteLayerHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
-    selectionStore: any; // JS domain object � fully typed once domain migrates to TypeScript
-    undoRedoManager: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
+    selectionStore: LayerSelectionStore | null;
+    undoRedoManager: UndoRedoManager | null;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      * @param {SelectionStore} [selectionStore] - Optional selection store for auto-deselect
      * @param {UndoRedoManager} [undoRedoManager] - Optional undo/redo manager for undo support
      */
-    constructor(layout: unknown, selectionStore: unknown = null, undoRedoManager: unknown = null) {
+    constructor(layout: HomesteadLayout, selectionStore: LayerSelectionStore | null = null, undoRedoManager: UndoRedoManager | null = null) {
         this.layout = layout;
         this.selectionStore = selectionStore || null;
         this.undoRedoManager = undoRedoManager || null;
@@ -28,7 +33,7 @@ export class DeleteLayerHandler {
      * Executes the delete layer command
      * @param {DeleteLayerCommand} command - The command to execute
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: { layerId: string }): void {
         const layerId = new LayerId(command.layerId);
         const layer = this.layout.getLayer(layerId.id);
 

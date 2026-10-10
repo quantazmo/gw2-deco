@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Handler for LoadAdditionalLayoutCommand
  * Parses XML layout and adds it as a new layer to the existing layout.
@@ -8,18 +7,20 @@ import { Layer } from '../../domain/Layer.js';
 import { Decoration } from '../../domain/Decoration.js';
 import { WorldCoordinate } from '../../domain/WorldCoordinate.js';
 import { LayerCreatedEvent } from '../../domain/events/LayerCreatedEvent.js';
-import { XmlLayoutAdapter } from '../../infrastructure/XmlLayoutAdapter.js';
+import { ParsedLayoutData, XmlLayoutAdapter } from '../../infrastructure/XmlLayoutAdapter.js';
 import { LAYER_COLORS } from '../../config/constants.js';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
+import { LoadAdditionalLayoutCommand } from '../commands/LoadAdditionalLayoutCommand.ts';
 
 export class LoadAdditionalLayoutHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
-    xmlAdapter: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
+    xmlAdapter: XmlLayoutAdapter;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      * @param {XmlLayoutAdapter} xmlAdapter - XML layout adapter
      */
-    constructor(layout: unknown, xmlAdapter: unknown) {
+    constructor(layout: HomesteadLayout, xmlAdapter: XmlLayoutAdapter) {
         this.layout = layout;
         this.xmlAdapter = xmlAdapter;
     }
@@ -29,7 +30,7 @@ export class LoadAdditionalLayoutHandler {
      * @param {Object} command - The command payload with xmlContent and fileName
      * @returns {Object} Result: success with layer info, or requiresConfirmation
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: LoadAdditionalLayoutCommand) {
         const { xmlContent, fileName } = command;
 
         if (!xmlContent || typeof xmlContent !== 'string' || xmlContent.trim().length === 0) {
@@ -45,13 +46,14 @@ export class LoadAdditionalLayoutHandler {
         const newMapName = layoutData.name;
 
         // If no map is loaded yet (first load), this is handled as a first-load
-        if (!this.layout.hasMapLoaded()) {
+        const currentMap = this.layout.map;
+        if (!this.layout.hasMapLoaded() || !currentMap) {
             return this._createLayerFromLayout(layoutData, fileName);
         }
 
         // Compare map IDs
-        const currentMapId = this.layout.map.id;
-        const currentMapName = this.layout.map.name || 'Unknown';
+        const currentMapId = currentMap.id;
+        const currentMapName = currentMap.name || 'Unknown';
 
         if (String(currentMapId) !== String(newMapId)) {
             // Different map — return confirmation request
@@ -75,7 +77,7 @@ export class LoadAdditionalLayoutHandler {
      * Creates a layer from parsed layout data and adds it to the layout
      * @private
      */
-    _createLayerFromLayout(layoutData, fileName) {
+    _createLayerFromLayout(layoutData: ParsedLayoutData, fileName: string) {
         // Generate unique layer ID
         const layerId = `layer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -85,7 +87,7 @@ export class LoadAdditionalLayoutHandler {
             : `Layer ${this.layout.getLayerCount() + 1}`;
 
         // Pick a random unused palette color for the new layer
-        const usedColors = new Set(this.layout.getAllLayers().map((l: any) => l.color));
+        const usedColors = new Set(this.layout.getAllLayers().map(layer => layer.color));
         const unusedColors = (LAYER_COLORS as readonly string[]).filter(c => !usedColors.has(c));
         const pool = unusedColors.length > 0 ? unusedColors : (LAYER_COLORS as readonly string[]);
         const color = pool[Math.floor(Math.random() * pool.length)];
@@ -123,12 +125,11 @@ export class LoadAdditionalLayoutHandler {
         this.layout.addLayer(layer);
 
         // Emit domain event
-        const event = new LayerCreatedEvent(
+        const event = Object.assign(new LayerCreatedEvent(
             this.layout.id,
             layerId,
             layerName
-        );
-        (event as any).layer = layer; // attach convenience property not in domain Event base type
+        ), { layer });
         this.layout.addEvent(event);
 
         return {
@@ -143,7 +144,7 @@ export class LoadAdditionalLayoutHandler {
      * Fallback sync parse using XmlLayoutAdapter static methods
      * @private
      */
-    _parseSync(xmlContent) {
+    _parseSync(xmlContent: string): ParsedLayoutData {
         const validation = XmlLayoutAdapter.validateXmlString(xmlContent);
         if (!validation.isValid) {
             throw new Error(`XML validation failed: ${validation.errors.join(', ')}`);

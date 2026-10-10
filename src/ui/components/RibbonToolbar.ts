@@ -1,6 +1,16 @@
-// @ts-nocheck
 import { LoadFromUrlDialog } from './LoadFromUrlDialog.js';
 import { DecorationReportDialog } from './DecorationReportDialog.js';
+import { AppService } from '../../application/AppService.ts';
+import { AppStore } from '../stores/AppStore.ts';
+import { ZoomStore } from '../stores/ZoomStore.ts';
+import { EventBus } from '../EventBus.ts';
+import { UndoRedoManager } from '../../application/UndoRedoManager.ts';
+import { ToolModeStore } from '../stores/ToolModeStore.ts';
+
+type RibbonWindow = Window & {
+    openFileDialog?: () => void;
+    completeLayoutLoadingWorkflow?: (xmlContent: string, fileName: string) => Promise<void>;
+};
 /**
  * RibbonToolbar
  * Fixed top-of-viewport ribbon toolbar organised into command groups:
@@ -16,6 +26,23 @@ import { DecorationReportDialog } from './DecorationReportDialog.js';
  */
 
 export class RibbonToolbar {
+    private _appService: AppService;
+    private _appStore: AppStore | null;
+    private _zoomStore: ZoomStore;
+    private _eventBus: EventBus | null;
+    private _undoRedoManager: UndoRedoManager | null;
+    private _toolModeStore: ToolModeStore | null;
+    private _element: HTMLElement | null;
+    private _exportBtn: HTMLButtonElement | null;
+    private _undoBtn: HTMLButtonElement | null;
+    private _redoBtn: HTMLButtonElement | null;
+    private _panBtn: HTMLButtonElement | null;
+    private _selectBtn: HTMLButtonElement | null;
+    private _reportBtn: HTMLButtonElement | null;
+    private _loadFromUrlDialog: LoadFromUrlDialog | null;
+    private _decorationReportDialog: DecorationReportDialog | null;
+    private _unsubscribers: Array<() => void>;
+
     /**
      * @param {object}  appService       AppService for executing commands
      * @param {object}  appStore         AppStore (reads layout state for Export disabled)
@@ -24,7 +51,7 @@ export class RibbonToolbar {
      * @param {object}  [undoRedoManager] UndoRedoManager for undo/redo actions
      * @param {object}  [toolModeStore]  ToolModeStore for tool mode switching
      */
-    constructor(appService, appStore, zoomStore, eventBus = null, undoRedoManager = null, toolModeStore = null) {
+    constructor(appService: AppService, appStore: AppStore | null, zoomStore: ZoomStore, eventBus: EventBus | null = null, undoRedoManager: UndoRedoManager | null = null, toolModeStore: ToolModeStore | null = null) {
         this._appService = appService;
         this._appStore = appStore;
         this._zoomStore = zoomStore;
@@ -47,22 +74,22 @@ export class RibbonToolbar {
     }
 
     /** @returns {HTMLElement} */
-    getElement() {
+    getElement(): HTMLElement {
         if (!this._element) {
             this._build();
         }
-        return this._element;
+        return this._element!;
     }
 
     /** Detach all subscriptions. Call when removing the toolbar. */
-    unmount() {
+    unmount(): void {
         this._unsubscribers.forEach(u => typeof u === 'function' && u());
         this._unsubscribers = [];
     }
 
     // ── build ───────────────────────────────────────────────────────────────
 
-    _build() {
+    _build(): void {
         const toolbar = document.createElement('div');
         toolbar.className = 'ribbon-toolbar';
         toolbar.setAttribute('role', 'toolbar');
@@ -135,7 +162,7 @@ export class RibbonToolbar {
      * @param {HTMLElement[]} buttons    Button elements to include
      * @returns {HTMLElement}
      */
-    _createGroup(groupName, buttons) {
+    _createGroup(groupName: string, buttons: HTMLElement[]): HTMLElement {
         const group = document.createElement('div');
         group.className = 'ribbon-group';
         group.dataset.group = groupName.toLowerCase();
@@ -158,8 +185,8 @@ export class RibbonToolbar {
      * @param {string} action  data-action value
      * @returns {string}
      */
-    _getIcon(action) {
-        const icons = {
+    _getIcon(action: string): string {
+        const icons: Record<string, string> = {
             'ribbon-load': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
             'ribbon-load-url': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
             'ribbon-export': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
@@ -185,7 +212,7 @@ export class RibbonToolbar {
      * @param {Function}  [refCb]      Optional callback that receives the button element for ref storage
      * @returns {HTMLButtonElement}
      */
-    _makeBtn(label, action, onClick, refCb = null) {
+    _makeBtn(label: string, action: string, onClick: () => void, refCb: ((button: HTMLButtonElement) => void) | null = null): HTMLButtonElement {
         const btn = document.createElement('button');
         btn.className = 'ribbon-btn';
         btn.type = 'button';
@@ -206,7 +233,7 @@ export class RibbonToolbar {
      * @param {Function}  [refCb]
      * @returns {HTMLButtonElement}
      */
-    _makeToggleBtn(label, action, onClick, refCb = null) {
+    _makeToggleBtn(label: string, action: string, onClick: () => void, refCb: ((button: HTMLButtonElement) => void) | null = null): HTMLButtonElement {
         const btn = this._makeBtn(label, action, onClick, refCb);
         btn.setAttribute('aria-pressed', 'false');
         return btn;
@@ -214,7 +241,7 @@ export class RibbonToolbar {
 
     // ── state ───────────────────────────────────────────────────────────────
 
-    _updateState() {
+    _updateState(): void {
         const hasLayout = this._appStore
             ? !!this._appStore.getState().layout
             : false;
@@ -226,8 +253,9 @@ export class RibbonToolbar {
             this._undoBtn.disabled = this._undoRedoManager
                 ? !this._undoRedoManager.canUndo()
                 : true;
-            if (this._undoRedoManager && this._undoRedoManager.peekUndo()) {
-                this._undoBtn.title = `Undo ${this._undoRedoManager.peekUndo().label}`;
+            const nextUndo = this._undoRedoManager?.peekUndo();
+            if (nextUndo) {
+                this._undoBtn.title = `Undo ${nextUndo.label}`;
             } else {
                 this._undoBtn.title = 'Undo';
             }
@@ -236,8 +264,9 @@ export class RibbonToolbar {
             this._redoBtn.disabled = this._undoRedoManager
                 ? !this._undoRedoManager.canRedo()
                 : true;
-            if (this._undoRedoManager && this._undoRedoManager.peekRedo()) {
-                this._redoBtn.title = `Redo ${this._undoRedoManager.peekRedo().label}`;
+            const nextRedo = this._undoRedoManager?.peekRedo();
+            if (nextRedo) {
+                this._redoBtn.title = `Redo ${nextRedo.label}`;
             } else {
                 this._redoBtn.title = 'Redo';
             }
@@ -258,22 +287,22 @@ export class RibbonToolbar {
 
     // ── handlers ────────────────────────────────────────────────────────────
 
-    _onLoad() {
+    _onLoad(): void {
         const fileInput = document.getElementById('file-input');
         if (fileInput) {
             fileInput.click();
-        } else if (window.openFileDialog) {
-            window.openFileDialog();
+        } else if ((window as RibbonWindow).openFileDialog) {
+            (window as RibbonWindow).openFileDialog?.();
         }
     }
 
-    async _onLoadFromUrl() {
+    async _onLoadFromUrl(): Promise<void> {
         if (!this._loadFromUrlDialog) {
             this._loadFromUrlDialog = new LoadFromUrlDialog();
         }
 
         const url = await this._loadFromUrlDialog.show();
-        if (!url) return;
+        if (typeof url !== 'string' || !url) return;
 
         // Basic URL validation — must start with http:// or https:// or be a relative path (samples)
         const isAbsolute = /^https?:\/\//i.test(url);
@@ -294,7 +323,7 @@ export class RibbonToolbar {
             await this._loadXmlContent(xmlContent, fileName);
         } catch (error) {
             console.error('[RibbonToolbar] Failed to load layout from URL:', error);
-            alert(`Failed to load layout from URL:\n${error.message}`);
+            alert(`Failed to load layout from URL:\n${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
@@ -304,7 +333,7 @@ export class RibbonToolbar {
      * confirmation dialog can gate the operation (same flow as FileDropZone).
      * @private
      */
-    async _loadXmlContent(xmlContent: string, fileName: string) {
+    async _loadXmlContent(xmlContent: string, fileName: string): Promise<void> {
         const hasExistingLayers = this._appService?.layout &&
             this._appService.layout.getLayerCount() > 0;
 
@@ -314,7 +343,9 @@ export class RibbonToolbar {
                 payload: { xmlContent, fileName }
             });
 
-            if (result && result.requiresConfirmation) {
+            if (result && typeof result === 'object' && 'requiresConfirmation' in result && result.requiresConfirmation === true &&
+                'currentMapName' in result && typeof result.currentMapName === 'string' &&
+                'newMapName' in result && typeof result.newMapName === 'string') {
                 this._eventBus?.publish('confirm:mapSwitch', {
                     currentMapName: result.currentMapName,
                     newMapName: result.newMapName,
@@ -322,8 +353,8 @@ export class RibbonToolbar {
                     fileName
                 });
             }
-        } else if (window.completeLayoutLoadingWorkflow) {
-            await window.completeLayoutLoadingWorkflow(xmlContent, fileName);
+        } else if ((window as RibbonWindow).completeLayoutLoadingWorkflow) {
+            await (window as RibbonWindow).completeLayoutLoadingWorkflow!(xmlContent, fileName);
         } else {
             console.warn('[RibbonToolbar] completeLayoutLoadingWorkflow not available, using fallback');
             await this._appService?.execute({
@@ -333,13 +364,13 @@ export class RibbonToolbar {
         }
     }
 
-    _onSettings() {
+    _onSettings(): void {
         if (this._eventBus) {
             this._eventBus.publish('ribbon:settings-requested');
         }
     }
 
-    _onExport() {
+    _onExport(): void {
         if (!this._appStore) return;
         const layout = this._appStore.getState().layout;
         if (!layout) return;
@@ -350,17 +381,17 @@ export class RibbonToolbar {
         }
     }
 
-    _onZoomIn() { this._eventBus?.publish('zoom:in-requested'); }
-    _onZoomOut() { this._eventBus?.publish('zoom:out-requested'); }
-    _onFit() { this._eventBus?.publish('zoom:fit-requested'); }
-    _onUndo() {
+    _onZoomIn(): void { this._eventBus?.publish('zoom:in-requested'); }
+    _onZoomOut(): void { this._eventBus?.publish('zoom:out-requested'); }
+    _onFit(): void { this._eventBus?.publish('zoom:fit-requested'); }
+    _onUndo(): void {
         if (this._undoRedoManager && this._undoRedoManager.canUndo()) {
             if (this._eventBus) {
                 this._eventBus.publish('undo:requested');
             }
         }
     }
-    _onRedo() {
+    _onRedo(): void {
         if (this._undoRedoManager && this._undoRedoManager.canRedo()) {
             if (this._eventBus) {
                 this._eventBus.publish('redo:requested');
@@ -368,11 +399,11 @@ export class RibbonToolbar {
         }
     }
 
-    _onResetLayout() {
+    _onResetLayout(): void {
         this._appService?.execute({ type: 'ResetLayoutCommand', payload: {} });
     }
 
-    _onReport() {
+    _onReport(): void {
         if (!this._appStore) return;
         const layout = this._appStore.getState().layout;
         if (!layout) return;
@@ -382,7 +413,7 @@ export class RibbonToolbar {
         }
     }
 
-    _onToolMode(mode) {
+    _onToolMode(mode: 'pan' | 'select'): void {
         if (this._toolModeStore) {
             this._toolModeStore.setMode(mode);
         }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Handler for SwitchMapCommand
  * Clears all layers via HomesteadLayout.clearAllLayers(),
@@ -9,19 +8,22 @@ import { Decoration } from '../../domain/Decoration.js';
 import { WorldCoordinate } from '../../domain/WorldCoordinate.js';
 import { LayerCreatedEvent } from '../../domain/events/LayerCreatedEvent.js';
 import { AllLayersClearedEvent } from '../../domain/events/AllLayersClearedEvent.js';
-import { XmlLayoutAdapter } from '../../infrastructure/XmlLayoutAdapter.js';
+import { ParsedLayoutData, XmlLayoutAdapter } from '../../infrastructure/XmlLayoutAdapter.js';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
+import { UndoRedoManager } from '../UndoRedoManager.ts';
+import { SwitchMapCommand } from '../commands/SwitchMapCommand.ts';
 
 export class SwitchMapHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
-    xmlAdapter: any; // JS domain object � fully typed once domain migrates to TypeScript
-    undoRedoManager: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
+    xmlAdapter: XmlLayoutAdapter;
+    undoRedoManager: UndoRedoManager;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      * @param {XmlLayoutAdapter} xmlAdapter - XML layout adapter
      * @param {UndoRedoManager} undoRedoManager - Undo/redo manager to clear on switch
      */
-    constructor(layout: unknown, xmlAdapter: unknown, undoRedoManager: unknown) {
+    constructor(layout: HomesteadLayout, xmlAdapter: XmlLayoutAdapter, undoRedoManager: UndoRedoManager) {
         this.layout = layout;
         this.xmlAdapter = xmlAdapter;
         this.undoRedoManager = undoRedoManager;
@@ -32,7 +34,7 @@ export class SwitchMapHandler {
      * @param {Object} command - The command payload with xmlContent and fileName
      * @returns {Object} Result with success, mapId, mapName, layerId, decorationCount
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: SwitchMapCommand) {
         const { xmlContent, fileName } = command;
 
         if (!xmlContent || typeof xmlContent !== 'string' || xmlContent.trim().length === 0) {
@@ -66,7 +68,7 @@ export class SwitchMapHandler {
      * Creates a layer from parsed layout data and adds it to the layout
      * @private
      */
-    _createLayerFromLayout(layoutData, fileName) {
+    _createLayerFromLayout(layoutData: ParsedLayoutData, fileName: string) {
         const layerId = `layer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
         const layerName = fileName
@@ -99,12 +101,11 @@ export class SwitchMapHandler {
         this.layout.addLayer(layer);
 
         // Emit LayerCreatedEvent
-        const event = new LayerCreatedEvent(
+        const event = Object.assign(new LayerCreatedEvent(
             this.layout.id,
             layerId,
             layerName
-        );
-        (event as any).layer = layer; // attach convenience property not in domain Event base type
+        ), { layer });
         this.layout.addEvent(event);
 
         return {
@@ -119,7 +120,7 @@ export class SwitchMapHandler {
      * Fallback sync parse using XmlLayoutAdapter static methods
      * @private
      */
-    _parseSync(xmlContent) {
+    _parseSync(xmlContent: string): ParsedLayoutData {
         const validation = XmlLayoutAdapter.validateXmlString(xmlContent);
         if (!validation.isValid) {
             throw new Error(`XML validation failed: ${validation.errors.join(', ')}`);

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ToolPanel } from '../../../src/ui/components/ToolPanel.js';
 
 describe('ToolPanel', () => {

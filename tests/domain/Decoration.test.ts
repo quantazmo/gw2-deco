@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/domain/Decoration.js
  * Covers core construction, rotX/rotZ fields, validation, and toDTO output.

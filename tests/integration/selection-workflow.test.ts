@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration tests for selection workflow
  * Covers: map click select, list Ctrl+Click, list Shift+Click range across layers,

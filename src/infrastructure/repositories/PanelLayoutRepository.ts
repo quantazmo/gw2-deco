@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PanelLayoutRepository
  * Persists and restores LayoutConfiguration to/from localStorage.
@@ -14,16 +13,26 @@
  */
 
 import { DockLayoutConfiguration } from '../../domain/DockLayoutConfiguration.js';
+import type { DockLayoutNode } from '../../domain/DockLayoutConfiguration.js';
 import { LAYOUT } from '../../config/constants.js';
 
 const SUPPORTED_VERSION = 1;
 
+interface StorageLike {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+    removeItem(key: string): void;
+}
+
 export class PanelLayoutRepository {
+    private readonly _storage: StorageLike;
+    private readonly _key: string;
+
     /**
      * @param {Storage|object} [storage]  localStorage-compatible storage.
      *   Defaults to globalThis.localStorage when omitted.
      */
-    constructor(storage = null) {
+    constructor(storage: StorageLike | null = null) {
         this._storage = storage || (typeof localStorage !== 'undefined' ? localStorage : globalThis.localStorage);
         this._key = LAYOUT.LAYOUT_STORAGE_KEY;
     }
@@ -32,7 +41,7 @@ export class PanelLayoutRepository {
      * Serialize a LayoutConfiguration and write it to localStorage.
      * @param {DockLayoutConfiguration} layout
      */
-    save(layout) {
+    save(layout: DockLayoutConfiguration): void {
         try {
             const doc = {
                 version: layout.version ?? SUPPORTED_VERSION,
@@ -41,7 +50,7 @@ export class PanelLayoutRepository {
             this._storage.setItem(this._key, JSON.stringify(doc));
         } catch (err) {
             // Storage quota exceeded or unavailable — degrade gracefully
-            console.warn('[LayoutRepository] Failed to save layout:', err.message);
+            console.warn('[LayoutRepository] Failed to save layout:', err instanceof Error ? err.message : String(err));
         }
     }
 
@@ -50,25 +59,25 @@ export class PanelLayoutRepository {
      * Returns the default layout if the data is missing, corrupt, or invalid.
      * @returns {DockLayoutConfiguration}
      */
-    load() {
+    load(): DockLayoutConfiguration {
         try {
             const raw = this._storage.getItem(this._key);
             if (!raw) return DockLayoutConfiguration.createDefault();
 
-            const doc = JSON.parse(raw);
+            const doc: { version?: unknown; tree?: unknown } = JSON.parse(raw);
 
             if (!doc || typeof doc !== 'object') return DockLayoutConfiguration.createDefault();
             if (doc.version !== SUPPORTED_VERSION) return DockLayoutConfiguration.createDefault();
             if (!doc.tree) return DockLayoutConfiguration.createDefault();
 
-            const candidate = new DockLayoutConfiguration(doc.tree, doc.version);
+            const candidate = new DockLayoutConfiguration(doc.tree as DockLayoutNode, doc.version);
             const { valid } = candidate.validate();
             if (!valid) return DockLayoutConfiguration.createDefault();
 
             return candidate;
         } catch (err) {
             // JSON.parse failure or unexpected error
-            console.warn('[LayoutRepository] Failed to load layout, using default:', err.message);
+            console.warn('[LayoutRepository] Failed to load layout, using default:', err instanceof Error ? err.message : String(err));
             return DockLayoutConfiguration.createDefault();
         }
     }
@@ -76,11 +85,11 @@ export class PanelLayoutRepository {
     /**
      * Remove the persisted layout from localStorage.
      */
-    clear() {
+    clear(): void {
         try {
             this._storage.removeItem(this._key);
         } catch (err) {
-            console.warn('[LayoutRepository] Failed to clear layout:', err.message);
+            console.warn('[LayoutRepository] Failed to clear layout:', err instanceof Error ? err.message : String(err));
         }
     }
 }

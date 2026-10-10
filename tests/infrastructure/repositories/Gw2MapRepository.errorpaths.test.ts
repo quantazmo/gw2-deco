@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional error-path tests for Gw2MapRepository.
  * Targets uncovered lines: 95, 108, 117, 122, 137, 191, 206-212, 300

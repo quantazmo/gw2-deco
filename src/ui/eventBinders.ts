@@ -1,9 +1,14 @@
-// @ts-nocheck
 /**
  * eventBinders.js
  * Binds DOM events to application commands and updates UI from store changes
  * Handles all user interactions and state synchronization
  */
+import { AppService } from '../application/AppService.ts';
+import { AppState, AppStore } from './stores/AppStore.ts';
+import { SelectionStore } from './stores/SelectionStore.ts';
+import { ZoomStore } from './stores/ZoomStore.ts';
+import { EventBus } from './EventBus.ts';
+import { Layer } from '../domain/Layer.ts';
 
 /**
  * Bind layer creation button
@@ -11,7 +16,7 @@
  * @param {Object} appService - The AppService instance
  * @param {EventBus} eventBus - The EventBus instance
  */
-function bindCreateLayerButton(button, appService, eventBus) {
+function bindCreateLayerButton(button: HTMLElement, appService: Pick<AppService, 'execute'>, eventBus: EventBus): void {
     console.log('[eventBinders] ⚡ bindCreateLayerButton() called');
 
     button.addEventListener('click', () => {
@@ -43,7 +48,7 @@ function bindCreateLayerButton(button, appService, eventBus) {
  * @param {SelectionStore} selectionStore - The SelectionStore instance
  * @param {EventBus} eventBus - The EventBus instance
  */
-function bindDeleteLayerButton(button, appService, selectionStore, eventBus) {
+function bindDeleteLayerButton(button: HTMLElement, appService: Pick<AppService, 'execute'>, selectionStore: SelectionStore, eventBus: EventBus): void {
     console.log('[eventBinders] ⚡ bindDeleteLayerButton() called');
 
     button.addEventListener('click', () => {
@@ -82,7 +87,7 @@ function bindDeleteLayerButton(button, appService, selectionStore, eventBus) {
  * @param {SelectionStore} selectionStore - The SelectionStore instance
  * @param {EventBus} eventBus - The EventBus instance
  */
-function bindRenameLayerInput(input, appService, selectionStore, eventBus) {
+function bindRenameLayerInput(input: HTMLInputElement, appService: Pick<AppService, 'execute'>, selectionStore: SelectionStore, eventBus: EventBus): void {
     input.addEventListener('blur', () => {
         try {
             const newName = input.value.trim();
@@ -118,11 +123,11 @@ function bindRenameLayerInput(input, appService, selectionStore, eventBus) {
  * @param {Object} appService - The AppService instance
  * @param {EventBus} eventBus - The EventBus instance
  */
-function bindFileDropZone(dropZone, appService, eventBus) {
+function bindFileDropZone(dropZone: HTMLElement, appService: Pick<AppService, 'execute'>, eventBus: EventBus): void {
     // Prevent default drag behavior
     dropZone.addEventListener('dragover', (event) => {
         event.preventDefault();
-        event.dataTransfer.dropEffect = 'copy';
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
         dropZone.classList.add('drag-over');
     });
 
@@ -134,10 +139,12 @@ function bindFileDropZone(dropZone, appService, eventBus) {
         event.preventDefault();
         dropZone.classList.remove('drag-over');
 
-        const files = event.dataTransfer.files;
+        const files = event.dataTransfer?.files;
+        if (!files) return;
         if (files.length === 0) return;
 
         const file = files[0];
+        if (!file) return;
 
         // Validate file type
         if (!file.name.endsWith('.xml')) {
@@ -147,9 +154,10 @@ function bindFileDropZone(dropZone, appService, eventBus) {
 
         // Read file
         const reader = new FileReader();
-        reader.onload = async (e) => {
+        reader.onload = async (e: ProgressEvent<FileReader>) => {
             try {
-                const xmlContent = e.target.result;
+                const xmlContent = e.target?.result;
+                if (typeof xmlContent !== 'string') return;
                 const command = {
                     type: 'LoadLayoutCommand',
                     payload: { xmlContent, fileName: file.name }
@@ -178,7 +186,7 @@ function bindFileDropZone(dropZone, appService, eventBus) {
  * @param {Object} appService - The AppService instance
  * @param {EventBus} eventBus - The EventBus instance
  */
-function bindLayerVisibilityToggle(checkbox, layerId, appService, eventBus) {
+function bindLayerVisibilityToggle(checkbox: HTMLInputElement, layerId: string, appService: Pick<AppService, 'execute'>, eventBus: EventBus): void {
     checkbox.addEventListener('change', async () => {
         try {
             // Toggle visibility using command through AppService
@@ -201,7 +209,7 @@ function bindLayerVisibilityToggle(checkbox, layerId, appService, eventBus) {
  * @param {string} layerId - The layer ID
  * @param {SelectionStore} selectionStore - The SelectionStore instance
  */
-function bindLayerSelection(layerElement, layerId, selectionStore) {
+function bindLayerSelection(layerElement: HTMLElement, layerId: string, selectionStore: SelectionStore): void {
     layerElement.addEventListener('click', () => {
         selectionStore.setActiveLayer(layerId);
     });
@@ -213,7 +221,7 @@ function bindLayerSelection(layerElement, layerId, selectionStore) {
  * @param {HTMLElement} zoomOutButton - The zoom out button
  * @param {Object} zoomStore - The ZoomStore instance
  */
-function bindZoomControls(zoomInButton, zoomOutButton, zoomStore) {
+function bindZoomControls(zoomInButton: HTMLElement | null, zoomOutButton: HTMLElement | null, zoomStore: ZoomStore): void {
     if (zoomInButton) {
         zoomInButton.addEventListener('click', () => {
             zoomStore.zoom(1.2);
@@ -232,7 +240,7 @@ function bindZoomControls(zoomInButton, zoomOutButton, zoomStore) {
  * @param {HTMLElement} resetButton - The reset zoom button
  * @param {Object} zoomStore - The ZoomStore instance
  */
-function bindResetZoomButton(resetButton, zoomStore) {
+function bindResetZoomButton(resetButton: HTMLElement, zoomStore: ZoomStore): void {
     resetButton.addEventListener('click', () => {
         zoomStore.reset();
     });
@@ -245,7 +253,7 @@ function bindResetZoomButton(resetButton, zoomStore) {
  * @param {SelectionStore} selectionStore - The SelectionStore instance
  * @param {Function} createLayerElement - Function to create layer DOM element
  */
-function updateLayerPanel(layerPanel, state, selectionStore, createLayerElement) {
+function updateLayerPanel(layerPanel: HTMLElement, state: AppState, selectionStore: SelectionStore, createLayerElement: (layer: Layer, active: boolean) => HTMLElement): void {
     // Clear existing layers
     layerPanel.innerHTML = '';
 
@@ -264,7 +272,7 @@ function updateLayerPanel(layerPanel, state, selectionStore, createLayerElement)
  * @param {HTMLElement} layerPanel - The layer panel container
  * @param {string} activeLayerId - The active layer ID
  */
-function highlightActiveLayer(layerPanel, activeLayerId) {
+function highlightActiveLayer(layerPanel: HTMLElement, activeLayerId: string | null): void {
     const layerElements = layerPanel.querySelectorAll('[data-layer-id]');
 
     layerElements.forEach(element => {
@@ -282,7 +290,7 @@ function highlightActiveLayer(layerPanel, activeLayerId) {
  * @param {SVGElement} mapSvg - The SVG map element
  * @param {Object} transform - The zoom/pan transform
  */
-function updateMapTransform(mapSvg, transform) {
+function updateMapTransform(mapSvg: SVGElement, transform: { sx: number; sy: number; tx: number; ty: number }): void {
     const transformString = `matrix(${transform.sx}, 0, 0, ${transform.sy}, ${transform.tx}, ${transform.ty})`;
     mapSvg.style.transform = transformString;
 }
@@ -293,7 +301,7 @@ function updateMapTransform(mapSvg, transform) {
  * @param {string} type - The notification type: 'success', 'error', 'warning', 'info'
  * @param {number} duration - Duration in milliseconds (0 for permanent)
  */
-function showNotification(message, type = 'info', duration = 3000) {
+function showNotification(message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', duration: number = 3000): void {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.textContent = message;
@@ -315,7 +323,7 @@ function showNotification(message, type = 'info', duration = 3000) {
  * @param {HTMLElement} button - The button element
  * @param {boolean} enabled - Whether the button should be enabled
  */
-function setButtonState(button, enabled) {
+function setButtonState(button: HTMLElement | null, enabled: boolean): void {
     if (!button) return; // Button may not exist in HTML
 
     if (enabled) {
@@ -337,7 +345,7 @@ function setButtonState(button, enabled) {
  * @param {Object} appStore - The AppStore instance
  * @param {EventBus} eventBus - The EventBus instance
  */
-function bindExportButton(button, appService, appStore, eventBus) {
+function bindExportButton(button: HTMLElement | null, appService: Pick<AppService, 'execute'>, appStore: AppStore, eventBus: EventBus): void {
     if (!button) return;
 
     console.log('[eventBinders] ⚡ bindExportButton() called');

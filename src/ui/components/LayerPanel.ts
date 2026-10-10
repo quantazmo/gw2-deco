@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * LayerPanel Component
  * List layers with controls
@@ -10,9 +9,28 @@ import * as domHelpers from '../domHelpers.js';
 import * as eventBinders from '../eventBinders.js';
 import { ConfirmDialog } from './ConfirmDialog.js';
 import { DecorationLayerColorDialog } from './DecorationLayerColorDialog.js';
+import type { AppStore } from '../stores/AppStore.js';
+import type { SelectionStore } from '../stores/SelectionStore.js';
+import type { AppService } from '../../application/AppService.js';
+import type { EventBus } from '../EventBus.js';
+import type { Layer } from '../../domain/Layer.js';
+import type { ContextMenu } from './ContextMenu.js';
 
 class LayerPanel {
-    constructor(containerElement, appStore, selectionStore, appService, eventBus) {
+    private container: HTMLElement;
+    private appStore: AppStore;
+    private selectionStore: SelectionStore;
+    private appService: AppService;
+    private eventBus: EventBus;
+    private layerList!: HTMLDivElement;
+    private createLayerBtn: HTMLElement | null;
+    private deleteLayerBtn: HTMLElement | null;
+    private renameInput: HTMLInputElement | null;
+    private _contextMenu: ContextMenu | null;
+    private _confirmDialog: ConfirmDialog;
+    private _colorDialog: DecorationLayerColorDialog;
+
+    constructor(containerElement: HTMLElement, appStore: AppStore, selectionStore: SelectionStore, appService: AppService, eventBus: EventBus) {
         console.log('[LayerPanel] 🚀 LayerPanel constructor called');
 
         this.container = containerElement;
@@ -21,7 +39,6 @@ class LayerPanel {
         this.appService = appService;
         this.eventBus = eventBus;
 
-        this.layerList = null;
         this.createLayerBtn = null;
         this.deleteLayerBtn = null;
         this.renameInput = null;
@@ -30,7 +47,7 @@ class LayerPanel {
         this._contextMenu = null;
 
         /** @type {ConfirmDialog} Dialog for merge confirmation */
-        this._confirmDialog = new ConfirmDialog();
+        this._confirmDialog = new ConfirmDialog('mergeLayer');
 
         /** @type {DecorationLayerColorDialog} Dialog for changing layer color */
         this._colorDialog = new DecorationLayerColorDialog();
@@ -45,7 +62,7 @@ class LayerPanel {
     /**
      * Initialize component structure
      */
-    initialize() {
+    initialize(): void {
         // Clear container
         domHelpers.empty(this.container);
 
@@ -60,11 +77,11 @@ class LayerPanel {
     /**
      * Bind HTML buttons if they exist
      */
-    bindHTMLButtons() {
+    bindHTMLButtons(): void {
         console.log('[LayerPanel] ⚡ Binding HTML buttons...');
         // Get buttons from HTML
         const addLayerBtn = document.getElementById('add-layer-btn');
-        const deleteLayerBtn = document.querySelector('[id*="delete"][id*="layer"], [id*="remove"][id*="layer"]');
+        const deleteLayerBtn = document.querySelector<HTMLElement>('[id*="delete"][id*="layer"], [id*="remove"][id*="layer"]');
 
         if (addLayerBtn) {
             console.log('[LayerPanel]   ↳ Binding add-layer-btn...');
@@ -105,7 +122,7 @@ class LayerPanel {
     /**
      * Subscribe to store changes
      */
-    subscribeToChanges() {
+    subscribeToChanges(): void {
         console.log('[LayerPanel] ⚡ Subscribing to store changes...');
         // Listen to app state changes
         console.log('[LayerPanel]   ↳ Subscribing to AppStore...');
@@ -126,7 +143,7 @@ class LayerPanel {
      * Render layers in the panel
      * @param {Object} state - App state
      */
-    render(state) {
+    render(state: ReturnType<AppStore['getState']>): void {
         console.log('[LayerPanel] ⚡ render() called with state:', {
             layers: state.layers?.length || 0,
             activeLayerId: state.activeLayerId
@@ -149,9 +166,9 @@ class LayerPanel {
      * @param {boolean} isActive - Whether this is the active layer
      * @returns {HTMLElement}
      */
-    createLayerElement(layer, isActive) {
+    createLayerElement(layer: Layer, isActive: boolean): HTMLElement {
         const element = domHelpers.createElement('div', {
-            className: `layer-item ${isActive ? 'active' : ''} ${!layer.isVisible ? 'layer-hidden' : ''}`
+            className: ['layer-item', isActive ? 'active' : '', !layer.isVisible ? 'layer-hidden' : '']
         });
 
         element.setAttribute('data-layer-id', layer.id);
@@ -167,7 +184,7 @@ class LayerPanel {
         // Visibility icon (SVG eye)
         const visibilityIcon = document.createElement('span');
         visibilityIcon.className = 'visibility-icon';
-        visibilityIcon.setAttribute('data-visible', layer.isVisible);
+        visibilityIcon.setAttribute('data-visible', String(layer.isVisible));
         visibilityIcon.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -245,7 +262,7 @@ class LayerPanel {
         // Drag-and-drop target for decorations
         element.addEventListener('dragover', (e) => {
             e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
+            if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
             element.classList.add('drop-highlight');
         });
 
@@ -257,11 +274,13 @@ class LayerPanel {
             e.preventDefault();
             element.classList.remove('drop-highlight');
 
-            const raw = e.dataTransfer.getData('application/x-decoration-ids');
+            const dataTransfer = e.dataTransfer;
+            if (!dataTransfer) return;
+            const raw = dataTransfer.getData('application/x-decoration-ids');
             if (!raw) return;
 
             try {
-                const decorationIds = JSON.parse(raw);
+                const decorationIds: unknown = JSON.parse(raw);
                 if (!Array.isArray(decorationIds) || decorationIds.length === 0) return;
 
                 this.appService.execute({
@@ -281,7 +300,7 @@ class LayerPanel {
      * @param {Layer} layer - The layer
      * @param {MouseEvent} event - Mouse event
      */
-    _handleLayerContextMenu(layer, event) {
+    _handleLayerContextMenu(layer: Layer, event: MouseEvent): void {
         event.preventDefault();
         if (!this._contextMenu) return;
 
@@ -289,14 +308,7 @@ class LayerPanel {
         this.selectionStore.setActiveLayer(layer.id);
 
         // Gather all decoration IDs from this layer
-        let decorationIds = [];
-        if (typeof layer.getAllDecorations === 'function') {
-            decorationIds = layer.getAllDecorations().map(d => d.uid);
-        } else if (layer.decorations instanceof Map) {
-            decorationIds = Array.from(layer.decorations.values()).map(d => d.uid);
-        } else if (Array.isArray(layer.decorations)) {
-            decorationIds = layer.decorations.map(d => d.uid);
-        }
+        const decorationIds = layer.getAllDecorations().map(decoration => decoration.uid);
 
         // Gather all other layers for the "Merge to..." submenu
         const state = this.appStore.getState();
@@ -327,7 +339,7 @@ class LayerPanel {
      * Set the shared ContextMenu instance
      * @param {ContextMenu} contextMenu
      */
-    setContextMenu(contextMenu) {
+    setContextMenu(contextMenu: ContextMenu): void {
         this._contextMenu = contextMenu;
     }
 
@@ -336,10 +348,8 @@ class LayerPanel {
      * @param {Layer} sourceLayer - The layer to merge from (will be deleted)
      * @param {Layer} targetLayer - The layer to merge into
      */
-    async _confirmAndMergeLayer(sourceLayer, targetLayer) {
-        const decorationCount = typeof sourceLayer.getAllDecorations === 'function'
-            ? sourceLayer.getAllDecorations().length
-            : 0;
+    async _confirmAndMergeLayer(sourceLayer: Layer, targetLayer: Layer): Promise<void> {
+        const decorationCount = sourceLayer.getAllDecorations().length;
         const decorationText = decorationCount === 1
             ? '1 decoration'
             : `${decorationCount} decorations`;
@@ -372,8 +382,9 @@ class LayerPanel {
      * @param {HTMLElement} layerElement - The layer element
      * @param {Layer} layer - The layer
      */
-    openRenameMode(layerElement, layer) {
-        const nameSpan = layerElement.querySelector('.layer-name');
+    openRenameMode(layerElement: HTMLElement, layer: Layer): void {
+        const nameSpan = layerElement.querySelector<HTMLElement>('.layer-name');
+        if (!nameSpan) return;
 
         // Hide name span
         domHelpers.hide(nameSpan);
@@ -429,7 +440,7 @@ class LayerPanel {
      * Delete a layer
      * @param {string} layerId - The layer ID to delete
      */
-    deleteLayer(layerId) {
+    deleteLayer(layerId: string): void {
         try {
             const command = {
                 type: 'DeleteLayerCommand',
@@ -447,7 +458,7 @@ class LayerPanel {
      * Update active layer highlighting
      * @param {string} activeLayerId - The active layer ID
      */
-    updateActiveLayer(activeLayerId) {
+    updateActiveLayer(activeLayerId: string | null): void {
         eventBinders.highlightActiveLayer(this.layerList, activeLayerId);
         this.updateDeleteButtonState();
     }
@@ -455,7 +466,7 @@ class LayerPanel {
     /**
      * Update delete button state based on layer selection
      */
-    updateDeleteButtonState() {
+    updateDeleteButtonState(): void {
         if (!this.deleteLayerBtn) return; // Button may not exist in HTML
 
         const state = this.appStore.getState();
@@ -472,7 +483,7 @@ class LayerPanel {
      * Get the container element
      * @returns {HTMLElement}
      */
-    getElement() {
+    getElement(): HTMLElement {
         return this.container;
     }
 }

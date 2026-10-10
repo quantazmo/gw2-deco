@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/domain/Layer.js
  * Tests Layer aggregate entity with decoration management and business rules

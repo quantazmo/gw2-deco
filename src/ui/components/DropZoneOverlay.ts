@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * DropZoneOverlay
  * Renders semi-transparent edge highlight strips on the viewport during panel drag
@@ -14,8 +13,26 @@
  */
 
 import { PANEL_IDS } from '../../config/constants.js';
+import type { EventBus } from '../EventBus.js';
+
+type DropEdge = 'top' | 'bottom' | 'left' | 'right';
+type DropZone =
+    | { type: 'edge'; edge: DropEdge }
+    | { type: 'tab-merge'; targetPanelId: string }
+    | { type: 'stack'; targetPanelId: string; edge: DropEdge };
 
 export class DropZoneOverlay {
+    private _overlay: HTMLElement | null;
+    private _zoneElements: Record<string, HTMLElement>;
+    private _centerHighlight: HTMLElement | null;
+    private _activeCenterPanelId: string | null;
+    private _edgeHighlight: HTMLElement | null;
+    private _activeEdgePanelId: string | null;
+    private _activeEdge: DropEdge | null;
+    private _previewOutline: HTMLElement | null;
+    private _activePreviewKey: string | null;
+    private _panelAffordances: HTMLElement[];
+
     constructor() {
         /** @type {HTMLElement | null} */
         this._overlay = null;
@@ -43,11 +60,11 @@ export class DropZoneOverlay {
      * Subscribe to EventBus drag events and mount the overlay into the DOM.
      * @param {object} eventBus  EventBus with subscribe() and publish() methods
      */
-    attach(eventBus) {
+    attach(eventBus: Pick<EventBus, 'subscribe'>): void {
         this._createElement();
 
-        eventBus.subscribe('layout:drag-start', ({ panelId }) => this._show(panelId));
-        eventBus.subscribe('layout:drag-move', ({ dropZone }) => this._highlight(dropZone));
+        eventBus.subscribe<{ panelId: string }>('layout:drag-start', ({ panelId }) => this._show(panelId));
+        eventBus.subscribe<{ dropZone: DropZone | null }>('layout:drag-move', ({ dropZone }) => this._highlight(dropZone));
         eventBus.subscribe('layout:drag-end', () => this._hide());
     }
 
@@ -55,11 +72,11 @@ export class DropZoneOverlay {
     // Private: DOM management
     // ─────────────────────────────────────────────────────────────────────────
 
-    _createElement() {
+    _createElement(): void {
         const overlay = document.createElement('div');
         overlay.className = 'drop-zone-overlay';
 
-        for (const edge of ['left', 'right']) {
+        for (const edge of ['left', 'right'] as const) {
             const zone = document.createElement('div');
             zone.className = `drop-zone drop-zone-${edge}`;
             zone.dataset.edge = edge;
@@ -102,7 +119,7 @@ export class DropZoneOverlay {
      * Show all passive drop zone indicators when a drag begins.
      * @param {string} [draggedPanelId]  The panel being dragged (excluded from affordances)
      */
-    _show(draggedPanelId) {
+    _show(draggedPanelId?: string): void {
         if (this._overlay) {
             this._overlay.hidden = false;
             // Add passive class to reveal edge zones at low opacity
@@ -111,7 +128,7 @@ export class DropZoneOverlay {
         this._showPanelAffordances(draggedPanelId);
     }
 
-    _hide() {
+    _hide(): void {
         if (this._overlay) {
             this._overlay.hidden = true;
             this._overlay.classList.remove('dragging');
@@ -132,7 +149,7 @@ export class DropZoneOverlay {
      *
      * @param {{ type: string, edge?: string, targetPanelId?: string } | null} dropZone
      */
-    _highlight(dropZone) {
+    _highlight(dropZone: DropZone | null): void {
         // Clear previous edge highlights
         for (const zone of Object.values(this._zoneElements)) {
             zone.classList.remove('active');
@@ -163,7 +180,7 @@ export class DropZoneOverlay {
      * @param {string} targetPanelId
      * @private
      */
-    _showCenterHighlight(targetPanelId) {
+    _showCenterHighlight(targetPanelId: string): void {
         if (!this._centerHighlight) return;
 
         // Only re-query the DOM if the target has changed
@@ -172,7 +189,7 @@ export class DropZoneOverlay {
             return;
         }
 
-        const targetEl = document.querySelector(`.dock-region[data-panel-id="${targetPanelId}"]`);
+        const targetEl = document.querySelector<HTMLElement>(`.dock-region[data-panel-id="${targetPanelId}"]`);
         if (!targetEl) {
             this._hideCenterHighlight();
             return;
@@ -190,7 +207,7 @@ export class DropZoneOverlay {
     /**
      * @private
      */
-    _hideCenterHighlight() {
+    _hideCenterHighlight(): void {
         if (this._centerHighlight) {
             this._centerHighlight.hidden = true;
         }
@@ -203,7 +220,7 @@ export class DropZoneOverlay {
      * @param {'top'|'bottom'|'left'|'right'} edge
      * @private
      */
-    _showEdgeHighlight(targetPanelId, edge) {
+    _showEdgeHighlight(targetPanelId: string, edge: DropEdge): void {
         if (!this._edgeHighlight) return;
 
         // Only re-query the DOM if target or edge has changed
@@ -212,14 +229,14 @@ export class DropZoneOverlay {
             return;
         }
 
-        const targetEl = document.querySelector(`.dock-region[data-panel-id="${targetPanelId}"]`);
+        const targetEl = document.querySelector<HTMLElement>(`.dock-region[data-panel-id="${targetPanelId}"]`);
         if (!targetEl) {
             this._hideEdgeHighlight();
             return;
         }
 
         const rect = targetEl.getBoundingClientRect();
-        let left, top, width, height;
+        let left = 0, top = 0, width = 0, height = 0;
 
         switch (edge) {
             case 'top':
@@ -255,7 +272,7 @@ export class DropZoneOverlay {
     /**
      * @private
      */
-    _hideEdgeHighlight() {
+    _hideEdgeHighlight(): void {
         if (this._edgeHighlight) {
             this._edgeHighlight.hidden = true;
         }
@@ -272,7 +289,7 @@ export class DropZoneOverlay {
      * @param {'left'|'right'|'top'|'bottom'} edge
      * @private
      */
-    _showEdgePreviewOutline(edge) {
+    _showEdgePreviewOutline(edge: DropEdge): void {
         if (!this._previewOutline) return;
         const key = `edge:${edge}`;
         if (this._activePreviewKey === key) {
@@ -285,7 +302,7 @@ export class DropZoneOverlay {
         // Estimate ~25% of viewport for the docked panel
         const dockSize = 0.25;
 
-        let left, top, width, height;
+        let left = 0, top = 0, width = 0, height = 0;
         switch (edge) {
             case 'left':
                 left = 0; top = 0;
@@ -322,7 +339,7 @@ export class DropZoneOverlay {
      * @param {string} targetPanelId
      * @private
      */
-    _showTabMergePreviewOutline(targetPanelId) {
+    _showTabMergePreviewOutline(targetPanelId: string): void {
         if (!this._previewOutline) return;
         const key = `tab-merge:${targetPanelId}`;
         if (this._activePreviewKey === key) {
@@ -330,8 +347,8 @@ export class DropZoneOverlay {
             return;
         }
 
-        const targetEl = document.querySelector(`.dock-region[data-panel-id="${targetPanelId}"]`)
-            || document.querySelector(`.tabbed-container[data-panel-ids*="${targetPanelId}"]`);
+        const targetEl = document.querySelector<HTMLElement>(`.dock-region[data-panel-id="${targetPanelId}"]`)
+            || document.querySelector<HTMLElement>(`.tabbed-container[data-panel-ids*="${targetPanelId}"]`);
         if (!targetEl) {
             this._hidePreviewOutline();
             return;
@@ -353,7 +370,7 @@ export class DropZoneOverlay {
      * @param {'top'|'bottom'|'left'|'right'} edge
      * @private
      */
-    _showStackPreviewOutline(targetPanelId, edge) {
+    _showStackPreviewOutline(targetPanelId: string, edge: DropEdge): void {
         if (!this._previewOutline) return;
         const key = `stack:${targetPanelId}:${edge}`;
         if (this._activePreviewKey === key) {
@@ -361,14 +378,14 @@ export class DropZoneOverlay {
             return;
         }
 
-        const targetEl = document.querySelector(`.dock-region[data-panel-id="${targetPanelId}"]`);
+        const targetEl = document.querySelector<HTMLElement>(`.dock-region[data-panel-id="${targetPanelId}"]`);
         if (!targetEl) {
             this._hidePreviewOutline();
             return;
         }
 
         const rect = targetEl.getBoundingClientRect();
-        let left, top, width, height;
+        let left = 0, top = 0, width = 0, height = 0;
         switch (edge) {
             case 'top':
                 left = rect.left; top = rect.top;
@@ -403,7 +420,7 @@ export class DropZoneOverlay {
     /**
      * @private
      */
-    _hidePreviewOutline() {
+    _hidePreviewOutline(): void {
         if (this._previewOutline) {
             this._previewOutline.hidden = true;
         }
@@ -420,10 +437,10 @@ export class DropZoneOverlay {
      * @param {string} [draggedPanelId]
      * @private
      */
-    _showPanelAffordances(draggedPanelId) {
+    _showPanelAffordances(draggedPanelId?: string): void {
         this._hidePanelAffordances();
 
-        const panels = document.querySelectorAll('.dock-region[data-panel-id]');
+        const panels = document.querySelectorAll<HTMLElement>('.dock-region[data-panel-id]');
         for (const panelEl of panels) {
             const pid = panelEl.dataset.panelId;
             if (pid === draggedPanelId || pid === PANEL_IDS.MAP) continue;
@@ -444,7 +461,7 @@ export class DropZoneOverlay {
      * Remove all panel-level affordance overlays.
      * @private
      */
-    _hidePanelAffordances() {
+    _hidePanelAffordances(): void {
         for (const el of this._panelAffordances) {
             el.remove();
         }

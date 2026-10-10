@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration tests for multi-layer loading workflow
  * Covers: load first layout, load second same-map layout, verify both layers' decorations exist

@@ -1,14 +1,15 @@
-// @ts-nocheck
 /**
  * Handler for GetLayersQuery
  */
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
+
 export class GetLayersHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      */
-    constructor(layout: unknown) {
+    constructor(layout: HomesteadLayout) {
         this.layout = layout;
     }
 
@@ -17,7 +18,7 @@ export class GetLayersHandler {
      * @param {GetLayersQuery} query - The query to execute
      * @returns {Object[]} The layers in the layout as DTOs
      */
-    execute(query) {
+    execute(_query: unknown): Array<Record<string, unknown>> {
         const layers = this.layout.getAllLayers();
         return layers.map(layer => layer.toDTO());
     }
@@ -27,7 +28,7 @@ export class GetLayersHandler {
      * @param {GetLayersQuery} query - The query to execute
      * @returns {Layer[]} The layers in the layout
      */
-    handle(query) {
+    handle(query: { layout: HomesteadLayout }): { layout: HomesteadLayout; layers: Array<Record<string, unknown>> } {
         if (!query || !query.layout) {
             throw new Error('GetLayersHandler.handle: query with layout is required');
         }

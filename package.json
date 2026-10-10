@@ -5,6 +5,7 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
+    "start": "npm run build && npm run preview",
     "dev": "vite",
     "preview": "vite preview",
     "build": "tsc --noEmit && vite build",

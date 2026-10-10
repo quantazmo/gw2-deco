@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { PanelDragManager } from '../../../src/ui/components/PanelDragManager.js';
 
 function makeMockAppService() {

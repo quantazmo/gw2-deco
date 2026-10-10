@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/application/handlers/SetActiveLayerHandler.js
  * Tests the application layer command handling for setting active layer

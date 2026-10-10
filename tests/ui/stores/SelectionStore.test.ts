@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/ui/stores/SelectionStore.js
  * Tests multi-select, toggle, range, clear, deselectByLayer, event publishing

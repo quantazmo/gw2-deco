@@ -3,14 +3,15 @@
  */
 import { LayerId } from '../../domain/LayerId.js';
 import { DecorationDeletedEvent } from '../../domain/events/DecorationDeletedEvent.js';
+import { HomesteadLayout } from '../../domain/HomesteadLayout.ts';
 
 export class DeleteDecorationHandler {
-    layout: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layout: HomesteadLayout;
 
     /**
      * @param {HomesteadLayout} layout - The layout aggregate root
      */
-    constructor(layout: unknown) {
+    constructor(layout: HomesteadLayout) {
         this.layout = layout;
     }
 
@@ -18,7 +19,7 @@ export class DeleteDecorationHandler {
      * Executes the delete decoration command
      * @param {DeleteDecorationCommand} command - The command to execute
      */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: { layerId: string; decorationId: string }): void {
         const layerId = new LayerId(command.layerId);
 
         // Use aggregate method to remove decoration

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * LayoutStore
  * Flux-pattern store for layout state.
@@ -8,14 +7,22 @@
 
 import { DockLayoutConfiguration } from '../../domain/DockLayoutConfiguration.js';
 
+type LayoutStoreEventBus = { publish(eventType: string, data: unknown): void };
+type LayoutStoreRepository = { save(layout: DockLayoutConfiguration): void };
+
 export class DockPanelLayoutStore {
+    private _state: DockLayoutConfiguration;
+    private _listeners: Array<(state: DockLayoutConfiguration) => void>;
+    private _eventBus: LayoutStoreEventBus | null;
+    private _repository: LayoutStoreRepository | null;
+
     /**
      * @param {object} [eventBus]  EventBus instance for publishing domain events.
      *                             Optional — if omitted, only local listeners are notified.
      * @param {object} [repository]  LayoutRepository instance for auto-persist.
      *                               Optional — if omitted, layout is not persisted automatically.
      */
-    constructor(eventBus = null, repository = null) {
+    constructor(eventBus: LayoutStoreEventBus | null = null, repository: LayoutStoreRepository | null = null) {
         this._state = DockLayoutConfiguration.createDefault();
         this._listeners = [];
         this._eventBus = eventBus;

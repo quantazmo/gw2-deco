@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration tests for DockManager
  * Tests the full layout render cycle: LayoutStore → DockManager → DOM output.

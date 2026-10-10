@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * MapViewer Component
  * Encapsulates SVG map element and rendering
@@ -9,19 +8,102 @@
 import * as renderHelpers from '../renderHelpers.js';
 import * as domHelpers from '../domHelpers.js';
 import { SelectionRectangle } from './SelectionRectangle.js';
+import type { GW2Map } from '../../domain/GW2Map.js';
+import type { Layer } from '../../domain/Layer.js';
+import type { Decoration } from '../../domain/Decoration.js';
+
+declare global {
+    interface Window {
+        xZoom?: (value: number) => number;
+        yZoom?: (value: number) => number;
+    }
+}
+
+interface MapViewerState {
+    map: GW2Map | null;
+    layers: MapViewerLayer[];
+}
+
+interface ZoomStoreLike {
+    onChange?: (listener: (data: unknown) => void) => unknown;
+}
+
+interface AppStoreLike {
+    subscribe?: (listener: (state: MapViewerState) => void) => unknown;
+    getState: () => MapViewerState;
+}
+
+interface SelectionStoreLike {
+    subscribe?: (listener: () => void) => unknown;
+    isSelected: (id: string) => boolean;
+    selectDecoration: (id: string) => void;
+    toggleDecoration: (id: string) => void;
+    clearSelection: () => void;
+    getSelectedIds: () => string[];
+    removeFromSelection: (ids: string[]) => void;
+    addToSelection: (ids: string[]) => void;
+    selectAll: (ids: string[]) => void;
+}
+
+interface ToolModeStoreLike {
+    getMode: () => string;
+    subscribe: (listener: (mode: string) => void) => unknown;
+}
+
+interface AppServiceLike {
+    execute: (command: { type: string; payload: unknown }) => Promise<unknown>;
+}
+
+interface ContextMenuLike {
+    show: (x: number, y: number, items: Array<{ label: string; action?: () => void; submenu?: Array<{ label: string; action: () => void }> }>) => void;
+}
+
+interface MapViewerDecoration {
+    uid: string;
+    name?: string;
+    color?: string;
+    position: { x: number; y: number };
+}
+
+interface MapViewerLayer {
+    id: string;
+    name: string;
+    isVisible: boolean;
+    color?: string;
+    decorations?: Map<string, Decoration> | Decoration[];
+    getAllDecorations?: () => Decoration[];
+}
 
 class MapViewer {
-    constructor(svgElement, zoomStore, appStore, selectionStore) {
+    private svgElement: SVGSVGElement;
+    private zoomStore: ZoomStoreLike;
+    private appStore: AppStoreLike;
+    private selectionStore: SelectionStoreLike | null;
+    private appService: AppServiceLike | null;
+    private tileGroup!: SVGGElement;
+    private boundaryGroup!: SVGGElement;
+    private layersGroup!: SVGGElement;
+    private decorationsGroup!: SVGGElement;
+    private currentMap: GW2Map | null;
+    private currentLayers: MapViewerLayer[];
+    private _lastRenderedMapId: number | null;
+    private decorationCircles: Map<string, SVGCircleElement>;
+    private _contextMenu: ContextMenuLike | null;
+    private _toolModeStore: ToolModeStoreLike | null;
+    private _selectionRect: SelectionRectangle | null;
+    private _containerGroup: SVGGElement | null;
+    private _selectionIndicator: HTMLDivElement | null = null;
+    private _indicatorMouseX = 0;
+    private _indicatorMouseY = 0;
+    private _indicatorCtrl = false;
+    private _indicatorShift = false;
+
+    constructor(svgElement: SVGSVGElement, zoomStore: ZoomStoreLike, appStore: AppStoreLike, selectionStore: SelectionStoreLike | null) {
         this.svgElement = svgElement;
         this.zoomStore = zoomStore;
         this.appStore = appStore;
         this.selectionStore = selectionStore || null;
         this.appService = null;
-
-        this.tileGroup = null;
-        this.boundaryGroup = null;
-        this.layersGroup = null;
-        this.decorationsGroup = null;
 
         // Cache rendered data to avoid recreating on zoom
         this.currentMap = null;
@@ -52,7 +134,7 @@ class MapViewer {
     /**
      * Initialize SVG structure
      */
-    initialize() {
+    initialize(): void {
         // Create viewBox and ensure SVG is set up properly
         this.svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
@@ -90,7 +172,7 @@ class MapViewer {
     /**
      * Subscribe to store changes
      */
-    subscribeToChanges() {
+    subscribeToChanges(): void {
         // Listen to zoom/pan changes
         if (this.zoomStore && this.zoomStore.onChange) {
             this.zoomStore.onChange((data) => {
@@ -117,7 +199,7 @@ class MapViewer {
      * Update SVG transform for zoom and pan
      * @param {Object} transform - Transform with sx, sy, tx, ty
      */
-    updateTransform(transform) {
+    updateTransform(_transform: unknown): void {
         // Update positions of existing elements instead of recreating them
         // The xZoom/yZoom functions are updated globally before this is called
         if (this.currentMap) {
@@ -131,7 +213,7 @@ class MapViewer {
      * Render the entire map based on app state
      * @param {Object} state - App state
      */
-    render(state) {
+    render(state: MapViewerState): void {
         if (!state.map) {
             this.clear();
             return;
@@ -158,7 +240,7 @@ class MapViewer {
      * Render map tiles
      * @param {GW2Map} map - The map to render
      */
-    renderMap(map) {
+    renderMap(map: GW2Map): void {
         domHelpers.empty(this.tileGroup);
 
         if (!map.tiles || !Array.isArray(map.tiles)) {
@@ -166,12 +248,15 @@ class MapViewer {
         }
 
         // Use global xZoom/yZoom functions for coordinate transformation
+        const xZoom = window.xZoom;
+        const yZoom = window.yZoom;
         if (typeof xZoom !== 'function' || typeof yZoom !== 'function') {
             console.error('xZoom/yZoom functions not available');
             return;
         }
 
         map.tiles.forEach(tile => {
+            if (!tile.mapCoords || tile.tileSize === undefined || !tile.url) return;
             // Create SVG image element for tile
             const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
 
@@ -181,10 +266,10 @@ class MapViewer {
             const y1 = yZoom(tile.mapCoords.y + tile.tileSize);
             const y2 = yZoom(tile.mapCoords.y);
             image.setAttribute('href', tile.url);
-            image.setAttribute('x', Math.floor(x1));
-            image.setAttribute('y', Math.floor(y1));
-            image.setAttribute('width', Math.ceil(x2 - x1));
-            image.setAttribute('height', Math.ceil(y2 - y1));
+            image.setAttribute('x', String(Math.floor(x1)));
+            image.setAttribute('y', String(Math.floor(y1)));
+            image.setAttribute('width', String(Math.ceil(x2 - x1)));
+            image.setAttribute('height', String(Math.ceil(y2 - y1)));
             image.setAttribute('class', 'tile');
             image.setAttribute('preserveAspectRatio', 'none');
 
@@ -196,26 +281,28 @@ class MapViewer {
      * Render map boundary
      * @param {GW2Map} map - The map to render
      */
-    renderBoundary(map) {
+    renderBoundary(map: GW2Map): void {
         domHelpers.empty(this.boundaryGroup);
 
         // Handle both map.boundary (array) and map.boundary.points (nested)
-        const boundaryPoints = map.boundary?.points || map.boundary;
+        const boundaryPoints = map.boundary?.points ?? [];
 
         if (!boundaryPoints || !Array.isArray(boundaryPoints) || boundaryPoints.length === 0) {
             return;
         }
 
         // Use global xZoom/yZoom functions for coordinate transformation
-        if (typeof window.xZoom !== 'function' || typeof window.yZoom !== 'function') {
+        const xZoom = window.xZoom;
+        const yZoom = window.yZoom;
+        if (!xZoom || !yZoom) {
             console.error('xZoom/yZoom functions not available');
             return;
         }
 
         // Convert world coordinates to screen coordinates as [x, y] tuples
-        const transformedPoints = boundaryPoints.map(point => [
-            window.xZoom(point.x),
-            window.yZoom(point.y)
+        const transformedPoints: Array<[number, number]> = boundaryPoints.map(point => [
+            xZoom(point.x),
+            yZoom(point.y)
         ]);
 
         const polygon = renderHelpers.createPolygon(
@@ -236,7 +323,7 @@ class MapViewer {
      * Render all layers and their decorations
      * @param {Layer[]} layers - Array of layers to render
      */
-    renderLayers(layers) {
+    renderLayers(layers: MapViewerLayer[]): void {
         domHelpers.empty(this.layersGroup);
         domHelpers.empty(this.decorationsGroup);
 
@@ -258,10 +345,10 @@ class MapViewer {
                 id: `layer-${layer.id}`
             });
 
-            layerGroup.setAttribute('data-layer-id', layer.id);
+            layerGroup.setAttribute('data-layer-id', String(layer.id));
 
             // Get decorations - handle both Map (domain object) and Array (DTO/plain object)
-            let decorations = [];
+            let decorations: Decoration[] = [];
             if (layer.getAllDecorations && typeof layer.getAllDecorations === 'function') {
                 // Layer domain object with getAllDecorations method
                 decorations = layer.getAllDecorations();
@@ -294,7 +381,7 @@ class MapViewer {
      * @param {string} [layerColor] - The layer color to use for the fill
      * @returns {SVGCircleElement}
      */
-    createDecorationElement(decoration, layerColor) {
+    createDecorationElement(decoration: MapViewerDecoration, layerColor?: string): SVGCircleElement | null {
         // Ensure decoration has valid position
         if (!decoration || !decoration.position || typeof decoration.position.x !== 'number' || typeof decoration.position.y !== 'number') {
             console.warn('Invalid decoration position:', decoration);
@@ -339,28 +426,29 @@ class MapViewer {
      * Update tile positions without recreating them (for zoom/pan)
      * @param {GW2Map} map - The map with tile data
      */
-    updateTilePositions(map) {
+    updateTilePositions(map: GW2Map): void {
         if (!map.tiles || !Array.isArray(map.tiles)) {
             return;
         }
 
-        if (typeof window.xZoom !== 'function' || typeof window.yZoom !== 'function') {
-            return;
-        }
+        const xZoom = window.xZoom;
+        const yZoom = window.yZoom;
+        if (!xZoom || !yZoom) return;
 
         const tileImages = this.tileGroup.querySelectorAll('image');
 
         map.tiles.forEach((tile, index) => {
+            if (!tile.mapCoords || tile.tileSize === undefined) return;
             if (tileImages[index]) {
-                const x1 = window.xZoom(tile.mapCoords.x);
-                const x2 = window.xZoom(tile.mapCoords.x + tile.tileSize);
-                const y1 = window.yZoom(tile.mapCoords.y + tile.tileSize);
-                const y2 = window.yZoom(tile.mapCoords.y);
+                const x1 = xZoom(tile.mapCoords.x);
+                const x2 = xZoom(tile.mapCoords.x + tile.tileSize);
+                const y1 = yZoom(tile.mapCoords.y + tile.tileSize);
+                const y2 = yZoom(tile.mapCoords.y);
 
-                tileImages[index].setAttribute('x', Math.floor(x1));
-                tileImages[index].setAttribute('y', Math.floor(y1));
-                tileImages[index].setAttribute('width', Math.ceil(x2 - x1));
-                tileImages[index].setAttribute('height', Math.ceil(y2 - y1));
+                tileImages[index].setAttribute('x', String(Math.floor(x1)));
+                tileImages[index].setAttribute('y', String(Math.floor(y1)));
+                tileImages[index].setAttribute('width', String(Math.ceil(x2 - x1)));
+                tileImages[index].setAttribute('height', String(Math.ceil(y2 - y1)));
             }
         });
     }
@@ -369,21 +457,21 @@ class MapViewer {
      * Update boundary position without recreating it (for zoom/pan)
      * @param {GW2Map} map - The map with boundary data
      */
-    updateBoundaryPosition(map) {
-        const boundaryPoints = map.boundary?.points || map.boundary;
+    updateBoundaryPosition(map: GW2Map): void {
+        const boundaryPoints = map.boundary?.points ?? [];
 
         if (!boundaryPoints || !Array.isArray(boundaryPoints) || boundaryPoints.length === 0) {
             return;
         }
 
-        if (typeof window.xZoom !== 'function' || typeof window.yZoom !== 'function') {
-            return;
-        }
+        const xZoom = window.xZoom;
+        const yZoom = window.yZoom;
+        if (!xZoom || !yZoom) return;
 
         const polygon = this.boundaryGroup.querySelector('polygon');
         if (polygon) {
             const pointsString = boundaryPoints.map(point =>
-                `${window.xZoom(point.x)},${window.yZoom(point.y)}`
+                `${xZoom(point.x)},${yZoom(point.y)}`
             ).join(' ');
 
             polygon.setAttribute('points', pointsString);
@@ -394,21 +482,21 @@ class MapViewer {
      * Update decoration positions without recreating them (for zoom/pan)
      * @param {Layer[]} layers - Array of layers with decorations
      */
-    updateDecorationPositions(layers) {
+    updateDecorationPositions(layers: MapViewerLayer[]): void {
         if (!Array.isArray(layers)) {
             return;
         }
 
-        if (typeof window.xZoom !== 'function' || typeof window.yZoom !== 'function') {
-            return;
-        }
+        const xZoom = window.xZoom;
+        const yZoom = window.yZoom;
+        if (!xZoom || !yZoom) return;
 
         layers.forEach(layer => {
             if (!layer.isVisible) {
                 return;
             }
 
-            let decorations = [];
+            let decorations: Decoration[] = [];
             if (layer.getAllDecorations && typeof layer.getAllDecorations === 'function') {
                 decorations = layer.getAllDecorations();
             } else if (layer.decorations && Array.isArray(layer.decorations)) {
@@ -422,10 +510,10 @@ class MapViewer {
                     // Use cached circle reference instead of querySelector
                     const circle = this.decorationCircles.get(decoration.uid);
                     if (circle) {
-                        const screenX = window.xZoom(decoration.position.x);
-                        const screenY = window.yZoom(decoration.position.y);
-                        circle.setAttribute('cx', screenX);
-                        circle.setAttribute('cy', screenY);
+                        const screenX = xZoom(decoration.position.x);
+                        const screenY = yZoom(decoration.position.y);
+                        circle.setAttribute('cx', String(screenX));
+                        circle.setAttribute('cy', String(screenY));
                     }
                 }
             });
@@ -435,7 +523,7 @@ class MapViewer {
     /**
      * Clear all rendered content
      */
-    clear() {
+    clear(): void {
         domHelpers.empty(this.tileGroup);
         domHelpers.empty(this.boundaryGroup);
         domHelpers.empty(this.layersGroup);
@@ -453,9 +541,9 @@ class MapViewer {
      * @param {number} width - Viewport width
      * @param {number} height - Viewport height
      */
-    setViewport(width, height) {
-        this.svgElement.setAttribute('width', width);
-        this.svgElement.setAttribute('height', height);
+    setViewport(width: number, height: number): void {
+        this.svgElement.setAttribute('width', String(width));
+        this.svgElement.setAttribute('height', String(height));
         this.svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
     }
 
@@ -464,7 +552,7 @@ class MapViewer {
      * @param {MouseEvent} event - The mouse event
      * @returns {Object} {x, y} screen coordinates
      */
-    getClickCoordinates(event) {
+    getClickCoordinates(event: MouseEvent): { x: number; y: number } {
         const svg = this.svgElement;
         const rect = svg.getBoundingClientRect();
         const x = event.clientX - rect.left;
@@ -481,7 +569,7 @@ class MapViewer {
      * selection is handled by _bindRectangleSelectHandlers.
      * @private
      */
-    _bindSelectionHandlers() {
+    _bindSelectionHandlers(): void {
         // Track whether a drag (pan) occurred between mousedown and click so that
         // releasing the mouse after panning does not clear the selection.
         let panDragOccurred = false;
@@ -504,7 +592,8 @@ class MapViewer {
         });
 
         this.svgElement.addEventListener('click', (e) => {
-            if (!this.selectionStore) return;
+            const selectionStore = this.selectionStore;
+            if (!selectionStore) return;
 
             // In 'select' mode, empty-area clicks are handled by the rectangle
             // pointer handler (the click fires after a zero-distance drag, so we
@@ -512,10 +601,12 @@ class MapViewer {
             const mode = this._toolModeStore ? this._toolModeStore.getMode() : 'pan';
 
             // Walk from event target up to find a decoration circle
-            const circle = e.target.closest ? e.target.closest('[data-decoration-id]') : null;
+            const target = e.target instanceof Element ? e.target : null;
+            const circle = target?.closest('[data-decoration-id]') ?? null;
 
             if (circle) {
                 const decorationId = circle.getAttribute('data-decoration-id');
+                if (!decorationId) return;
                 // Check that the decoration belongs to a visible layer
                 const layerGroup = circle.closest('[data-layer-id]');
                 if (layerGroup) {
@@ -527,15 +618,15 @@ class MapViewer {
                 }
 
                 if (e.ctrlKey || e.metaKey) {
-                    this.selectionStore.toggleDecoration(decorationId);
+                    selectionStore.toggleDecoration(decorationId);
                 } else {
-                    this.selectionStore.selectDecoration(decorationId);
+                    selectionStore.selectDecoration(decorationId);
                 }
             } else if (mode === 'pan') {
                 // In pan mode only: clicking empty area clears selection,
                 // but only if the mouse was not dragged (panned) beforehand.
                 if (!panDragOccurred) {
-                    this.selectionStore.clearSelection();
+                    selectionStore.clearSelection();
                 }
                 panDragOccurred = false;
             }
@@ -553,7 +644,7 @@ class MapViewer {
      *   - pointerup finalises, determines enclosed decorations and selects them
      * @private
      */
-    _bindRectangleSelectHandlers() {
+    _bindRectangleSelectHandlers(): void {
         let rectInProgress = false;
         let hasMoved = false;
 
@@ -561,9 +652,11 @@ class MapViewer {
         this.svgElement.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
             if (!this._toolModeStore || !this._selectionRect) return;
+            const selectionRect = this._selectionRect;
             if (this._toolModeStore.getMode() !== 'select') return;
 
-            const circle = e.target.closest ? e.target.closest('[data-decoration-id]') : null;
+            const target = e.target instanceof Element ? e.target : null;
+            const circle = target?.closest('[data-decoration-id]') ?? null;
             if (circle) return; // Decoration click — let normal click handler process it
 
             // Block ZoomHandler from starting a pan
@@ -573,24 +666,25 @@ class MapViewer {
             rectInProgress = true;
 
             const svgCoords = this._getSVGCoords(e);
-            this._selectionRect.start(svgCoords.x, svgCoords.y);
+            selectionRect.start(svgCoords.x, svgCoords.y);
 
-            const onMove = (me) => {
+            const onMove = (me: MouseEvent) => {
                 if (!rectInProgress) return;
                 hasMoved = true;
                 const coords = this._getSVGCoords(me);
-                this._selectionRect.update(coords.x, coords.y);
+                selectionRect.update(coords.x, coords.y);
             };
 
-            const onUp = (me) => {
+            const onUp = (me: MouseEvent) => {
                 if (!rectInProgress) return;
                 rectInProgress = false;
                 document.removeEventListener('mousemove', onMove);
                 document.removeEventListener('mouseup', onUp);
 
-                const bounds = this._selectionRect.finish();
+                const bounds = selectionRect.finish();
 
-                if (!this.selectionStore) return;
+                const selectionStore = this.selectionStore;
+                if (!selectionStore) return;
 
                 if (hasMoved && bounds && (bounds.width > 2 || bounds.height > 2)) {
                     // Select decorations within the rectangle.
@@ -605,7 +699,7 @@ class MapViewer {
                         width: bounds.width,
                         height: bounds.height
                     };
-                    const ids = this._selectionRect.getDecorationsInBounds(
+                    const ids = selectionRect.getDecorationsInBounds(
                         groupBounds, this.decorationCircles
                     );
                     // Filter to only visible-layer decorations
@@ -621,17 +715,17 @@ class MapViewer {
 
                     if (me.shiftKey) {
                         // Shift (with or without Ctrl): remove from selection
-                        this.selectionStore.removeFromSelection(visibleIds);
+                        selectionStore.removeFromSelection(visibleIds);
                     } else if (me.ctrlKey || me.metaKey) {
                         // Ctrl only: additive — add to current selection
-                        this.selectionStore.addToSelection(visibleIds);
+                        selectionStore.addToSelection(visibleIds);
                     } else {
                         // No modifier: replace selection
-                        this.selectionStore.selectAll(visibleIds);
+                        selectionStore.selectAll(visibleIds);
                     }
                 } else if (!hasMoved) {
                     // Zero-distance click on empty area → clear selection
-                    this.selectionStore.clearSelection();
+                    selectionStore.clearSelection();
                 }
             };
 
@@ -653,7 +747,7 @@ class MapViewer {
      * @returns {{ x: number, y: number }}
      * @private
      */
-    _getContainerGroupOffset() {
+    _getContainerGroupOffset(): { x: number; y: number } {
         if (!this._containerGroup) return { x: 0, y: 0 };
         const transform = this._containerGroup.getAttribute('transform') || '';
         const match = /translate\(\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\)/.exec(transform);
@@ -661,8 +755,8 @@ class MapViewer {
         return { x: parseFloat(match[1]), y: parseFloat(match[2]) };
     }
 
-    _getSVGCoords(e) {
-        let point;
+    _getSVGCoords(e: MouseEvent): DOMPoint | { x: number; y: number } {
+        let point: DOMPoint;
         try {
             // createSVGPoint is standard but may be unavailable in some JSDOM versions
             point = this.svgElement.createSVGPoint();
@@ -686,7 +780,7 @@ class MapViewer {
      * Update visual selection highlights on decoration circles.
      * @private
      */
-    _updateSelectionHighlights() {
+    _updateSelectionHighlights(): void {
         for (const [id, circle] of this.decorationCircles) {
             if (this.selectionStore && this.selectionStore.isSelected(id)) {
                 circle.classList.add('selected-decoration');
@@ -704,7 +798,7 @@ class MapViewer {
      * Set the selection store (for late binding)
      * @param {SelectionStore} selectionStore
      */
-    setSelectionStore(selectionStore) {
+    setSelectionStore(selectionStore: SelectionStoreLike): void {
         this.selectionStore = selectionStore;
     }
 
@@ -713,7 +807,7 @@ class MapViewer {
      * Creates a SelectionRectangle on the SVG for rectangle selection.
      * @param {import('../stores/ToolModeStore.js').ToolModeStore} toolModeStore
      */
-    setToolModeStore(toolModeStore) {
+    setToolModeStore(toolModeStore: ToolModeStoreLike): void {
         this._toolModeStore = toolModeStore;
         this._selectionRect = new SelectionRectangle(this.svgElement);
 
@@ -730,7 +824,7 @@ class MapViewer {
      * Create and manage the floating +/- indicator near the cursor in select mode.
      * @private
      */
-    _initSelectionModeIndicator() {
+    _initSelectionModeIndicator(): void {
         const indicator = document.createElement('div');
         indicator.className = 'selection-mode-indicator';
         indicator.setAttribute('aria-hidden', 'true');
@@ -774,7 +868,7 @@ class MapViewer {
      * Update the selection mode indicator position and label.
      * @private
      */
-    _updateSelectionIndicator() {
+    _updateSelectionIndicator(): void {
         const el = this._selectionIndicator;
         if (!el) return;
 
@@ -804,7 +898,7 @@ class MapViewer {
      * Set the AppService reference (for late binding)
      * @param {AppService} appService
      */
-    setAppService(appService) {
+    setAppService(appService: AppServiceLike): void {
         this.appService = appService;
     }
 
@@ -812,7 +906,7 @@ class MapViewer {
      * Set the shared ContextMenu instance
      * @param {ContextMenu} contextMenu
      */
-    setContextMenu(contextMenu) {
+    setContextMenu(contextMenu: ContextMenuLike): void {
         this._contextMenu = contextMenu;
         this._bindContextMenuHandler();
         this._bindDragHandlers();
@@ -822,14 +916,19 @@ class MapViewer {
      * Bind right-click context menu on selected decoration circles.
      * @private
      */
-    _bindContextMenuHandler() {
+    _bindContextMenuHandler(): void {
         this.svgElement.addEventListener('contextmenu', (e) => {
-            if (!this._contextMenu || !this.selectionStore || !this.appService) return;
+            const contextMenu = this._contextMenu;
+            const selectionStore = this.selectionStore;
+            const appService = this.appService;
+            if (!contextMenu || !selectionStore || !appService) return;
 
-            const circle = e.target.closest ? e.target.closest('[data-decoration-id]') : null;
+            const target = e.target instanceof Element ? e.target : null;
+            const circle = target?.closest('[data-decoration-id]') ?? null;
             if (!circle) return;
 
             const decorationId = circle.getAttribute('data-decoration-id');
+            if (!decorationId) return;
 
             // Check visible layer
             const layerGroup = circle.closest('[data-layer-id]');
@@ -840,13 +939,13 @@ class MapViewer {
             }
 
             // If right-clicked decoration is not selected, select it first
-            if (!this.selectionStore.isSelected(decorationId)) {
-                this.selectionStore.selectDecoration(decorationId);
+            if (!selectionStore.isSelected(decorationId)) {
+                selectionStore.selectDecoration(decorationId);
             }
 
             e.preventDefault();
 
-            const selectedIds = this.selectionStore.getSelectedIds();
+            const selectedIds = selectionStore.getSelectedIds();
             const count = selectedIds.length;
             const state = this.appStore.getState();
             const layers = state.layers || [];
@@ -854,28 +953,28 @@ class MapViewer {
             const moveSubmenu = layers.map(l => ({
                 label: l.name || `Layer ${l.id}`,
                 action: () => {
-                    this.appService.execute({
+                    void appService.execute({
                         type: 'MoveDecorationsCommand',
                         payload: { decorationIds: selectedIds, targetLayerId: l.id }
                     });
                 }
             }));
 
-            const items = [];
+            const items: Array<{ label: string; action?: () => void; submenu?: Array<{ label: string; action: () => void }> }> = [];
             if (moveSubmenu.length > 0) {
                 items.push({ label: 'Move to Layer', submenu: moveSubmenu });
             }
             items.push({
                 label: `Delete ${count} Decoration${count > 1 ? 's' : ''}`,
                 action: () => {
-                    this.appService.execute({
+                    void appService.execute({
                         type: 'DeleteDecorationsCommand',
                         payload: { decorationIds: selectedIds }
                     });
                 }
             });
 
-            this._contextMenu.show(e.clientX, e.clientY, items);
+            contextMenu.show(e.clientX, e.clientY, items);
         });
     }
 
@@ -885,36 +984,42 @@ class MapViewer {
      * mousedown + mousemove to initiate a manual drag via a hidden helper element.
      * @private
      */
-    _bindDragHandlers() {
+    _bindDragHandlers(): void {
         // Use a helper HTML element overlaid on SVG to enable native drag
-        let dragHelper = null;
+        let dragHelper: HTMLDivElement | null = null;
 
         this.svgElement.addEventListener('mousedown', (e) => {
-            if (!this.selectionStore) return;
+            const selectionStore = this.selectionStore;
+            if (!selectionStore) return;
             if (e.button !== 0) return; // left click only
 
-            const circle = e.target.closest ? e.target.closest('[data-decoration-id]') : null;
+            const target = e.target instanceof Element ? e.target : null;
+            const circle = target?.closest('[data-decoration-id]') ?? null;
             if (!circle) return;
 
             const decorationId = circle.getAttribute('data-decoration-id');
-            if (!this.selectionStore.isSelected(decorationId)) return;
+            if (!decorationId || !selectionStore.isSelected(decorationId)) return;
 
             // Create a hidden draggable helper element for native HTML DnD
-            dragHelper = document.createElement('div');
-            dragHelper.setAttribute('draggable', 'true');
-            dragHelper.style.position = 'fixed';
-            dragHelper.style.left = `${e.clientX - 5}px`;
-            dragHelper.style.top = `${e.clientY - 5}px`;
-            dragHelper.style.width = '10px';
-            dragHelper.style.height = '10px';
-            dragHelper.style.opacity = '0';
-            dragHelper.style.zIndex = '9999';
-            document.body.appendChild(dragHelper);
+            const helperElement = document.createElement('div');
+            dragHelper = helperElement;
+            helperElement.setAttribute('draggable', 'true');
+            helperElement.style.position = 'fixed';
+            helperElement.style.left = `${e.clientX - 5}px`;
+            helperElement.style.top = `${e.clientY - 5}px`;
+            helperElement.style.width = '10px';
+            helperElement.style.height = '10px';
+            helperElement.style.opacity = '0';
+            helperElement.style.zIndex = '9999';
+            document.body.appendChild(helperElement);
 
-            dragHelper.addEventListener('dragstart', (de) => {
-                const selectedIds = this.selectionStore.getSelectedIds();
-                de.dataTransfer.setData('application/x-decoration-ids', JSON.stringify(selectedIds));
-                de.dataTransfer.effectAllowed = 'move';
+            helperElement.addEventListener('dragstart', (de) => {
+                const currentSelectionStore = this.selectionStore;
+                const dataTransfer = de.dataTransfer;
+                if (!currentSelectionStore || !dataTransfer) return;
+                const selectedIds = currentSelectionStore.getSelectedIds();
+                dataTransfer.setData('application/x-decoration-ids', JSON.stringify(selectedIds));
+                dataTransfer.effectAllowed = 'move';
 
                 const count = selectedIds.length;
                 if (count > 0) {
@@ -924,12 +1029,12 @@ class MapViewer {
                     dragImage.style.position = 'absolute';
                     dragImage.style.top = '-9999px';
                     document.body.appendChild(dragImage);
-                    de.dataTransfer.setDragImage(dragImage, 0, 0);
+                    dataTransfer.setDragImage(dragImage, 0, 0);
                     setTimeout(() => document.body.removeChild(dragImage), 0);
                 }
             });
 
-            dragHelper.addEventListener('dragend', () => {
+            helperElement.addEventListener('dragend', () => {
                 if (dragHelper && dragHelper.parentNode) {
                     dragHelper.parentNode.removeChild(dragHelper);
                 }
@@ -939,13 +1044,14 @@ class MapViewer {
             // Programmatically trigger dragstart on the helper
             // Use a small delay so the helper is in the DOM
             setTimeout(() => {
-                if (dragHelper) {
+                const currentHelper = dragHelper;
+                if (currentHelper) {
                     const dragEvent = new DragEvent('dragstart', {
                         bubbles: true,
                         cancelable: true,
                         dataTransfer: new DataTransfer()
                     });
-                    dragHelper.dispatchEvent(dragEvent);
+                    currentHelper.dispatchEvent(dragEvent);
                 }
             }, 0);
         });

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for SettingsDialog component
  * Covers: construction, show/cancel/save, pre-population, Escape handling,

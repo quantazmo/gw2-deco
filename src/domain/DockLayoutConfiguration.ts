@@ -19,6 +19,7 @@ export type PanelNode = { type: 'panel'; panelId: string };
 export type TabGroupNode = { type: 'tabgroup'; panels: string[]; activeIndex: number };
 export type SplitNode = { type: 'split'; direction: 'horizontal' | 'vertical'; ratio: number; first: DockLayoutNode; second: DockLayoutNode };
 export type DockLayoutNode = PanelNode | TabGroupNode | SplitNode;
+export type DockNodePath = Array<'first' | 'second'>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Node factory functions

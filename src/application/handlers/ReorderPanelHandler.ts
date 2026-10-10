@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ReorderPanelHandler
  * Handles ReorderPanelCommand:
@@ -12,6 +11,8 @@
 
 import {
     DockLayoutConfiguration,
+    DockLayoutNode,
+    DockNodePath,
     createTabGroupNode,
     createSplitNode,
 } from '../../domain/DockLayoutConfiguration.js';
@@ -28,12 +29,12 @@ import {
  * @param {string[]} path
  * @returns {object}
  */
-function getNodeAtPath(tree, path) {
+function getNodeAtPath(tree: DockLayoutNode, path: DockNodePath): DockLayoutNode {
     let node = tree;
     for (const key of path) {
-        if (!node) {
+        if (node.type !== 'split') {
             throw new Error(
-                `ReorderPanelHandler: null node reached at path segment "${key}"`
+                `ReorderPanelHandler: null node or non-split node reached at path segment "${key}"`
             );
         }
         node = node[key];
@@ -49,7 +50,7 @@ function getNodeAtPath(tree, path) {
  * @param {object}   replacement
  * @returns {object}
  */
-function replaceAtPath(tree, path, replacement) {
+function replaceAtPath(tree: DockLayoutNode, path: DockNodePath, replacement: DockLayoutNode): DockLayoutNode {
     if (path.length === 0) return replacement;
 
     const [head, ...rest] = path;
@@ -86,21 +87,21 @@ function replaceAtPath(tree, path, replacement) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export class ReorderPanelHandler {
-    layoutStore: any; // JS domain object � fully typed once domain migrates to TypeScript
+    layoutStore: import('../../ui/stores/DockPanelLayoutStore.ts').DockPanelLayoutStore;
 
     /**
      * @param {import('../../ui/stores/LayoutStore.js').LayoutStore} layoutStore
      */
-    constructor(layoutStore: unknown) {
+    constructor(layoutStore: import('../../ui/stores/DockPanelLayoutStore.ts').DockPanelLayoutStore) {
         this.layoutStore = layoutStore;
     }
 
     /** @param {import('../commands/ReorderPanelCommand.js').ReorderPanelCommand} command */
-    execute(command: any) { // TODO: typed command interface pending domain migration
+    execute(command: import('../commands/ReorderPanelCommand.ts').ReorderPanelCommand): DockLayoutConfiguration {
         return this.handle(command);
     }
 
-    handle(command: any) { // TODO: typed command interface pending domain migration
+    handle(command: import('../commands/ReorderPanelCommand.ts').ReorderPanelCommand): DockLayoutConfiguration {
         const { reorderType: type, nodePath, fromIndex, toIndex } = command;
 
         // Early exit — no change needed
@@ -110,7 +111,7 @@ export class ReorderPanelHandler {
 
         const currentLayout = this.layoutStore.getState();
         const currentTree = currentLayout.tree;
-        let newTree;
+        let newTree: DockLayoutNode;
 
         if (type === 'tab') {
             const tabNode = getNodeAtPath(currentTree, nodePath);

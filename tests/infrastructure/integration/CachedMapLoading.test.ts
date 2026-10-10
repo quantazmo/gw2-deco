@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Integration Tests: Cached Map Loading
  * 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * SelectionStore
  * Tracks user selections in the UI — supports multi-select via SelectionSet
@@ -7,8 +6,22 @@
  */
 import { SelectionSet } from '../../domain/SelectionSet.js';
 
+type SelectionState = {
+    activeLayerId: string | null;
+    selectedIds: string[];
+    selectionCount: number;
+    selectedDecorationId: string | null;
+};
+type SelectionEventBus = { publish(eventType: string, data: unknown): void };
+type SelectionListener = (state: SelectionState) => void;
+
 class SelectionStore {
-    constructor(eventBus) {
+    eventBus: SelectionEventBus | null;
+    state: { activeLayerId: string | null };
+    _selection: SelectionSet;
+    listeners: SelectionListener[];
+
+    constructor(eventBus: SelectionEventBus | null = null) {
         this.eventBus = eventBus;
 
         this.state = {
@@ -23,7 +36,7 @@ class SelectionStore {
      * Get current selection state (backward-compatible + new fields)
      * @returns {Object} Selection state
      */
-    getState() {
+    getState(): Readonly<SelectionState> {
         return Object.freeze({
             activeLayerId: this.state.activeLayerId,
             selectedIds: this._selection.toArray(),
@@ -37,7 +50,7 @@ class SelectionStore {
      * Set active layer
      * @param {string|null} layerId
      */
-    setActiveLayer(layerId) {
+    setActiveLayer(layerId: string | null): void {
         if (this.state.activeLayerId !== layerId) {
             this.state.activeLayerId = layerId;
             this._notifyListeners();
@@ -49,7 +62,7 @@ class SelectionStore {
      * Get active layer ID
      * @returns {string|null}
      */
-    getActiveLayerId() {
+    getActiveLayerId(): string | null {
         return this.state.activeLayerId;
     }
 
@@ -57,7 +70,7 @@ class SelectionStore {
      * Select a single decoration (clears previous selection)
      * @param {string} id - Decoration ID
      */
-    selectDecoration(id) {
+    selectDecoration(id: string): void {
         if (typeof id !== 'string' || id.trim().length === 0) return;
         this._selection = new SelectionSet([id]);
         this._notifyListeners();
@@ -68,7 +81,7 @@ class SelectionStore {
      * Toggle a decoration in/out of the selection (Ctrl+Click)
      * @param {string} id - Decoration ID
      */
-    toggleDecoration(id) {
+    toggleDecoration(id: string): void {
         if (typeof id !== 'string' || id.trim().length === 0) return;
         this._selection = this._selection.toggle(id);
         this._notifyListeners();
@@ -81,7 +94,7 @@ class SelectionStore {
      * @param {string} toId - Target decoration ID
      * @param {string[]} orderedIds - All decoration IDs in display order
      */
-    selectRange(fromId, toId, orderedIds) {
+    selectRange(fromId: string, toId: string, orderedIds: string[]): void {
         if (!Array.isArray(orderedIds)) return;
         const fromIndex = orderedIds.indexOf(fromId);
         const toIndex = orderedIds.indexOf(toId);
@@ -100,7 +113,7 @@ class SelectionStore {
      * Select all provided decoration IDs
      * @param {string[]} ids - Decoration IDs to select
      */
-    selectAll(ids) {
+    selectAll(ids: string[]): void {
         if (!Array.isArray(ids)) return;
         this._selection = new SelectionSet(ids);
         this._notifyListeners();
@@ -111,7 +124,7 @@ class SelectionStore {
      * Add decoration IDs to the current selection (additive, no duplicates)
      * @param {string[]} ids - Decoration IDs to add
      */
-    addToSelection(ids) {
+    addToSelection(ids: string[]): void {
         if (!Array.isArray(ids) || ids.length === 0) return;
         this._selection = this._selection.addRange(ids);
         this._notifyListeners();
@@ -122,7 +135,7 @@ class SelectionStore {
      * Remove decoration IDs from the current selection
      * @param {string[]} ids - Decoration IDs to remove
      */
-    removeFromSelection(ids) {
+    removeFromSelection(ids: string[]): void {
         if (!Array.isArray(ids) || ids.length === 0) return;
         this._selection = this._selection.removeRange(ids);
         this._notifyListeners();
@@ -132,7 +145,7 @@ class SelectionStore {
     /**
      * Clear all decoration selections
      */
-    clearSelection() {
+    clearSelection(): void {
         if (this._selection.isEmpty()) return;
         this._selection = new SelectionSet();
         this._notifyListeners();
@@ -143,7 +156,7 @@ class SelectionStore {
      * Get array of selected decoration IDs
      * @returns {string[]}
      */
-    getSelectedIds() {
+    getSelectedIds(): string[] {
         return this._selection.toArray();
     }
 
@@ -152,7 +165,7 @@ class SelectionStore {
      * @param {string} id
      * @returns {boolean}
      */
-    isSelected(id) {
+    isSelected(id: string): boolean {
         return this._selection.contains(id);
     }
 
@@ -160,7 +173,7 @@ class SelectionStore {
      * Get the number of selected decorations
      * @returns {number}
      */
-    getSelectionCount() {
+    getSelectionCount(): number {
         return this._selection.size;
     }
 
@@ -169,7 +182,7 @@ class SelectionStore {
      * @param {string} layerId - Layer ID
      * @param {function} decorationBelongsToLayer - Predicate: (decorationId) => boolean
      */
-    deselectByLayer(layerId, decorationBelongsToLayer) {
+    deselectByLayer(layerId: string, decorationBelongsToLayer: (decorationId: string) => boolean): void {
         if (typeof decorationBelongsToLayer !== 'function') return;
         const before = this._selection.size;
         this._selection = this._selection.removeByFilter(decorationBelongsToLayer);
@@ -183,7 +196,7 @@ class SelectionStore {
      * Get selected decoration ID (backward compatibility for single-select consumers)
      * @returns {string|null}
      */
-    getSelectedDecorationId() {
+    getSelectedDecorationId(): string | null {
         if (this._selection.size === 1) {
             return this._selection.toArray()[0];
         }
@@ -195,7 +208,7 @@ class SelectionStore {
      * @param {Function} listener - Callback function
      * @returns {Function} Unsubscribe function
      */
-    subscribe(listener) {
+    subscribe(listener: SelectionListener): () => void {
         if (typeof listener !== 'function') {
             throw new Error('Listener must be a function');
         }
@@ -209,7 +222,7 @@ class SelectionStore {
      * Notify listeners of state change
      * @private
      */
-    _notifyListeners() {
+    _notifyListeners(): void {
         const state = this.getState();
         this.listeners.forEach(listener => {
             try {
@@ -226,7 +239,7 @@ class SelectionStore {
      * @param {Function} callback - Called with state when selection changes
      * @returns {Function} Unsubscribe function
      */
-    on(event, callback) {
+    on(event: string, callback: SelectionListener): () => void {
         if (event === 'change' || !event) {
             this.listeners.push(callback);
             return () => {
@@ -240,7 +253,7 @@ class SelectionStore {
      * Publish event via event bus
      * @private
      */
-    _publishEvent(eventType, data) {
+    _publishEvent(eventType: string, data: unknown): void {
         if (this.eventBus) {
             this.eventBus.publish(eventType, data);
         }

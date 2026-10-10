@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for DecorationInfoDialog component
  * Covers: show with decoration data, close on button click,

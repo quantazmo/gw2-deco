@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for src/domain/ZoomCalculationService.js
  * Covers: calculateZoomToFitArea, calculateVisibleArea, invalid maxZoom

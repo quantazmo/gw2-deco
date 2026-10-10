@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for src/ui/components/SelectionRectangle.js
  * Covers: SVG rect creation, start/update/finish coordinates,

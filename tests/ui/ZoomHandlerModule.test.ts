@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createZoomHandler } from '../../src/ui/ZoomHandler.js';
 
 function makeMockZoomStore(minZoom = 0.1, maxZoom = 10) {

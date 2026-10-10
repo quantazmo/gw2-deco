@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Additional tests for src/domain/CoordinateConversionService.js
  * Covers: mapToContinent, worldToMap edge cases

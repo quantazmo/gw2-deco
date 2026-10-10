@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests for DeleteLayerHandler (Phase 6 — US4: Delete Layer with Undo)
  *

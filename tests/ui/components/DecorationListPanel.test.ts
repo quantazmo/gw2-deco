@@ -1,26 +1,32 @@
-// @ts-nocheck
 /**
  * Tests for DecorationListPanel component
  * Covers: render with visible layers, click-to-select, Ctrl+Click toggle,
  * Shift+Click range, hidden layer exclusion, layer group headers
  */
-import { DecorationListPanel } from '../../../src/ui/components/DecorationListPanel.js';
-import { SelectionStore } from '../../../src/ui/stores/SelectionStore.js';
-import { EventBus } from '../../../src/ui/EventBus.js';
+import { DecorationListPanel } from '../../../src/ui/components/DecorationListPanel.ts';
+import { SelectionStore } from '../../../src/ui/stores/SelectionStore.ts';
+import { EventBus } from '../../../src/ui/EventBus.ts';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { Decoration } from '../../../src/domain/Decoration.ts';
+import { Layer } from '../../../src/domain/Layer.ts';
+import { AppState, AppStore } from '../../../src/ui/stores/AppStore.js';
+import ContextMenu from '../../../src/ui/components/ContextMenu.ts';
+import AppService from '../../../src/application/AppService.ts';
 
-function createMockAppStore(layers = []) {
-    const listeners = [];
+function createMockAppStore(layers: Layer[] = []): AppStore {
+    const listeners: Array<(state: AppState) => void> = [];
     return {
-        getState: () => ({ layers }),
-        subscribe: (fn) => {
+        getState: () => ({ layers } as AppState),
+        listeners: listeners,
+        subscribe: (fn: (state: AppState) => void) => {
             listeners.push(fn);
             return () => { listeners.splice(listeners.indexOf(fn), 1); };
         },
-        _notify(state) { listeners.forEach(fn => fn(state)); }
-    };
+        _notify(state: AppState) { listeners.forEach(fn => fn(state)); }
+    } as unknown as AppStore;
 }
 
-function createLayer(id, name, decorations = [], isVisible = true) {
+function createLayer(id: string, name: string, decorations: Decoration[] = [], isVisible: boolean = true): Layer {
     return {
         id,
         name,
@@ -28,25 +34,25 @@ function createLayer(id, name, decorations = [], isVisible = true) {
         decorations: new Map(decorations.map(d => [d.id, d])),
         getAllDecorations() { return Array.from(this.decorations.values()); },
         getDecorationCount() { return this.decorations.size; }
-    };
+    } as Layer;
 }
 
-function createDecoration(id, name) {
-    return { id, uid: id, name, position: { x: 0, y: 0 } };
+function createDecoration(id: string, name: string): Decoration {
+    return { id, uid: id, name, position: { x: 0, y: 0 } } as Decoration;
 }
 
 describe('DecorationListPanel', () => {
-    let container;
-    let appStore;
-    let selectionStore;
-    let eventBus;
+    let container: HTMLElement;
+    let appStore: AppStore;
+    let selectionStore: SelectionStore;
+    let eventBus: EventBus;
 
     beforeEach(() => {
         document.body.innerHTML = '';
         container = document.createElement('div');
         document.body.appendChild(container);
         eventBus = new EventBus();
-        eventBus.debugEnabled = false;
+        // eventBus.debugEnabled = false;
         selectionStore = new SelectionStore(eventBus);
     });
 
@@ -102,7 +108,7 @@ describe('DecorationListPanel', () => {
                     createDecoration('d2', 'Bench')
                 ])
             ];
-            appStore._notify({ layers: newLayers });
+            (appStore as AppStore & { _notify(state: AppState): void })._notify({ layers: newLayers } as AppState);
 
             expect(container.querySelectorAll('.decoration-list__item').length).toBe(2);
         });
@@ -138,7 +144,7 @@ describe('DecorationListPanel', () => {
             const panel = new DecorationListPanel(container, appStore, selectionStore, eventBus);
 
             const items = container.querySelectorAll('.decoration-list__item');
-            items[0].click();
+            (items[0] as HTMLElement).click();
 
             expect(selectionStore.isSelected('d1')).toBe(true);
             expect(selectionStore.isSelected('d2')).toBe(false);
@@ -156,11 +162,11 @@ describe('DecorationListPanel', () => {
 
             // Select first
             const items = container.querySelectorAll('.decoration-list__item');
-            items[0].click();
+            (items[0] as HTMLElement).click();
             expect(selectionStore.isSelected('d1')).toBe(true);
 
             // Click second (should clear first)
-            items[1].click();
+            (items[1] as HTMLElement).click();
             expect(selectionStore.isSelected('d1')).toBe(false);
             expect(selectionStore.isSelected('d2')).toBe(true);
         });
@@ -180,7 +186,7 @@ describe('DecorationListPanel', () => {
             const items = container.querySelectorAll('.decoration-list__item');
 
             // Select first normally
-            items[0].click();
+            (items[0] as HTMLElement).click();
             expect(selectionStore.getSelectionCount()).toBe(1);
 
             // Ctrl+Click second
@@ -203,7 +209,7 @@ describe('DecorationListPanel', () => {
             const items = container.querySelectorAll('.decoration-list__item');
 
             // Select both
-            items[0].click();
+            (items[0] as HTMLElement).click();
             items[1].dispatchEvent(new MouseEvent('click', { ctrlKey: true, bubbles: true }));
             expect(selectionStore.getSelectionCount()).toBe(2);
 
@@ -230,7 +236,7 @@ describe('DecorationListPanel', () => {
             const items = container.querySelectorAll('.decoration-list__item');
 
             // Click first (anchor)
-            items[0].click();
+            (items[0] as HTMLElement).click();
             expect(selectionStore.isSelected('d1')).toBe(true);
 
             // Shift+Click third
@@ -259,7 +265,7 @@ describe('DecorationListPanel', () => {
             const items = container.querySelectorAll('.decoration-list__item');
 
             // Click first in layer 1
-            items[0].click();
+            (items[0] as HTMLElement).click();
 
             // Shift+Click first in layer 2
             items[2].dispatchEvent(new MouseEvent('click', { shiftKey: true, bubbles: true }));
@@ -284,8 +290,8 @@ describe('DecorationListPanel', () => {
             const panel = new DecorationListPanel(container, appStore, selectionStore, eventBus);
 
             const header = container.querySelector('.decoration-list__layer-header');
-            expect(header.textContent).toContain('My Trees');
-            expect(header.textContent).toContain('3');
+            expect(header!.textContent).toContain('My Trees');
+            expect(header!.textContent).toContain('3');
         });
     });
 
@@ -301,7 +307,7 @@ describe('DecorationListPanel', () => {
             const panel = new DecorationListPanel(container, appStore, selectionStore, eventBus);
 
             const items = container.querySelectorAll('.decoration-list__item');
-            items[0].click();
+            (items[0] as HTMLElement).click();
 
             // Re-query after potential re-render
             const updatedItems = container.querySelectorAll('.decoration-list__item');
@@ -319,7 +325,7 @@ describe('DecorationListPanel', () => {
             const panel = new DecorationListPanel(container, appStore, selectionStore, eventBus);
 
             const item = container.querySelector('.decoration-list__item');
-            expect(item.getAttribute('data-decoration-id')).toBe('d1');
+            expect(item!.getAttribute('data-decoration-id')).toBe('d1');
         });
 
         test('should display decoration name', () => {
@@ -330,34 +336,34 @@ describe('DecorationListPanel', () => {
             const panel = new DecorationListPanel(container, appStore, selectionStore, eventBus);
 
             const item = container.querySelector('.decoration-list__item');
-            expect(item.textContent).toContain('Oak Tree');
+            expect(item!.textContent).toContain('Oak Tree');
         });
     });
 
     describe('layer header context menu', () => {
-        let contextMenu;
-        let shownItems;
-        let appService;
+        let contextMenu: ContextMenu;
+        let shownItems: Parameters<ContextMenu['show']>[2];
+        let appService: AppService;
 
         beforeEach(() => {
-            shownItems = null;
-            contextMenu = { show: (x, y, items) => { shownItems = items; } };
-            appService = { execute: vi.fn() };
+            shownItems = [];
+            contextMenu = { show: (x, y, items: Parameters<ContextMenu['show']>[2]) => { shownItems = items; } } as ContextMenu;
+            appService = { execute: vi.fn() } as unknown as AppService;
             selectionStore.setActiveLayer = vi.fn();
             selectionStore.selectAll = vi.fn();
         });
 
-        function setupPanel(layers) {
+        function setupPanel(layers: Layer[]): DecorationListPanel {
             appStore = createMockAppStore(layers);
             const panel = new DecorationListPanel(container, appStore, selectionStore, eventBus, appService);
-            panel.setContextMenu(contextMenu);
+            panel._contextMenu = contextMenu;
             return panel;
         }
 
-        function triggerHeaderContextMenu(layers) {
+        function triggerHeaderContextMenu(layers: Layer[]) {
             setupPanel(layers);
             const header = container.querySelector('.decoration-list__layer-header');
-            header.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 100, clientY: 200 }));
+            header!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 100, clientY: 200 }));
             return shownItems;
         }
 
@@ -374,7 +380,7 @@ describe('DecorationListPanel', () => {
                 createLayer('l1', 'Layer 1', [createDecoration('d1', 'Tree'), createDecoration('d2', 'Bench')])
             ];
             const items = triggerHeaderContextMenu(layers);
-            const selectAll = items.find(i => i.label.startsWith('Select All'));
+            const selectAll = items.find(i => i.label.startsWith('Select All'))!;
             expect(selectAll).toBeDefined();
             expect(selectAll.label).toContain('2');
         });
@@ -387,14 +393,14 @@ describe('DecorationListPanel', () => {
             ];
             appStore = createMockAppStore(layers);
             const panel = new DecorationListPanel(container, appStore, selectionStore, eventBus, appService);
-            panel.setContextMenu(contextMenu);
+            panel._contextMenu = contextMenu;
 
             // Invoke handler directly with an empty layer
             const emptyLayer = createLayer('l2', 'Empty Layer', []);
-            const fakeEvent = { preventDefault: vi.fn(), clientX: 0, clientY: 0 };
+            const fakeEvent = { preventDefault: vi.fn(), clientX: 0, clientY: 0 } as unknown as MouseEvent;
             panel._handleLayerHeaderContextMenu(emptyLayer, fakeEvent);
 
-            const selectAll = shownItems.find(i => i.label.startsWith('Select All'));
+            const selectAll = shownItems.find(i => i.label.startsWith('Select All'))!;
             expect(selectAll.disabled).toBe(true);
         });
 
@@ -403,8 +409,8 @@ describe('DecorationListPanel', () => {
                 createLayer('l1', 'Layer 1', [createDecoration('d1', 'Tree'), createDecoration('d2', 'Bench')])
             ];
             const items = triggerHeaderContextMenu(layers);
-            const selectAll = items.find(i => i.label.startsWith('Select All'));
-            selectAll.action();
+            const selectAll = items.find(i => i.label.startsWith('Select All'))!;
+            selectAll.action!();
             expect(selectionStore.selectAll).toHaveBeenCalledWith(['d1', 'd2']);
         });
 
@@ -422,7 +428,7 @@ describe('DecorationListPanel', () => {
                 createLayer('l2', 'Layer 2', [createDecoration('d2', 'Bench')])
             ];
             const items = triggerHeaderContextMenu(layers);
-            const mergeItem = items.find(i => i.label.startsWith('Merge to'));
+            const mergeItem = items.find(i => i.label.startsWith('Merge to'))!;
             expect(mergeItem).toBeDefined();
         });
 
@@ -433,10 +439,10 @@ describe('DecorationListPanel', () => {
                 createLayer('l3', 'Layer 3', [createDecoration('d3', 'Rock')])
             ];
             const items = triggerHeaderContextMenu(layers);
-            const mergeItem = items.find(i => i.label.startsWith('Merge to'));
+            const mergeItem = items.find(i => i.label.startsWith('Merge to'))!;
             expect(mergeItem.submenu).toHaveLength(2);
-            expect(mergeItem.submenu[0].label).toBe('Layer 2');
-            expect(mergeItem.submenu[1].label).toBe('Layer 3');
+            expect(mergeItem.submenu![0].label).toBe('Layer 2');
+            expect(mergeItem.submenu![1].label).toBe('Layer 3');
         });
 
         test('"Merge to..." is disabled when no other layers exist', () => {
@@ -444,7 +450,7 @@ describe('DecorationListPanel', () => {
                 createLayer('l1', 'Layer 1', [createDecoration('d1', 'Tree')])
             ];
             const items = triggerHeaderContextMenu(layers);
-            const mergeItem = items.find(i => i.label.startsWith('Merge to'));
+            const mergeItem = items.find(i => i.label.startsWith('Merge to'))!;
             expect(mergeItem.disabled).toBe(true);
         });
 
@@ -455,14 +461,14 @@ describe('DecorationListPanel', () => {
             ];
             appStore = createMockAppStore(layers);
             const panel = new DecorationListPanel(container, appStore, selectionStore, eventBus, appService);
-            panel.setContextMenu(contextMenu);
+            panel._contextMenu = contextMenu;
             panel._confirmAndMergeLayer = vi.fn().mockResolvedValue(undefined);
 
             const header = container.querySelector('.decoration-list__layer-header');
-            header.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+            header!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
 
-            const mergeItem = shownItems.find(i => i.label.startsWith('Merge to'));
-            mergeItem.submenu[0].action();
+            const mergeItem = shownItems.find(i => i.label.startsWith('Merge to'))!;
+            mergeItem.submenu![0].action!();
             expect(panel._confirmAndMergeLayer).toHaveBeenCalled();
         });
     });

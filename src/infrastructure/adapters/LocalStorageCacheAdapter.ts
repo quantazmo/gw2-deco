@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * LocalStorageCacheAdapter
  * 
@@ -6,8 +5,31 @@
  * Supports different cache durations per item type and automatic expiration.
  */
 
+interface LocalStorageCacheOptions {
+    defaultTTL?: number;
+    storagePrefix?: string;
+    itemTTLs?: Record<string, number>;
+}
+
+interface CacheEnvelope {
+    value: unknown;
+    timestamp: number;
+    ttl: number;
+}
+
+interface CacheStats {
+    itemCount: number;
+    expiredCount: number;
+    totalSizeBytes: number;
+    totalSizeKB: string;
+}
+
 export class LocalStorageCacheAdapter {
-    constructor(options = {}) {
+    private readonly defaultTTL: number;
+    private readonly storagePrefix: string;
+    private readonly itemTTLs: Record<string, number>;
+
+    constructor(options: LocalStorageCacheOptions = {}) {
         this.defaultTTL = options.defaultTTL || 3600; // 1 hour default
         this.storagePrefix = options.storagePrefix || 'gw2-cache';
         this.itemTTLs = options.itemTTLs || {}; // Map of item types to TTL in seconds
@@ -16,9 +38,9 @@ export class LocalStorageCacheAdapter {
     /**
      * Get a cached item
      * @param {string} key - The cache key
-     * @returns {Promise<any|null>} The cached value, or null if expired or not found
+    * @returns {Promise<unknown|null>} The cached value, or null if expired or not found
      */
-    async get(key) {
+    async get(key: string): Promise<unknown | null> {
         try {
             const fullKey = this._getFullKey(key);
             const cached = localStorage.getItem(fullKey);
@@ -27,7 +49,7 @@ export class LocalStorageCacheAdapter {
                 return null;
             }
 
-            const wrapper = JSON.parse(cached);
+            const wrapper = JSON.parse(cached) as CacheEnvelope;
             const age = (Date.now() - wrapper.timestamp) / 1000; // Age in seconds
 
             if (age > wrapper.ttl) {
@@ -38,7 +60,8 @@ export class LocalStorageCacheAdapter {
 
             return wrapper.value;
         } catch (error) {
-            console.warn(`Failed to get cache item '${key}': ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            console.warn(`Failed to get cache item '${key}': ${message}`);
             return null;
         }
     }
@@ -46,11 +69,11 @@ export class LocalStorageCacheAdapter {
     /**
      * Set a cached item
      * @param {string} key - The cache key
-     * @param {any} value - The value to cache
+    * @param {unknown} value - The value to cache
      * @param {number} ttl - Optional: Time to live in seconds (uses defaultTTL if not specified)
      * @returns {Promise<void>}
      */
-    async set(key, value, ttl = null) {
+    async set(key: string, value: unknown, ttl: number | null = null): Promise<void> {
         try {
             const fullKey = this._getFullKey(key);
             const ttlSeconds = ttl !== null ? ttl : this._getTTLForKey(key);
@@ -63,7 +86,8 @@ export class LocalStorageCacheAdapter {
 
             localStorage.setItem(fullKey, JSON.stringify(wrapper));
         } catch (error) {
-            console.warn(`Failed to set cache item '${key}': ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            console.warn(`Failed to set cache item '${key}': ${message}`);
             // Don't throw - cache failures shouldn't crash the app
         }
     }
@@ -73,12 +97,13 @@ export class LocalStorageCacheAdapter {
      * @param {string} key - The cache key
      * @returns {Promise<void>}
      */
-    async delete(key) {
+    async delete(key: string): Promise<void> {
         try {
             const fullKey = this._getFullKey(key);
             localStorage.removeItem(fullKey);
         } catch (error) {
-            console.warn(`Failed to delete cache item '${key}': ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            console.warn(`Failed to delete cache item '${key}': ${message}`);
         }
     }
 
@@ -87,7 +112,7 @@ export class LocalStorageCacheAdapter {
      * @param {string} key - The cache key
      * @returns {Promise<boolean>} True if item exists and is not expired
      */
-    async exists(key) {
+    async exists(key: string): Promise<boolean> {
         const value = await this.get(key);
         return value !== null;
     }
@@ -96,7 +121,7 @@ export class LocalStorageCacheAdapter {
      * Clear all cache items
      * @returns {Promise<void>}
      */
-    async clear() {
+    async clear(): Promise<void> {
         try {
             const keys = Object.keys(localStorage);
             const prefix = `${this.storagePrefix}-`;
@@ -107,7 +132,8 @@ export class LocalStorageCacheAdapter {
                 }
             }
         } catch (error) {
-            console.warn(`Failed to clear cache: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            console.warn(`Failed to clear cache: ${message}`);
         }
     }
 
@@ -115,7 +141,7 @@ export class LocalStorageCacheAdapter {
      * Clear expired items from cache
      * @returns {Promise<void>}
      */
-    async clearExpired() {
+    async clearExpired(): Promise<void> {
         try {
             const keys = Object.keys(localStorage);
             const prefix = `${this.storagePrefix}-`;
@@ -124,7 +150,7 @@ export class LocalStorageCacheAdapter {
                 if (key.startsWith(prefix)) {
                     const cached = localStorage.getItem(key);
                     if (cached) {
-                        const wrapper = JSON.parse(cached);
+                        const wrapper = JSON.parse(cached) as CacheEnvelope;
                         const age = (Date.now() - wrapper.timestamp) / 1000;
 
                         if (age > wrapper.ttl) {
@@ -134,7 +160,8 @@ export class LocalStorageCacheAdapter {
                 }
             }
         } catch (error) {
-            console.warn(`Failed to clear expired cache items: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            console.warn(`Failed to clear expired cache items: ${message}`);
         }
     }
 
@@ -142,7 +169,7 @@ export class LocalStorageCacheAdapter {
      * Get cache statistics
      * @returns {Promise<object>} Cache stats (itemCount, totalSize, etc.)
      */
-    async getStats() {
+    async getStats(): Promise<CacheStats> {
         try {
             const keys = Object.keys(localStorage);
             const prefix = `${this.storagePrefix}-`;
@@ -156,7 +183,7 @@ export class LocalStorageCacheAdapter {
                     const cached = localStorage.getItem(key);
                     if (cached) {
                         totalSize += cached.length;
-                        const wrapper = JSON.parse(cached);
+                        const wrapper = JSON.parse(cached) as CacheEnvelope;
                         const age = (Date.now() - wrapper.timestamp) / 1000;
 
                         if (age > wrapper.ttl) {
@@ -173,7 +200,8 @@ export class LocalStorageCacheAdapter {
                 totalSizeKB: (totalSize / 1024).toFixed(2)
             };
         } catch (error) {
-            console.warn(`Failed to get cache stats: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            console.warn(`Failed to get cache stats: ${message}`);
             return {
                 itemCount: 0,
                 expiredCount: 0,
@@ -188,7 +216,7 @@ export class LocalStorageCacheAdapter {
      * @param {string} itemType - The item type (e.g., 'map', 'layout')
      * @param {number} ttlSeconds - Time to live in seconds
      */
-    setItemTTL(itemType, ttlSeconds) {
+    setItemTTL(itemType: string, ttlSeconds: number): void {
         this.itemTTLs[itemType] = ttlSeconds;
     }
 
@@ -198,7 +226,7 @@ export class LocalStorageCacheAdapter {
      * Get the full storage key with prefix
      * @private
      */
-    _getFullKey(key) {
+    _getFullKey(key: string): string {
         return `${this.storagePrefix}-${key}`;
     }
 
@@ -206,7 +234,7 @@ export class LocalStorageCacheAdapter {
      * Get the TTL for a specific key based on its prefix/type
      * @private
      */
-    _getTTLForKey(key) {
+    _getTTLForKey(key: string): number {
         // Check if any item type prefix matches this key
         for (const [itemType, ttl] of Object.entries(this.itemTTLs)) {
             if (key.startsWith(itemType)) {

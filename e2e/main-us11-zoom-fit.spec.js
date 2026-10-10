@@ -28,7 +28,7 @@ async function loadLayout(page) {
  */
 async function getMapAndContainerBounds(page) {
     return page.evaluate(() => {
-        const container = document.getElementById('chart-container');
+        const container = document.getElementById('map-container');
         const svg = container ? container.querySelector('svg') : null;
         if (!container || !svg) return null;
 
@@ -77,7 +77,7 @@ test.describe('US11: Fit Default Zoom to Map Display Area', () => {
 
         // Get positions of all rendered decoration circles
         const circlesInBounds = await page.evaluate(() => {
-            const container = document.getElementById('chart-container');
+            const container = document.getElementById('map-container');
             if (!container) return { all: 0, outOfBounds: 0 };
 
             const containerRect = container.getBoundingClientRect();
@@ -133,7 +133,7 @@ test.describe('US11: Fit Default Zoom to Map Display Area', () => {
         await loadLayout(page);
 
         const result = await page.evaluate(() => {
-            const container = document.getElementById('chart-container');
+            const container = document.getElementById('map-container');
             const svg = container ? container.querySelector('svg') : null;
             if (!container || !svg) return null;
 
