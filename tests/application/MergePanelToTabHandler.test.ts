@@ -7,6 +7,7 @@
  *   - TabGroupNode reverts to PanelNode when only one panel remains
  *   - Invalid inputs are rejected
  */
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { MergePanelToTabHandler } from '../../src/application/handlers/MergePanelToTabHandler.js';
 import { MergePanelToTabCommand } from '../../src/application/commands/MergePanelToTabCommand.js';
 import { DockPanelLayoutStore } from '../../src/ui/stores/DockPanelLayoutStore.js';

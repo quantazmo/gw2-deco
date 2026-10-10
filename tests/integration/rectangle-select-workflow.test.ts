@@ -3,6 +3,7 @@
  * Covers: draw rectangle to select, Ctrl+drag for additive,
  *         empty rectangle clears, mode switch preserves selection
  */
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { ToolModeStore } from '../../src/ui/stores/ToolModeStore.js';
 import { SelectionStore } from '../../src/ui/stores/SelectionStore.js';
 import { SelectionRectangle } from '../../src/ui/components/SelectionRectangle.js';

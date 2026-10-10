@@ -2,6 +2,7 @@
  * Tests for src/application/handlers/ExportLayersHandler.js
  * Covers: filtering, ordering, filename derivation, error cases.
  */
+import { describe, test, expect, vi } from 'vitest';
 import { ExportLayersHandler } from '../../src/application/handlers/ExportLayersHandler.js';
 import { Layer } from '../../src/domain/Layer.js';
 import { Decoration } from '../../src/domain/Decoration.js';

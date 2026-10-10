@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AppService as AppServiceImplementation } from '../../src/application/AppService.js';
 
 type AppServiceLayout = ConstructorParameters<typeof AppServiceImplementation>[0];

@@ -2,15 +2,23 @@
  * Additional tests for src/domain/Layer.js
  * Covers: clone, equals, toString, fromDTO, getDecoration
  */
+import { describe, test, expect } from 'vitest';
 import { Layer } from '../../src/domain/Layer.js';
 import { Decoration } from '../../src/domain/Decoration.js';
 import { WorldCoordinate } from '../../src/domain/WorldCoordinate.js';
+import { runtimeInput } from './runtimeInput.js';
 
-function makeCoord(x = 10, y = 20) {
+function makeCoord(x: number = 10, y: number = 20): WorldCoordinate {
     return new WorldCoordinate(x, y, 0, 0);
 }
-function makeDec(id, name = 'Test') {
+function makeDec(id: string, name: string = 'Test'): Decoration {
     return new Decoration(id, name, makeCoord());
+}
+
+function requireDecoration(layer: Layer, id: string): Decoration {
+    const decoration = layer.getDecoration(id);
+    if (!decoration) throw new Error(`Expected decoration ${id}`);
+    return decoration;
 }
 
 describe('Layer — additional coverage', () => {
@@ -19,7 +27,7 @@ describe('Layer — additional coverage', () => {
         test('returns decoration by id', () => {
             const layer = new Layer('l1', 'Layer');
             layer.addDecoration(makeDec('d1', 'Torch'));
-            const result = layer.getDecoration('d1');
+            const result = requireDecoration(layer, 'd1');
             expect(result.id).toBe('d1');
         });
 
@@ -44,7 +52,7 @@ describe('Layer — additional coverage', () => {
             layer.addDecoration(makeDec('d1', 'Tree'));
             const clone = layer.clone();
             expect(clone.getDecorationCount()).toBe(1);
-            expect(clone.getDecoration('d1').name).toBe('Tree');
+            expect(requireDecoration(clone, 'd1').name).toBe('Tree');
         });
 
         test('clone is independent from original', () => {
@@ -147,7 +155,7 @@ describe('Layer — additional coverage', () => {
             expect(layer.name).toBe('Test Layer');
             expect(layer.isVisible).toBe(false);
             expect(layer.getDecorationCount()).toBe(1);
-            expect(layer.getDecoration('d1').name).toBe('Torch');
+            expect(requireDecoration(layer, 'd1').name).toBe('Torch');
         });
 
         test('creates empty layer from DTO with no decorations', () => {
@@ -183,7 +191,7 @@ describe('Layer — additional coverage', () => {
     describe('addDecoration — invalid decoration', () => {
         test('throws when decoration has no id property', () => {
             const layer = new Layer('l1', 'Layer');
-            expect(() => layer.addDecoration({ name: 'no-id' })).toThrow();
+            expect(() => layer.addDecoration(runtimeInput<Decoration>({ name: 'no-id' }))).toThrow();
         });
     });
 

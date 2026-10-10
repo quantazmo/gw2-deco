@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PanelDragManager } from '../../../src/ui/components/PanelDragManager.js';
 
 function makeMockAppService() {

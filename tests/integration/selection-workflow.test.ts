@@ -3,6 +3,7 @@
  * Covers: map click select, list Ctrl+Click, list Shift+Click range across layers,
  * deselect on empty click, hidden layer not selectable
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { SelectionStore } from '../../src/ui/stores/SelectionStore.js';
 import { EventBus } from '../../src/ui/EventBus.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

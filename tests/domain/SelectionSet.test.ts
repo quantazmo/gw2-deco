@@ -2,7 +2,9 @@
  * Tests for src/domain/SelectionSet.js
  * Tests SelectionSet value object — immutability, all methods, edge cases
  */
+import { describe, test, expect } from 'vitest';
 import { SelectionSet } from '../../src/domain/SelectionSet.js';
+import { runtimeInput } from './runtimeInput.js';
 
 describe('SelectionSet Value Object', () => {
 
@@ -66,15 +68,15 @@ describe('SelectionSet Value Object', () => {
 
         test('should ignore non-string ids', () => {
             const set = new SelectionSet();
-            const result = set.add(123);
+            const result = set.add(runtimeInput<string>(123));
 
             expect(result.isEmpty()).toBe(true);
         });
 
         test('should ignore null and undefined ids', () => {
             const set = new SelectionSet();
-            expect(set.add(null).isEmpty()).toBe(true);
-            expect(set.add(undefined).isEmpty()).toBe(true);
+            expect(set.add(runtimeInput<string>(null)).isEmpty()).toBe(true);
+            expect(set.add(runtimeInput<string>(undefined)).isEmpty()).toBe(true);
         });
     });
 
@@ -134,7 +136,7 @@ describe('SelectionSet Value Object', () => {
 
         test('should ignore non-string ids', () => {
             const set = new SelectionSet();
-            const result = set.toggle(42);
+            const result = set.toggle(runtimeInput<string>(42));
             expect(result.isEmpty()).toBe(true);
         });
     });
@@ -167,7 +169,7 @@ describe('SelectionSet Value Object', () => {
 
         test('should skip invalid ids in the array', () => {
             const set = new SelectionSet();
-            const result = set.addRange(['a', '', null, 42, 'b', '  ']);
+            const result = set.addRange(runtimeInput<string[]>(['a', '', null, 42, 'b', '  ']));
 
             expect(result.size).toBe(2);
             expect(result.contains('a')).toBe(true);
@@ -176,7 +178,7 @@ describe('SelectionSet Value Object', () => {
 
         test('should return same-valued set when given non-array', () => {
             const set = new SelectionSet(['x']);
-            const result = set.addRange('not-an-array');
+            const result = set.addRange(runtimeInput<string[]>('not-an-array'));
 
             expect(result.size).toBe(1);
             expect(result.contains('x')).toBe(true);
@@ -249,7 +251,7 @@ describe('SelectionSet Value Object', () => {
 
         test('should handle non-function predicate gracefully', () => {
             const set = new SelectionSet(['a']);
-            const result = set.removeByFilter('not-a-function');
+            const result = set.removeByFilter(runtimeInput<(id: string) => boolean>('not-a-function'));
 
             expect(result.size).toBe(1);
         });

@@ -2,6 +2,7 @@
  * Tests for Gw2ApiAdapter
  */
 
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Gw2ApiAdapter } from '../../../src/infrastructure/adapters/Gw2ApiAdapter.js';
 
 describe('Gw2ApiAdapter', () => {

@@ -2,6 +2,7 @@
  * Error-path tests for LocalStorageCacheAdapter — catch block coverage.
  * Uncovered lines: 80 (delete catch), 109 (clear catch), 136 (clearExpired catch), 175-176 (getStats catch)
  */
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { LocalStorageCacheAdapter } from '../../../src/infrastructure/adapters/LocalStorageCacheAdapter.js';
 import { setupLocalStorageMock, restoreLocalStorage } from '../mocks/localStorageMock.js';
 

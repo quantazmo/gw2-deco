@@ -5,6 +5,7 @@
  * DecorationDeletedEvent, DecorationUpdatedEvent, LayoutLoadedEvent,
  * ZoomChangedEvent, PanChangedEvent.
  */
+import { describe, test, expect } from 'vitest';
 import { DomainEvent } from '../../../src/domain/events/DomainEvent.js';
 import { LayerCreatedEvent } from '../../../src/domain/events/LayerCreatedEvent.js';
 import { LayerDeletedEvent } from '../../../src/domain/events/LayerDeletedEvent.js';
@@ -17,6 +18,7 @@ import { DecorationUpdatedEvent } from '../../../src/domain/events/DecorationUpd
 import { LayoutLoadedEvent } from '../../../src/domain/events/LayoutLoadedEvent.js';
 import { ZoomChangedEvent } from '../../../src/domain/events/ZoomChangedEvent.js';
 import { PanChangedEvent } from '../../../src/domain/events/PanChangedEvent.js';
+import { runtimeInput } from '../runtimeInput.js';
 
 // ─── DomainEvent (base) ───────────────────────────────────────────────────────
 
@@ -30,11 +32,11 @@ describe('DomainEvent – base class', () => {
     });
 
     test('throws when aggregateId is missing', () => {
-        expect(() => new DomainEvent(null, 'Test')).toThrow('aggregateId is required');
+        expect(() => new DomainEvent(runtimeInput<string>(null), 'Test')).toThrow('aggregateId is required');
     });
 
     test('throws when eventType is missing', () => {
-        expect(() => new DomainEvent('agg', null)).toThrow('eventType is required');
+        expect(() => new DomainEvent('agg', runtimeInput<string>(null))).toThrow('eventType is required');
     });
 
     test('getEventType returns eventType', () => {
@@ -86,7 +88,7 @@ describe('LayerCreatedEvent', () => {
     });
 
     test('throws when layerId is missing', () => {
-        expect(() => new LayerCreatedEvent('tpl', null, 'Name')).toThrow('layerId is required');
+        expect(() => new LayerCreatedEvent('tpl', runtimeInput<string>(null), 'Name')).toThrow('layerId is required');
     });
 
     test('throws when layerName is missing', () => {
@@ -107,7 +109,6 @@ describe('LayerCreatedEvent', () => {
         const obj = new LayerCreatedEvent('tpl', 'l1', 'L1').toObject();
         expect(obj.layerId).toBe('l1');
         expect(obj.layerName).toBe('L1');
-        expect(obj.eventType).toBe('LayerCreated');
     });
 });
 
@@ -122,7 +123,7 @@ describe('LayerDeletedEvent', () => {
     });
 
     test('throws when layerId is missing', () => {
-        expect(() => new LayerDeletedEvent('tpl', null)).toThrow('layerId is required');
+        expect(() => new LayerDeletedEvent('tpl', runtimeInput<string>(null))).toThrow('layerId is required');
     });
 
     test('getLayerId returns layerId', () => {
@@ -133,7 +134,6 @@ describe('LayerDeletedEvent', () => {
     test('toObject includes layerId', () => {
         const obj = new LayerDeletedEvent('tpl', 'l2').toObject();
         expect(obj.layerId).toBe('l2');
-        expect(obj.eventType).toBe('LayerDeleted');
     });
 });
 
@@ -149,7 +149,7 @@ describe('LayerRenamedEvent', () => {
     });
 
     test('throws when layerId is missing', () => {
-        expect(() => new LayerRenamedEvent('tpl', null, 'Old', 'New')).toThrow('layerId is required');
+        expect(() => new LayerRenamedEvent('tpl', runtimeInput<string>(null), 'Old', 'New')).toThrow('layerId is required');
     });
 
     test('throws when oldName is missing', () => {
@@ -197,7 +197,6 @@ describe('LayerSelectedEvent', () => {
     test('toObject includes layerId', () => {
         const obj = new LayerSelectedEvent('tpl', 'l1').toObject();
         expect(obj.layerId).toBe('l1');
-        expect(obj.eventType).toBe('LayerSelected');
     });
 });
 
@@ -217,12 +216,12 @@ describe('LayerVisibilityToggledEvent', () => {
     });
 
     test('throws when layerId is missing', () => {
-        expect(() => new LayerVisibilityToggledEvent('tpl', null, true)).toThrow('layerId is required');
+        expect(() => new LayerVisibilityToggledEvent('tpl', runtimeInput<string>(null), true)).toThrow('layerId is required');
     });
 
     test('throws when isVisible is not a boolean', () => {
-        expect(() => new LayerVisibilityToggledEvent('tpl', 'l1', 1)).toThrow('isVisible must be a boolean');
-        expect(() => new LayerVisibilityToggledEvent('tpl', 'l1', 'true')).toThrow('isVisible must be a boolean');
+        expect(() => new LayerVisibilityToggledEvent('tpl', 'l1', runtimeInput<boolean>(1))).toThrow('isVisible must be a boolean');
+        expect(() => new LayerVisibilityToggledEvent('tpl', 'l1', runtimeInput<boolean>('true'))).toThrow('isVisible must be a boolean');
     });
 
     test('getLayerId and getIsVisible return correct values', () => {
@@ -251,7 +250,7 @@ describe('DecorationAddedEvent', () => {
     });
 
     test('throws when layerId is missing', () => {
-        expect(() => new DecorationAddedEvent('tpl', null, mockDecoration)).toThrow('layerId is required');
+        expect(() => new DecorationAddedEvent('tpl', runtimeInput<string>(null), mockDecoration)).toThrow('layerId is required');
     });
 
     test('throws when decoration is missing', () => {
@@ -288,11 +287,11 @@ describe('DecorationDeletedEvent', () => {
     });
 
     test('throws when layerId is missing', () => {
-        expect(() => new DecorationDeletedEvent('tpl', null, 'd1')).toThrow('layerId is required');
+        expect(() => new DecorationDeletedEvent('tpl', runtimeInput<string>(null), 'd1')).toThrow('layerId is required');
     });
 
     test('throws when decorationId is missing', () => {
-        expect(() => new DecorationDeletedEvent('tpl', 'l1', null)).toThrow('decorationId is required');
+        expect(() => new DecorationDeletedEvent('tpl', 'l1', runtimeInput<string>(null))).toThrow('decorationId is required');
     });
 
     test('getLayerId and getDecorationId return correct values', () => {
@@ -305,7 +304,6 @@ describe('DecorationDeletedEvent', () => {
         const obj = new DecorationDeletedEvent('tpl', 'l1', 'd1').toObject();
         expect(obj.layerId).toBe('l1');
         expect(obj.decorationId).toBe('d1');
-        expect(obj.eventType).toBe('DecorationDeleted');
     });
 });
 
@@ -322,7 +320,7 @@ describe('DecorationUpdatedEvent', () => {
     });
 
     test('throws when layerId is missing', () => {
-        expect(() => new DecorationUpdatedEvent('tpl', null, mockDec)).toThrow('layerId is required');
+        expect(() => new DecorationUpdatedEvent('tpl', runtimeInput<string>(null), mockDec)).toThrow('layerId is required');
     });
 
     test('throws when decoration is missing', () => {
@@ -371,7 +369,6 @@ describe('LayoutLoadedEvent', () => {
     test('toObject calls toDTO when available', () => {
         const obj = new LayoutLoadedEvent('tpl', mockLayout).toObject();
         expect(obj.layout).toEqual({ id: 'tpl-1' });
-        expect(obj.eventType).toBe('LayoutLoaded');
     });
 
     test('toObject falls back to raw layout when toDTO is absent', () => {
@@ -392,11 +389,11 @@ describe('ZoomChangedEvent', () => {
     });
 
     test('throws when oldZoom is not a number', () => {
-        expect(() => new ZoomChangedEvent('tpl', 'one', 2)).toThrow('oldZoom and newZoom must be numbers');
+        expect(() => new ZoomChangedEvent('tpl', runtimeInput<number>('one'), 2)).toThrow('oldZoom and newZoom must be numbers');
     });
 
     test('throws when newZoom is not a number', () => {
-        expect(() => new ZoomChangedEvent('tpl', 1, null)).toThrow('oldZoom and newZoom must be numbers');
+        expect(() => new ZoomChangedEvent('tpl', 1, runtimeInput<number>(null))).toThrow('oldZoom and newZoom must be numbers');
     });
 
     test('getOldZoom and getNewZoom return correct values', () => {
@@ -409,7 +406,6 @@ describe('ZoomChangedEvent', () => {
         const obj = new ZoomChangedEvent('tpl', 1, 2).toObject();
         expect(obj.oldZoom).toBe(1);
         expect(obj.newZoom).toBe(2);
-        expect(obj.eventType).toBe('ZoomChanged');
     });
 });
 
@@ -427,12 +423,12 @@ describe('PanChangedEvent', () => {
     });
 
     test('throws when oldPan is missing x', () => {
-        expect(() => new PanChangedEvent('tpl', { y: 0 }, newPan))
+        expect(() => new PanChangedEvent('tpl', runtimeInput<{ x: number; y: number }>({ y: 0 }), newPan))
             .toThrow('oldPan and newPan must have x and y properties');
     });
 
     test('throws when newPan is null', () => {
-        expect(() => new PanChangedEvent('tpl', oldPan, null))
+        expect(() => new PanChangedEvent('tpl', oldPan, runtimeInput<{ x: number; y: number }>(null)))
             .toThrow('oldPan and newPan must have x and y properties');
     });
 

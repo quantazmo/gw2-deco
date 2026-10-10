@@ -6,6 +6,7 @@
  *  - margin and padding are accounted for
  */
 
+import { describe, test, expect } from 'vitest';
 import { UI_LAYOUT } from '../../src/config/constants.js';
 
 // ---------------------------------------------------------------------------

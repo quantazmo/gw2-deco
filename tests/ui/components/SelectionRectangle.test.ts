@@ -3,6 +3,7 @@
  * Covers: SVG rect creation, start/update/finish coordinates,
  *         hit-testing decorations within bounds
  */
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { SelectionRectangle } from '../../../src/ui/components/SelectionRectangle.js';
 
 // Minimal SVG element stub used in JSDOM environment

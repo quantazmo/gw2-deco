@@ -9,6 +9,7 @@
  * - Escape to close
  * - viewport clamping
  */
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ContextMenu } from '../../../src/ui/components/ContextMenu.js';
 
 describe('ContextMenu', () => {

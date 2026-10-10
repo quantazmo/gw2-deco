@@ -1,8 +1,10 @@
 /**
  * Tests for src/domain/GW2Map.js
  */
+import { describe, test, expect } from 'vitest';
 import { GW2Map } from '../../src/domain/GW2Map.js';
 import { MapBoundary } from '../../src/domain/MapBoundary.js';
+import { runtimeInput } from './runtimeInput.js';
 
 const triangle = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 5, y: 10 }];
 
@@ -26,7 +28,7 @@ describe('GW2Map', () => {
 
         test('throws for non-integer id', () => {
             expect(() => new GW2Map(1.5, 'Map', 1)).toThrow();
-            expect(() => new GW2Map('bad', 'Map', 1)).toThrow();
+            expect(() => new GW2Map(runtimeInput<number>('bad'), 'Map', 1)).toThrow();
         });
 
         test('throws for negative id', () => {
@@ -34,7 +36,7 @@ describe('GW2Map', () => {
         });
 
         test('throws for non-string name', () => {
-            expect(() => new GW2Map(1, 42, 1)).toThrow();
+            expect(() => new GW2Map(1, runtimeInput<string>(42), 1)).toThrow();
         });
 
         test('throws for empty name', () => {
@@ -60,8 +62,8 @@ describe('GW2Map', () => {
 
         test('throws for invalid boundary', () => {
             const m = new GW2Map(1, 'Map', 1);
-            expect(() => m.setBoundary(null)).toThrow();
-            expect(() => m.setBoundary({})).toThrow();
+            expect(() => m.setBoundary(runtimeInput<MapBoundary>(null))).toThrow();
+            expect(() => m.setBoundary(runtimeInput<MapBoundary>({}))).toThrow();
         });
     });
 
@@ -74,7 +76,7 @@ describe('GW2Map', () => {
 
         test('setTiles throws for non-array', () => {
             const m = new GW2Map(1, 'Map', 1);
-            expect(() => m.setTiles('bad')).toThrow();
+            expect(() => m.setTiles(runtimeInput<Parameters<typeof m.setTiles>[0]>('bad'))).toThrow();
         });
 
         test('addTile adds a single tile', () => {
@@ -85,7 +87,7 @@ describe('GW2Map', () => {
 
         test('addTile throws for null', () => {
             const m = new GW2Map(1, 'Map', 1);
-            expect(() => m.addTile(null)).toThrow();
+            expect(() => m.addTile(runtimeInput<Parameters<typeof m.addTile>[0]>(null))).toThrow();
         });
 
         test('hasTiles returns false when empty', () => {
@@ -104,6 +106,7 @@ describe('GW2Map', () => {
             const m = new GW2Map(1, 'Map', 1);
             m.setRect({ x: 0, y: 0 }, { x: 100, y: 200 });
             const r = m.getRect();
+            if (!r) throw new Error('Expected map rect');
             expect(r.min).toEqual({ x: 0, y: 0 });
             expect(r.max).toEqual({ x: 100, y: 200 });
             expect(r.width).toBe(100);
@@ -112,8 +115,8 @@ describe('GW2Map', () => {
 
         test('throws for invalid args', () => {
             const m = new GW2Map(1, 'Map', 1);
-            expect(() => m.setRect(null, { x: 100, y: 200 })).toThrow();
-            expect(() => m.setRect({ x: 0, y: 0 }, null)).toThrow();
+            expect(() => m.setRect(runtimeInput<Parameters<typeof m.setRect>[0]>(null), { x: 100, y: 200 })).toThrow();
+            expect(() => m.setRect({ x: 0, y: 0 }, runtimeInput<Parameters<typeof m.setRect>[1]>(null))).toThrow();
         });
     });
 

@@ -2,6 +2,7 @@
  * Tests for ExportDialog component
  * Covers US2 (pre-check, decoration count, confirm disabled) and US3 (cancel, Escape).
  */
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { ExportDialog } from '../../../src/ui/components/ExportDialog.js';
 import { Layer } from '../../../src/domain/Layer.js';
 import { Decoration } from '../../../src/domain/Decoration.js';

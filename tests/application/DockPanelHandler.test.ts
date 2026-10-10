@@ -3,6 +3,7 @@
  * Tests: remove panel from tree, insert SplitNode at appropriate edge,
  * verify map retains ≥50% space, cancel (invalid edge) rejects gracefully.
  */
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { DockPanelHandler } from '../../src/application/handlers/DockPanelHandler.js';
 import { DockPanelCommand } from '../../src/application/commands/DockPanelCommand.js';
 import { DockPanelLayoutStore } from '../../src/ui/stores/DockPanelLayoutStore.js';

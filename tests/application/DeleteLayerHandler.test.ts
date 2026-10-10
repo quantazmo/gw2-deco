@@ -8,6 +8,7 @@
  * - LayerDeletedEvent emission
  * - Backward compatibility without selectionStore / undoRedoManager
  */
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { DeleteLayerHandler } from '../../src/application/handlers/DeleteLayerHandler.js';
 import { DeleteLayerCommand } from '../../src/application/commands/DeleteLayerCommand.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

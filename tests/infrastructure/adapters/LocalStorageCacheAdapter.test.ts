@@ -2,6 +2,7 @@
  * Tests for LocalStorageCacheAdapter
  */
 
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { LocalStorageCacheAdapter } from '../../../src/infrastructure/adapters/LocalStorageCacheAdapter.js';
 import { setupLocalStorageMock, restoreLocalStorage } from '../mocks/localStorageMock.js';
 

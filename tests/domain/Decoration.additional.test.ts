@@ -2,8 +2,10 @@
  * Additional tests for src/domain/Decoration.js
  * Covers: clone, equals, toString, fromDTO, validateState, plain-object position
  */
+import { describe, test, expect } from 'vitest';
 import { Decoration } from '../../src/domain/Decoration.js';
 import { WorldCoordinate } from '../../src/domain/WorldCoordinate.js';
+import { runtimeInput } from './runtimeInput.js';
 
 function coord(x = 10, y = 20, z = 0) {
     return new WorldCoordinate(x, y, z, 0);
@@ -54,8 +56,8 @@ describe('Decoration — additional coverage', () => {
         });
 
         test('throws when position is missing x or y', () => {
-            expect(() => new Decoration('1', 'A', { x: 1 })).toThrow();
-            expect(() => new Decoration('1', 'A', null)).toThrow();
+            expect(() => new Decoration('1', 'A', runtimeInput<ConstructorParameters<typeof Decoration>[2]>({ x: 1 }))).toThrow();
+            expect(() => new Decoration('1', 'A', runtimeInput<ConstructorParameters<typeof Decoration>[2]>(null))).toThrow();
         });
     });
 
@@ -159,7 +161,7 @@ describe('Decoration — additional coverage', () => {
 
     describe('validate – name type check', () => {
         test('throws when name is not a string', () => {
-            expect(() => new Decoration('d1', 42, coord(0, 0), 0, 1))
+            expect(() => new Decoration('d1', runtimeInput<string>(42), coord(0, 0), 0, 1))
                 .toThrow('Decoration: name must be a string');
         });
     });

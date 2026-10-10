@@ -12,6 +12,7 @@
  *   - Publishes the updated layout to LayoutStore
  *   - Returns the updated LayoutConfiguration
  */
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { ResizeDockHandler } from '../../src/application/handlers/ResizeDockHandler.js';
 import { ResizeDockCommand } from '../../src/application/commands/ResizeDockCommand.js';
 import { DockPanelLayoutStore } from '../../src/ui/stores/DockPanelLayoutStore.js';

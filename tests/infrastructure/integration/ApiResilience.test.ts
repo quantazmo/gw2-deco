@@ -8,6 +8,7 @@
  * - Timeout behavior
  */
 
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Gw2ApiAdapter } from '../../../src/infrastructure/adapters/Gw2ApiAdapter.js';
 
 // Mock fetch for controlled API responses

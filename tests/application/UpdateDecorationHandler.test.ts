@@ -1,6 +1,7 @@
 /**
  * Tests for UpdateDecorationHandler
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { UpdateDecorationHandler } from '../../src/application/handlers/UpdateDecorationHandler.js';
 import { UpdateDecorationCommand } from '../../src/application/commands/UpdateDecorationCommand.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

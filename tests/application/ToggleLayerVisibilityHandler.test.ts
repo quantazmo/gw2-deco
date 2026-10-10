@@ -1,6 +1,7 @@
 /**
  * Tests for ToggleLayerVisibilityHandler
  */
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { ToggleLayerVisibilityHandler } from '../../src/application/handlers/ToggleLayerVisibilityHandler.js';
 import { ToggleLayerVisibilityCommand } from '../../src/application/commands/ToggleLayerVisibilityCommand.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

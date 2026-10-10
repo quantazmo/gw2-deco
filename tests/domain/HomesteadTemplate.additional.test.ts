@@ -3,21 +3,29 @@
  * Covers: validateState, toDTO, fromDTO, clone, equals, toString,
  *         addEvent/getPendingEvents/clearPendingEvents, setActiveLayer, validateMapLoaded
  */
+import { describe, test, expect } from 'vitest';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { GW2Map } from '../../src/domain/GW2Map.js';
 import { Layer } from '../../src/domain/Layer.js';
 import { Decoration } from '../../src/domain/Decoration.js';
 import { WorldCoordinate } from '../../src/domain/WorldCoordinate.js';
+import { runtimeInput } from './runtimeInput.js';
 
-function makeMap() {
+function makeMap(): GW2Map {
     return new GW2Map(1, 'Test Map', 1, 1);
 }
 
-function makeLayer(id = 'l1', name = 'Layer') {
+function makeLayer(id: string = 'l1', name: string = 'Layer'): Layer {
     const layer = new Layer(id, name);
     // Add a decoration so validateState passes (Layer requires at least one)
     layer.addDecoration(new Decoration('d1', 'Torch', new WorldCoordinate(10, 20, 0, 0)));
     return layer;
+}
+
+function requireDecoration(layer: Layer, id: string): Decoration {
+    const decoration = layer.getDecoration(id);
+    if (!decoration) throw new Error(`Expected decoration ${id}`);
+    return decoration;
 }
 
 describe('HomesteadLayout — additional coverage', () => {
@@ -226,8 +234,8 @@ describe('HomesteadLayout — additional coverage', () => {
             layout.addEvent({ type: 'B' });
             layout.addEvent({ type: 'C' });
             const events = layout.getPendingEvents();
-            expect(events[0].type).toBe('A');
-            expect(events[2].type).toBe('C');
+            expect(events[0]).toMatchObject({ type: 'A' });
+            expect(events[2]).toMatchObject({ type: 'C' });
         });
     });
 
@@ -253,11 +261,11 @@ describe('HomesteadLayout — additional coverage', () => {
         });
 
         test('throws on non-string non-number id', () => {
-            expect(() => new HomesteadLayout([], 'Name')).toThrow();
+            expect(() => new HomesteadLayout(runtimeInput<string | number>([]), 'Name')).toThrow();
         });
 
         test('throws when name is not a string (line 31)', () => {
-            expect(() => new HomesteadLayout('id1', 42)).toThrow('HomesteadLayout: name must be a string');
+            expect(() => new HomesteadLayout('id1', runtimeInput<string>(42))).toThrow('HomesteadLayout: name must be a string');
         });
     });
 
@@ -267,18 +275,18 @@ describe('HomesteadLayout — additional coverage', () => {
     describe('setMap — error paths', () => {
         test('throws when map is null (line 40)', () => {
             const layout = new HomesteadLayout('t1', 'T');
-            expect(() => layout.setMap(null)).toThrow('map must be a GW2Map instance');
+            expect(() => layout.setMap(runtimeInput<GW2Map>(null))).toThrow('map must be a GW2Map instance');
         });
 
         test('throws when map has no validateState function (line 40)', () => {
             const layout = new HomesteadLayout('t1', 'T');
-            expect(() => layout.setMap({ id: 1 })).toThrow('map must be a GW2Map instance');
+            expect(() => layout.setMap(runtimeInput<GW2Map>({ id: 1 }))).toThrow('map must be a GW2Map instance');
         });
 
         test('throws when map validateState returns invalid (line 44)', () => {
             const layout = new HomesteadLayout('t1', 'T');
             const fakeMap = { validateState: () => ({ isValid: false, errors: ['bad map'] }) };
-            expect(() => layout.setMap(fakeMap)).toThrow('invalid map');
+            expect(() => layout.setMap(runtimeInput<GW2Map>(fakeMap))).toThrow('invalid map');
         });
     });
 
@@ -288,7 +296,7 @@ describe('HomesteadLayout — additional coverage', () => {
     describe('addLayer — error paths', () => {
         test('throws when layer has no id (line 62)', () => {
             const layout = new HomesteadLayout('t1', 'T');
-            expect(() => layout.addLayer({})).toThrow('layer must have an id');
+            expect(() => layout.addLayer(runtimeInput<Layer>({}))).toThrow('layer must have an id');
         });
 
         test('throws when adding duplicate layer id (line 65)', () => {
@@ -358,7 +366,7 @@ describe('HomesteadLayout — additional coverage', () => {
         test('throws when decoration has no id (line 162)', () => {
             const layout = new HomesteadLayout('t1', 'T');
             layout.addLayer(makeLayer('l1'));
-            expect(() => layout.addDecorationToLayer('l1', {})).toThrow('decoration must have an id');
+            expect(() => layout.addDecorationToLayer('l1', runtimeInput<Decoration>({}))).toThrow('decoration must have an id');
         });
     });
 
@@ -382,7 +390,7 @@ describe('HomesteadLayout — additional coverage', () => {
             layout.addLayer(layer);
             const newPos = new WorldCoordinate(99, 88, 0, 0);
             layout.updateDecorationInLayer('l1', 'd1', { position: newPos });
-            const dec = layer.getDecoration('d1');
+            const dec = requireDecoration(layer, 'd1');
             expect(dec.position.x).toBe(99);
         });
 
@@ -391,7 +399,7 @@ describe('HomesteadLayout — additional coverage', () => {
             const layer = makeLayer('l1');
             layout.addLayer(layer);
             layout.updateDecorationInLayer('l1', 'd1', { rotation: 45 });
-            const dec = layer.getDecoration('d1');
+            const dec = requireDecoration(layer, 'd1');
             expect(dec.rotation).toBe(45);
         });
 
@@ -400,7 +408,7 @@ describe('HomesteadLayout — additional coverage', () => {
             const layer = makeLayer('l1');
             layout.addLayer(layer);
             layout.updateDecorationInLayer('l1', 'd1', { scale: 2.5 });
-            const dec = layer.getDecoration('d1');
+            const dec = requireDecoration(layer, 'd1');
             expect(dec.scale).toBe(2.5);
         });
 
@@ -409,7 +417,7 @@ describe('HomesteadLayout — additional coverage', () => {
             const layer = makeLayer('l1');
             layout.addLayer(layer);
             layout.updateDecorationInLayer('l1', 'd1', { position: { x: 5, y: 10 } });
-            const dec = layer.getDecoration('d1');
+            const dec = requireDecoration(layer, 'd1');
             expect(dec.position.x).toBe(5);
         });
     });
@@ -433,7 +441,7 @@ describe('HomesteadLayout — additional coverage', () => {
             layout.setMap(makeMap());
             layout.addLayer(makeLayer());
             // Corrupt id so validate() throws
-            layout.id = null;
+            Reflect.set(layout, 'id', null);
             const result = layout.validateState();
             expect(result.isValid).toBe(false);
             expect(result.errors.some(e => e.includes('id'))).toBe(true);
@@ -444,7 +452,7 @@ describe('HomesteadLayout — additional coverage', () => {
             layout.setMap(makeMap());
             layout.addLayer(makeLayer());
             // Override map with one that returns invalid
-            layout.map = { validateState: () => ({ isValid: false, errors: ['Map broken'] }) };
+            Reflect.set(layout, 'map', { validateState: () => ({ isValid: false, errors: ['Map broken'] }) });
             const result = layout.validateState();
             expect(result.isValid).toBe(false);
             expect(result.errors.some(e => e.includes('Map'))).toBe(true);
@@ -481,7 +489,9 @@ describe('HomesteadLayout — additional coverage', () => {
             const b = new HomesteadLayout('t1', 'T');
             b.addLayer(makeLayer('l1'));
             // Override a's layer equals to return false (simulates different layer content)
-            a.layers.get('l1').equals = () => false;
+            const layer = a.layers.get('l1');
+            if (!layer) throw new Error('Expected layer l1');
+            layer.equals = () => false;
             expect(a.equals(b)).toBe(false);
         });
     });

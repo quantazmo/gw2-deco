@@ -2,6 +2,7 @@
  * Tests for src/application/UndoRecord.js
  * Tests UndoRecord value object — construction, immutability, validation
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { UndoRecord } from '../../src/application/UndoRecord.js';
 
 describe('UndoRecord Value Object', () => {

@@ -1,6 +1,7 @@
 /**
  * Tests for AddDecorationHandler, DeleteDecorationHandler, GetMapHandler, GetLayoutHandler
  */
+import { describe, test, expect } from 'vitest';
 import { AddDecorationHandler } from '../../src/application/handlers/AddDecorationHandler.js';
 import { DeleteDecorationHandler } from '../../src/application/handlers/DeleteDecorationHandler.js';
 import { GetMapHandler } from '../../src/application/handlers/GetMapHandler.js';

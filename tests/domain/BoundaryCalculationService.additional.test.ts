@@ -3,7 +3,9 @@
  * Covers: expandBoundsToAspectRatio, centerBoundsInViewport, calculateCenteringPadding,
  *         calculateBoundsFromTiles (invalid tiles)
  */
+import { describe, test, expect } from 'vitest';
 import { BoundaryCalculationService } from '../../src/domain/BoundaryCalculationService.js';
+import { runtimeInput } from './runtimeInput.js';
 
 const squareBounds = {
     min: { x: 0, y: 0 },
@@ -34,18 +36,18 @@ describe('BoundaryCalculationService — additional coverage', () => {
         });
 
         test('throws on non-array', () => {
-            expect(() => BoundaryCalculationService.calculateBoundsFromTiles(null)).toThrow();
+            expect(() => BoundaryCalculationService.calculateBoundsFromTiles(runtimeInput<unknown[]>(null))).toThrow();
         });
 
         test('throws on tile missing x property', () => {
             expect(() =>
-                BoundaryCalculationService.calculateBoundsFromTiles([{ y: 10 }])
+                BoundaryCalculationService.calculateBoundsFromTiles(runtimeInput<unknown[]>([{ y: 10 }]))
             ).toThrow();
         });
 
         test('throws on tile missing y property', () => {
             expect(() =>
-                BoundaryCalculationService.calculateBoundsFromTiles([{ x: 10 }])
+                BoundaryCalculationService.calculateBoundsFromTiles(runtimeInput<unknown[]>([{ x: 10 }]))
             ).toThrow();
         });
     });
@@ -83,7 +85,7 @@ describe('BoundaryCalculationService — additional coverage', () => {
 
         test('throws on invalid bounds', () => {
             expect(() =>
-                BoundaryCalculationService.expandBoundsToAspectRatio(null, 1)
+                BoundaryCalculationService.expandBoundsToAspectRatio(runtimeInput<Parameters<typeof BoundaryCalculationService.expandBoundsToAspectRatio>[0]>(null), 1)
             ).toThrow();
         });
 
@@ -98,7 +100,7 @@ describe('BoundaryCalculationService — additional coverage', () => {
 
         test('throws on non-number targetAspect', () => {
             expect(() =>
-                BoundaryCalculationService.expandBoundsToAspectRatio(squareBounds, 'wide')
+                BoundaryCalculationService.expandBoundsToAspectRatio(squareBounds, runtimeInput<number>('wide'))
             ).toThrow();
         });
     });
@@ -129,19 +131,19 @@ describe('BoundaryCalculationService — additional coverage', () => {
 
         test('throws on invalid bounds', () => {
             expect(() =>
-                BoundaryCalculationService.centerBoundsInViewport(null, { width: 400, height: 400 })
+                BoundaryCalculationService.centerBoundsInViewport(runtimeInput<Parameters<typeof BoundaryCalculationService.centerBoundsInViewport>[0]>(null), { width: 400, height: 400 })
             ).toThrow();
         });
 
         test('throws on invalid viewport', () => {
             expect(() =>
-                BoundaryCalculationService.centerBoundsInViewport(squareBounds, null)
+                BoundaryCalculationService.centerBoundsInViewport(squareBounds, runtimeInput<Parameters<typeof BoundaryCalculationService.centerBoundsInViewport>[1]>(null))
             ).toThrow();
         });
 
         test('throws on non-number margin', () => {
             expect(() =>
-                BoundaryCalculationService.centerBoundsInViewport(squareBounds, { width: 400, height: 400 }, 'big')
+                BoundaryCalculationService.centerBoundsInViewport(squareBounds, { width: 400, height: 400 }, runtimeInput<number>('big'))
             ).toThrow();
         });
     });
@@ -174,13 +176,13 @@ describe('BoundaryCalculationService — additional coverage', () => {
 
         test('throws on invalid contentSize', () => {
             expect(() =>
-                BoundaryCalculationService.calculateCenteringPadding(null, { width: 100, height: 100 })
+                BoundaryCalculationService.calculateCenteringPadding(runtimeInput<Parameters<typeof BoundaryCalculationService.calculateCenteringPadding>[0]>(null), { width: 100, height: 100 })
             ).toThrow();
         });
 
         test('throws on invalid containerSize', () => {
             expect(() =>
-                BoundaryCalculationService.calculateCenteringPadding({ width: 100, height: 100 }, null)
+                BoundaryCalculationService.calculateCenteringPadding({ width: 100, height: 100 }, runtimeInput<Parameters<typeof BoundaryCalculationService.calculateCenteringPadding>[1]>(null))
             ).toThrow();
         });
     });

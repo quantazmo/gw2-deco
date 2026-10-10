@@ -2,6 +2,7 @@
  * Tests for SwitchMapHandler
  * Covers: clear all layers, load new map, undo history cleared
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { GW2Map } from '../../src/domain/GW2Map.js';
 import { MapBoundary } from '../../src/domain/MapBoundary.js';

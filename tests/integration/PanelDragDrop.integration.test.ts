@@ -3,6 +3,7 @@
  * Tests the full command/handler flow for edge docking without DOM interaction.
  * Simulates the drag-drop workflow: command dispatch → handler → store update.
  */
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { DockPanelHandler } from '../../src/application/handlers/DockPanelHandler.js';
 import { DockPanelCommand } from '../../src/application/commands/DockPanelCommand.js';
 import { DockPanelLayoutStore } from '../../src/ui/stores/DockPanelLayoutStore.js';

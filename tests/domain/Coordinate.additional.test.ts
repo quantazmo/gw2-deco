@@ -2,7 +2,9 @@
  * Additional tests for src/domain/Coordinate.js
  * Covers: fromArray, fromObject, toArray, toObject, translate, scale
  */
+import { describe, test, expect } from 'vitest';
 import { Coordinate } from '../../src/domain/Coordinate.js';
+import { runtimeInput } from './runtimeInput.js';
 
 describe('Coordinate — additional coverage', () => {
 
@@ -20,8 +22,8 @@ describe('Coordinate — additional coverage', () => {
         });
 
         test('throws on non-array', () => {
-            expect(() => Coordinate.fromArray(null)).toThrow();
-            expect(() => Coordinate.fromArray({ x: 1, y: 2 })).toThrow();
+            expect(() => Coordinate.fromArray(runtimeInput<number[]>(null))).toThrow();
+            expect(() => Coordinate.fromArray(runtimeInput<number[]>({ x: 1, y: 2 }))).toThrow();
         });
 
         test('throws on array with less than 2 elements', () => {
@@ -38,19 +40,19 @@ describe('Coordinate — additional coverage', () => {
         });
 
         test('throws on null', () => {
-            expect(() => Coordinate.fromObject(null)).toThrow();
+            expect(() => Coordinate.fromObject(runtimeInput<{ x: number; y: number }>(null))).toThrow();
         });
 
         test('throws on object missing x', () => {
-            expect(() => Coordinate.fromObject({ y: 5 })).toThrow();
+            expect(() => Coordinate.fromObject(runtimeInput<{ x: number; y: number }>({ y: 5 }))).toThrow();
         });
 
         test('throws on object missing y', () => {
-            expect(() => Coordinate.fromObject({ x: 5 })).toThrow();
+            expect(() => Coordinate.fromObject(runtimeInput<{ x: number; y: number }>({ x: 5 }))).toThrow();
         });
 
         test('throws on non-object', () => {
-            expect(() => Coordinate.fromObject('not-an-object')).toThrow();
+            expect(() => Coordinate.fromObject(runtimeInput<{ x: number; y: number }>('not-an-object'))).toThrow();
         });
     });
 

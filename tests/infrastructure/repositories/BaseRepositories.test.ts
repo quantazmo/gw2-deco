@@ -2,6 +2,7 @@
  * Tests for abstract base classes: MapRepository and LayoutRepository
  * Each method must throw "must be implemented by subclass"
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { MapRepository } from '../../../src/infrastructure/repositories/MapRepository.js';
 
 describe('MapRepository (abstract base class)', () => {

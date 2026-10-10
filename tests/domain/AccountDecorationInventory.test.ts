@@ -1,6 +1,7 @@
 /**
  * Tests for AccountDecorationInventory domain value object
  */
+import { describe, it, expect } from 'vitest';
 import { AccountDecorationInventory } from '../../src/domain/AccountDecorationInventory.js';
 
 describe('AccountDecorationInventory', () => {

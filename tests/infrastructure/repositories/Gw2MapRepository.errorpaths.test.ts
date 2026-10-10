@@ -2,6 +2,7 @@
  * Additional error-path tests for Gw2MapRepository.
  * Targets uncovered lines: 95, 108, 117, 122, 137, 191, 206-212, 300
  */
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { Gw2MapRepository } from '../../../src/infrastructure/repositories/Gw2MapRepository.js';
 import { GW2Map } from '../../../src/domain/GW2Map.js';
 import { Coordinate } from '../../../src/domain/Coordinate.js';

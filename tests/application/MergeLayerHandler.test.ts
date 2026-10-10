@@ -11,6 +11,7 @@
  * - Error cases: missing IDs, same layer, non-existent layers
  * - Backward compatibility without selectionStore / undoRedoManager
  */
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { MergeLayerHandler } from '../../src/application/handlers/MergeLayerHandler.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { Layer } from '../../src/domain/Layer.js';

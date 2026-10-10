@@ -3,6 +3,7 @@
  * Covers: show with decoration data, close on button click,
  * accessibility attributes, displays all decoration fields
  */
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { DecorationInfoDialog } from '../../../src/ui/components/DecorationInfoDialog.js';
 
 function makeDecoration(overrides = {}) {

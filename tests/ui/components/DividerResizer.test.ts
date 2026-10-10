@@ -1,6 +1,7 @@
 /**
  * Tests for DividerResizer — covers mouse-drag interaction (lines 58-122).
  */
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DividerResizer } from '../../../src/ui/components/DividerResizer.js';
 
 describe('DividerResizer', () => {

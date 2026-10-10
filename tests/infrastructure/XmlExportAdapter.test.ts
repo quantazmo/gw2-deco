@@ -2,6 +2,7 @@
  * Tests for src/infrastructure/XmlExportAdapter.js
  * Covers XML serialisation, numeric precision, special-character escaping, and rotation fields.
  */
+import { describe, test, expect } from 'vitest';
 import { XmlExportAdapter } from '../../src/infrastructure/XmlExportAdapter.js';
 import { Layer } from '../../src/domain/Layer.js';
 import { Decoration } from '../../src/domain/Decoration.js';

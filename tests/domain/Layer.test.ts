@@ -2,9 +2,11 @@
  * Tests for src/domain/Layer.js
  * Tests Layer aggregate entity with decoration management and business rules
  */
+import { describe, test, expect } from 'vitest';
 import { Layer } from '../../src/domain/Layer.js';
 import { Decoration } from '../../src/domain/Decoration.js';
 import { WorldCoordinate } from '../../src/domain/WorldCoordinate.js';
+import { runtimeInput } from './runtimeInput.js';
 
 describe('Layer Aggregate Entity', () => {
 
@@ -28,21 +30,21 @@ describe('Layer Aggregate Entity', () => {
 
     test('constructor should throw on null or undefined name', () => {
         expect(() => {
-            new Layer('layer-1', null);
+            new Layer('layer-1', runtimeInput<string>(null));
         }).toThrow();
 
         expect(() => {
-            new Layer('layer-1', undefined);
+            new Layer('layer-1', runtimeInput<string>(undefined));
         }).toThrow();
     });
 
     test('constructor should throw on invalid layerId', () => {
         expect(() => {
-            new Layer(null, 'My Layer');
+            new Layer(runtimeInput<string>(null), 'My Layer');
         }).toThrow();
 
         expect(() => {
-            new Layer(undefined, 'My Layer');
+            new Layer(runtimeInput<string>(undefined), 'My Layer');
         }).toThrow();
     });
 
@@ -87,11 +89,11 @@ describe('Layer Aggregate Entity', () => {
         const layer = new Layer('layer-1', 'My Layer');
 
         expect(() => {
-            layer.addDecoration(null);
+            layer.addDecoration(runtimeInput<Decoration>(null));
         }).toThrow();
 
         expect(() => {
-            layer.addDecoration(undefined);
+            layer.addDecoration(runtimeInput<Decoration>(undefined));
         }).toThrow();
     });
 
@@ -185,11 +187,11 @@ describe('Layer Aggregate Entity', () => {
 
     test('constructor validates name cannot be null or undefined', () => {
         expect(() => {
-            new Layer('layer-1', null);
+            new Layer('layer-1', runtimeInput<string>(null));
         }).toThrow();
 
         expect(() => {
-            new Layer('layer-1', undefined);
+            new Layer('layer-1', runtimeInput<string>(undefined));
         }).toThrow();
     });
 
@@ -341,7 +343,7 @@ describe('Layer Aggregate Entity', () => {
             const layer = new Layer('layer-1', 'My Layer');
 
             expect(() => {
-                layer.insertDecorationAt(null, 0);
+                layer.insertDecorationAt(runtimeInput<Decoration>(null), 0);
             }).toThrow();
         });
 

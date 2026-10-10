@@ -9,6 +9,7 @@
  *   - Invalid inputs are rejected
  *   - Cancel (no-op) behavior when dragged and target are the same
  */
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { StackPanelHandler } from '../../src/application/handlers/StackPanelHandler.js';
 import { StackPanelCommand } from '../../src/application/commands/StackPanelCommand.js';
 import { DockPanelLayoutStore } from '../../src/ui/stores/DockPanelLayoutStore.js';

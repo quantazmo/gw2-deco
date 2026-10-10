@@ -1,6 +1,7 @@
 /**
  * Tests for RenameLayerHandler
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { RenameLayerHandler } from '../../src/application/handlers/RenameLayerHandler.js';
 import RenameLayerCommand from '../../src/application/commands/RenameLayerCommand.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

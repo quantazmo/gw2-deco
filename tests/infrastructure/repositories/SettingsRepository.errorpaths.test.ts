@@ -2,6 +2,7 @@
  * Additional tests for SettingsRepository — targeting uncovered error paths.
  * Covers: save catch/warn, clear catch/warn, load getItem throws.
  */
+import { describe, test, expect } from 'vitest';
 import { SettingsRepository } from '../../../src/infrastructure/repositories/SettingsRepository.js';
 
 describe('SettingsRepository — error path coverage', () => {

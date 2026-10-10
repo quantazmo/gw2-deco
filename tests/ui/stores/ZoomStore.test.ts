@@ -3,6 +3,7 @@
  * Covers: ZoomEventEmitter (on, emit, once) and ZoomStore (initialize, setZoom,
  * zoom, pan, undo/redo, reset, limits, canUndo/canRedo, onChange, getters).
  */
+import { describe, test, expect } from 'vitest';
 import { ZoomStore } from '../../../src/ui/stores/ZoomStore.js';
 
 // ─── helpers ────────────────────────────────────────────────────────────────

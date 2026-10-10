@@ -2,6 +2,7 @@
  * Tests for RibbonToolbar
  * Covers: _build(), button click handlers, _updateState(), subscriptions, unmount
  */
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { RibbonToolbar } from '../../../src/ui/components/RibbonToolbar.js';
 
 // Mock LoadFromUrlDialog so tests don't depend on DOM dialog behaviour

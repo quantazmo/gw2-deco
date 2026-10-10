@@ -2,10 +2,12 @@
  * Tests for new domain events:
  * DecorationsMovedEvent, DecorationsDeletedEvent, MapSwitchedEvent, AllLayersClearedEvent
  */
+import { describe, test, expect } from 'vitest';
 import { DecorationsMovedEvent } from '../../../src/domain/events/DecorationsMovedEvent.js';
 import { DecorationsDeletedEvent } from '../../../src/domain/events/DecorationsDeletedEvent.js';
 import { MapSwitchedEvent } from '../../../src/domain/events/MapSwitchedEvent.js';
 import { AllLayersClearedEvent } from '../../../src/domain/events/AllLayersClearedEvent.js';
+import { runtimeInput } from '../runtimeInput.js';
 
 describe('DecorationsMovedEvent', () => {
     test('should construct with valid parameters', () => {
@@ -40,7 +42,7 @@ describe('DecorationsMovedEvent', () => {
     });
 
     test('should throw on missing targetLayerId', () => {
-        expect(() => new DecorationsMovedEvent('tpl-1', ['d1'], new Map(), null))
+        expect(() => new DecorationsMovedEvent('tpl-1', ['d1'], new Map(), runtimeInput<string>(null)))
             .toThrow('targetLayerId is required');
     });
 
@@ -49,7 +51,7 @@ describe('DecorationsMovedEvent', () => {
         const event = new DecorationsMovedEvent('tpl-1', ['d1'], sourceMapping, 'layer-2');
         const obj = event.toObject();
 
-        expect(obj.eventType).toBe('DecorationsMoved');
+        expect(event.eventType).toBe('DecorationsMoved');
         expect(obj.decorationIds).toEqual(['d1']);
         expect(obj.sourceMapping).toEqual({ d1: 'layer-1' });
         expect(obj.targetLayerId).toBe('layer-2');
@@ -77,7 +79,7 @@ describe('DecorationsDeletedEvent', () => {
         const event = new DecorationsDeletedEvent('tpl-1', ['d1', 'd2'], sourceMapping);
         const obj = event.toObject();
 
-        expect(obj.eventType).toBe('DecorationsDeleted');
+        expect(event.eventType).toBe('DecorationsDeleted');
         expect(obj.decorationIds).toEqual(['d1', 'd2']);
         expect(obj.sourceMapping).toEqual({ d1: 'layer-1', d2: 'layer-2' });
     });
@@ -100,7 +102,7 @@ describe('MapSwitchedEvent', () => {
     });
 
     test('should throw on missing newMapId', () => {
-        expect(() => new MapSwitchedEvent('tpl-1', 100, null, 'Map'))
+        expect(() => new MapSwitchedEvent('tpl-1', 100, runtimeInput<number>(null), 'Map'))
             .toThrow('newMapId is required');
     });
 
@@ -113,7 +115,7 @@ describe('MapSwitchedEvent', () => {
         const event = new MapSwitchedEvent('tpl-1', 100, 200, 'Shimmering Equinox');
         const obj = event.toObject();
 
-        expect(obj.eventType).toBe('MapSwitched');
+        expect(event.eventType).toBe('MapSwitched');
         expect(obj.previousMapId).toBe(100);
         expect(obj.newMapId).toBe(200);
         expect(obj.newMapName).toBe('Shimmering Equinox');
@@ -140,7 +142,7 @@ describe('AllLayersClearedEvent', () => {
     });
 
     test('should throw on non-number layer count', () => {
-        expect(() => new AllLayersClearedEvent('tpl-1', 'three'))
+        expect(() => new AllLayersClearedEvent('tpl-1', runtimeInput<number>('three')))
             .toThrow('previousLayerCount must be a non-negative number');
     });
 
@@ -148,7 +150,7 @@ describe('AllLayersClearedEvent', () => {
         const event = new AllLayersClearedEvent('tpl-1', 5);
         const obj = event.toObject();
 
-        expect(obj.eventType).toBe('AllLayersCleared');
+        expect(event.eventType).toBe('AllLayersCleared');
         expect(obj.previousLayerCount).toBe(5);
     });
 });

@@ -2,6 +2,7 @@
  * Additional tests for src/domain/LayoutValidationService.js
  * Covers: getValidationSummary, scale warnings, missing validateState, validateLayout
  */
+import { describe, test, expect } from 'vitest';
 import { DecorationLayoutValidationService } from '../../src/domain/DecorationLayoutValidationService.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { GW2Map } from '../../src/domain/GW2Map.js';

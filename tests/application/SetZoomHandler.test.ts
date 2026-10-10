@@ -1,6 +1,7 @@
 /**
  * Tests for SetZoomHandler
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { SetZoomHandler } from '../../src/application/handlers/SetZoomHandler.js';
 import { SetZoomCommand } from '../../src/application/commands/SetZoomCommand.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

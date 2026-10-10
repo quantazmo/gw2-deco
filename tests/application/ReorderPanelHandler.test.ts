@@ -8,6 +8,7 @@
  *   - No-op when fromIndex equals toIndex (stack)
  *   - Invalid inputs are rejected
  */
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { ReorderPanelHandler } from '../../src/application/handlers/ReorderPanelHandler.js';
 import { ReorderPanelCommand } from '../../src/application/commands/ReorderPanelCommand.js';
 import { DockPanelLayoutStore } from '../../src/ui/stores/DockPanelLayoutStore.js';

@@ -1,6 +1,7 @@
 /**
  * Tests for GetMapQuery and GetLayoutQuery (trivial constructors).
  */
+import { test, expect } from 'vitest';
 import GetMapQuery from '../../src/application/queries/GetMapQuery.js';
 import { GetLayoutQuery } from '../../src/application/queries/GetLayoutQuery.js';
 

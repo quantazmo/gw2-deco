@@ -2,12 +2,17 @@
  * Tests for src/domain/LayoutValidationService.js
  * Tests validation of decorations, layers, and layouts
  */
+import { describe, test, expect } from 'vitest';
 import { DecorationLayoutValidationService } from '../../src/domain/DecorationLayoutValidationService.js';
 import { Decoration } from '../../src/domain/Decoration.js';
 import { Layer } from '../../src/domain/Layer.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { GW2Map } from '../../src/domain/GW2Map.js';
 import { WorldCoordinate } from '../../src/domain/WorldCoordinate.js';
+
+function createDecorationWithUncheckedPosition(position: unknown): Decoration {
+    return new Decoration('deco-1', 'Torch', position as ConstructorParameters<typeof Decoration>[2]);
+}
 
 describe('LayoutValidationService', () => {
 
@@ -34,7 +39,7 @@ describe('LayoutValidationService', () => {
         const decoration = new Decoration('deco-1', 'Torch', coord);
 
         // Corrupt the decoration
-        decoration.id = null;
+        Reflect.set(decoration, 'id', null);
 
         const result = DecorationLayoutValidationService.validateDecoration(decoration);
 
@@ -54,7 +59,7 @@ describe('LayoutValidationService', () => {
     test('validateDecoration should validate decoration position', () => {
         // Test that constructor throws on null position
         expect(() => {
-            new Decoration('deco-1', 'Torch', null);
+            createDecorationWithUncheckedPosition(null);
         }).toThrow('Decoration: position must be a WorldCoordinate');
     });
 
@@ -216,7 +221,7 @@ describe('LayoutValidationService', () => {
     test('validateDecoration should provide detailed error messages', () => {
         // Test that constructor throws with null position
         expect(() => {
-            new Decoration('deco-1', 'Torch', null);
+            createDecorationWithUncheckedPosition(null);
         }).toThrow();
     });
 

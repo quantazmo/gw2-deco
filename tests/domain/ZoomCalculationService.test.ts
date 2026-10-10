@@ -2,8 +2,10 @@
  * Tests for src/domain/ZoomCalculationService.js
  * Tests zoom level calculations and constraints
  */
+import { describe, test, expect } from 'vitest';
 import { ZoomCalculationService } from '../../src/domain/ZoomCalculationService.js';
 import { ZoomLevel } from '../../src/domain/ZoomLevel.js';
+import { runtimeInput } from './runtimeInput.js';
 
 describe('ZoomCalculationService', () => {
 
@@ -42,7 +44,7 @@ describe('ZoomCalculationService', () => {
         const viewportSize = { width: 500, height: 500 };
 
         expect(() => {
-            ZoomCalculationService.calculateUniformScale(null, viewportSize);
+            ZoomCalculationService.calculateUniformScale(runtimeInput<Parameters<typeof ZoomCalculationService.calculateUniformScale>[0]>(null), viewportSize);
         }).toThrow();
     });
 
@@ -50,7 +52,7 @@ describe('ZoomCalculationService', () => {
         const mapSize = { width: 1000, height: 1000 };
 
         expect(() => {
-            ZoomCalculationService.calculateUniformScale(mapSize, null);
+            ZoomCalculationService.calculateUniformScale(mapSize, runtimeInput<Parameters<typeof ZoomCalculationService.calculateUniformScale>[1]>(null));
         }).toThrow();
     });
 
@@ -96,11 +98,11 @@ describe('ZoomCalculationService', () => {
 
     test('calculateZoomLimits should throw on null inputs', () => {
         expect(() => {
-            ZoomCalculationService.calculateZoomLimits(null, { width: 500, height: 500 });
+            ZoomCalculationService.calculateZoomLimits(runtimeInput<Parameters<typeof ZoomCalculationService.calculateZoomLimits>[0]>(null), { width: 500, height: 500 });
         }).toThrow();
 
         expect(() => {
-            ZoomCalculationService.calculateZoomLimits({ width: 1000, height: 1000 }, null);
+            ZoomCalculationService.calculateZoomLimits({ width: 1000, height: 1000 }, runtimeInput<Parameters<typeof ZoomCalculationService.calculateZoomLimits>[1]>(null));
         }).toThrow();
     });
 
@@ -138,11 +140,11 @@ describe('ZoomCalculationService', () => {
         }).toThrow();
 
         expect(() => {
-            ZoomCalculationService.constrainZoom(1, null, 5);
+            ZoomCalculationService.constrainZoom(1, runtimeInput<number>(null), 5);
         }).toThrow();
 
         expect(() => {
-            ZoomCalculationService.constrainZoom(1, 0.5, null);
+            ZoomCalculationService.constrainZoom(1, 0.5, runtimeInput<number>(null));
         }).toThrow();
     });
 
@@ -174,11 +176,11 @@ describe('ZoomCalculationService', () => {
 
     test('calculatePanAfterZoom should throw on null inputs', () => {
         expect(() => {
-            ZoomCalculationService.calculatePanAfterZoom(null, 1, 2, { x: 0, y: 0 });
+            ZoomCalculationService.calculatePanAfterZoom(runtimeInput<Parameters<typeof ZoomCalculationService.calculatePanAfterZoom>[0]>(null), 1, 2, { x: 0, y: 0 });
         }).toThrow();
 
         expect(() => {
-            ZoomCalculationService.calculatePanAfterZoom({ x: 100, y: 100 }, 1, 2, null);
+            ZoomCalculationService.calculatePanAfterZoom({ x: 100, y: 100 }, 1, 2, runtimeInput<Parameters<typeof ZoomCalculationService.calculatePanAfterZoom>[3]>(null));
         }).toThrow();
     });
 

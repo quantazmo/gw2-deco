@@ -4,6 +4,7 @@
  *
  * Uncovered lines (previous run): 28, 69, 82, 133-136, 141-146, 162, 170, 200
  */
+import { describe, test, expect } from 'vitest';
 import { DecorationLayoutValidationService } from '../../src/domain/DecorationLayoutValidationService.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { GW2Map } from '../../src/domain/GW2Map.js';

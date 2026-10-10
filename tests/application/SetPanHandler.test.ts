@@ -1,6 +1,7 @@
 /**
  * Tests for SetPanHandler
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { SetPanHandler } from '../../src/application/handlers/SetPanHandler.js';
 import { SetPanCommand } from '../../src/application/commands/SetPanCommand.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

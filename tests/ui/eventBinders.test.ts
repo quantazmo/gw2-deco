@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Mock ExportDialog before importing eventBinders
 let mockExportDialogShow = vi.fn(async () => ['layer-1']);

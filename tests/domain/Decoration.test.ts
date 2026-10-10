@@ -2,6 +2,7 @@
  * Tests for src/domain/Decoration.js
  * Covers core construction, rotX/rotZ fields, validation, and toDTO output.
  */
+import { describe, test, expect } from 'vitest';
 import { Decoration } from '../../src/domain/Decoration.js';
 import { WorldCoordinate } from '../../src/domain/WorldCoordinate.js';
 

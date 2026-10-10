@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 vi.mock('../../../src/ui/renderHelpers.js', () => ({
     createGroup: (opts) => {

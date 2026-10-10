@@ -3,6 +3,7 @@
  * Tests push/undo/redo cycles, redo-clear-on-new-action, max size eviction,
  * clear, subscribe notifications, peek methods
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { UndoRedoManager } from '../../src/application/UndoRedoManager.js';
 import { UndoRecord } from '../../src/application/UndoRecord.js';
 

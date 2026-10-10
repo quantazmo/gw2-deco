@@ -2,6 +2,7 @@
  * Tests for LoadFromUrlDialog component
  * Covers: DOM structure, sample dropdown, URL input interaction, Load/Cancel resolution.
  */
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { LoadFromUrlDialog } from '../../../src/ui/components/LoadFromUrlDialog.js';
 
 describe('LoadFromUrlDialog', () => {

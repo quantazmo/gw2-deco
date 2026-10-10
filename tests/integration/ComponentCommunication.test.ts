@@ -3,6 +3,7 @@
  * Tests that components properly communicate through EventBus and Stores
  */
 
+import { describe, test, expect, beforeEach } from 'vitest';
 import { AppService } from '../../src/application/AppService.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { XmlLayoutAdapter } from '../../src/infrastructure/XmlLayoutAdapter.js';

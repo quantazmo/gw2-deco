@@ -2,6 +2,7 @@
  * Tests for src/application/handlers/LoadLayoutHandler.js
  * Tests the application layer command handling for layout loading
  */
+import { describe, test, expect } from 'vitest';
 import { LoadLayoutHandler } from '../../src/application/handlers/LoadLayoutHandler.js';
 import { LoadLayoutCommand } from '../../src/application/commands/LoadLayoutCommand.js';
 import { XmlLayoutAdapter } from '../../src/infrastructure/XmlLayoutAdapter.js';

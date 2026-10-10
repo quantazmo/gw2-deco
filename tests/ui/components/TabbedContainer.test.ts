@@ -2,6 +2,7 @@
  * Tests for TabbedContainer — covers lines 71-74, 83, 111-222.
  * Specifically: tab clicks, missing panel content, and tab reorder drag.
  */
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TabbedContainer } from '../../../src/ui/components/TabbedContainer.js';
 
 function makeTabGroupNode(panels = ['map', 'layers'], activeIndex = 0) {

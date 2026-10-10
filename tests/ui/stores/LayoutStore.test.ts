@@ -3,6 +3,7 @@
  * Covers: constructor, getState, setState, subscribe/unsubscribe,
  *         EventBus integration, repository persistence.
  */
+import { describe, test, expect } from 'vitest';
 import { DockPanelLayoutStore } from '../../../src/ui/stores/DockPanelLayoutStore.js';
 import { DockLayoutConfiguration } from '../../../src/domain/DockLayoutConfiguration.js';
 

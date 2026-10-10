@@ -10,6 +10,7 @@
  * Lines 239-272 (_enforceMinimumSizes — window resize + direct call)
  * Lines 308-315 (_onDividerMoved — called directly)
  */
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DockManager } from '../../../src/ui/components/DockManager.js';
 import { DockPanelLayoutStore } from '../../../src/ui/stores/DockPanelLayoutStore.js';
 import {

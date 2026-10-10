@@ -10,6 +10,7 @@
  * - DecorationsMovedEvent emission
  * - Backward compatibility without undoRedoManager
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { MoveDecorationsHandler } from '../../src/application/handlers/MoveDecorationsHandler.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { Layer } from '../../src/domain/Layer.js';

@@ -2,7 +2,9 @@
  * Tests for src/domain/Coordinate.js
  * Tests coordinate value object validation, distance calculations, and immutability
  */
+import { describe, test, expect } from 'vitest';
 import { Coordinate } from '../../src/domain/Coordinate.js';
+import { runtimeInput } from './runtimeInput.js';
 
 describe('Coordinate Value Object', () => {
     test('constructor should create coordinate with valid x, y values', () => {
@@ -25,29 +27,29 @@ describe('Coordinate Value Object', () => {
 
     test('constructor should throw on non-numeric x', () => {
         expect(() => {
-            new Coordinate('invalid', 20);
+            new Coordinate(runtimeInput<number>('invalid'), 20);
         }).toThrow();
 
         expect(() => {
-            new Coordinate(null, 20);
+            new Coordinate(runtimeInput<number>(null), 20);
         }).toThrow();
 
         expect(() => {
-            new Coordinate(undefined, 20);
+            new Coordinate(runtimeInput<number>(undefined), 20);
         }).toThrow();
     });
 
     test('constructor should throw on non-numeric y', () => {
         expect(() => {
-            new Coordinate(10, 'invalid');
+            new Coordinate(10, runtimeInput<number>('invalid'));
         }).toThrow();
 
         expect(() => {
-            new Coordinate(10, null);
+            new Coordinate(10, runtimeInput<number>(null));
         }).toThrow();
 
         expect(() => {
-            new Coordinate(10, undefined);
+            new Coordinate(10, runtimeInput<number>(undefined));
         }).toThrow();
     });
 
@@ -85,11 +87,11 @@ describe('Coordinate Value Object', () => {
         const coord = new Coordinate(0, 0);
 
         expect(() => {
-            coord.distanceTo(null);
+            coord.distanceTo(runtimeInput<Coordinate>(null));
         }).toThrow();
 
         expect(() => {
-            coord.distanceTo({ x: 1 }); // Missing y
+            coord.distanceTo(runtimeInput<Coordinate>({ x: 1 })); // Missing y
         }).toThrow();
     });
 

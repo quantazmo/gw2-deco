@@ -1,6 +1,7 @@
 /**
  * Tests for SetLayerColorHandler
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { SetLayerColorHandler } from '../../src/application/handlers/SetLayerColorHandler.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { Layer } from '../../src/domain/Layer.js';

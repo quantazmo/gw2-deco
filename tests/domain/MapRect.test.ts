@@ -1,7 +1,9 @@
 /**
  * Tests for src/domain/MapRect.js
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { MapRect } from '../../src/domain/MapRect.js';
+import { runtimeInput } from './runtimeInput.js';
 
 describe('MapRect', () => {
     describe('constructor – (minX, minY, maxX, maxY) signature', () => {
@@ -55,7 +57,10 @@ describe('MapRect', () => {
         });
 
         test('throws on invalid constructor args', () => {
-            expect(() => new MapRect('bad', 'args')).toThrow();
+            expect(() => new MapRect(
+                runtimeInput<ConstructorParameters<typeof MapRect>[0]>('bad'),
+                runtimeInput<ConstructorParameters<typeof MapRect>[1]>('args')
+            )).toThrow();
         });
     });
 
@@ -69,8 +74,8 @@ describe('MapRect', () => {
         });
 
         test('throws for non-array args', () => {
-            expect(() => MapRect.fromArrays(null, [10, 20])).toThrow();
-            expect(() => MapRect.fromArrays([1, 2], 'bad')).toThrow();
+            expect(() => MapRect.fromArrays(runtimeInput<number[]>(null), [10, 20])).toThrow();
+            expect(() => MapRect.fromArrays([1, 2], runtimeInput<number[]>('bad'))).toThrow();
         });
 
         test('throws for arrays with fewer than 2 elements', () => {
@@ -86,13 +91,13 @@ describe('MapRect', () => {
         });
 
         test('throws for missing properties', () => {
-            expect(() => MapRect.fromObject({ minX: 5 })).toThrow();
-            expect(() => MapRect.fromObject(null)).toThrow();
+            expect(() => MapRect.fromObject(runtimeInput<Parameters<typeof MapRect.fromObject>[0]>({ minX: 5 }))).toThrow();
+            expect(() => MapRect.fromObject(runtimeInput<Parameters<typeof MapRect.fromObject>[0]>(null))).toThrow();
         });
     });
 
     describe('dimension getters', () => {
-        let r;
+        let r: MapRect;
         beforeEach(() => { r = new MapRect(10, 20, 50, 80); });
 
         test('getMin returns {x, y}', () => {
@@ -172,7 +177,7 @@ describe('MapRect', () => {
         });
 
         test('throws for non-MapRect arg', () => {
-            expect(() => r.overlaps({ minX: 0, minY: 0, maxX: 50, maxY: 50 })).toThrow();
+            expect(() => r.overlaps(runtimeInput<MapRect>({ minX: 0, minY: 0, maxX: 50, maxY: 50 }))).toThrow();
         });
     });
 

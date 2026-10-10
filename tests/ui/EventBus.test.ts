@@ -1,6 +1,7 @@
 /**
  * Tests for src/ui/EventBus.js
  */
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { EventBus } from '../../src/ui/EventBus.js';
 
 describe('EventBus', () => {

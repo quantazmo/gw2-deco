@@ -2,6 +2,7 @@
  * Tests for src/infrastructure/XmlLayoutAdapter.js
  * Covers: validateXmlString, _validatePropElement, parseLayout, _extractLayout
  */
+import { describe, test, expect } from 'vitest';
 import { XmlLayoutAdapter } from '../../src/infrastructure/XmlLayoutAdapter.js';
 
 const VALID_XML = `<?xml version="1.0" encoding="UTF-8"?><Decorations version="1" mapId="1558" mapName="Queensdale" type="0"></Decorations>`;

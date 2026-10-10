@@ -2,10 +2,13 @@
  * Additional tests for src/domain/CoordinateConversionService.js
  * Covers: mapToContinent, worldToMap edge cases
  */
+import { describe, test, expect } from 'vitest';
 import { CoordinateConversionService } from '../../src/domain/CoordinateConversionService.js';
 import { ContinentCoordinate } from '../../src/domain/ContinentCoordinate.js';
 import { MapCoordinate } from '../../src/domain/MapCoordinate.js';
+import { ScreenCoordinate } from '../../src/domain/ScreenCoordinate.js';
 import { WorldCoordinate } from '../../src/domain/WorldCoordinate.js';
+import { runtimeInput } from './runtimeInput.js';
 
 const FLOOR_DATA = {
     continent_rect: [[0, 16384], [16384, 0]],
@@ -32,13 +35,13 @@ describe('CoordinateConversionService — additional coverage', () => {
 
         test('throws on null mapCoord', () => {
             expect(() =>
-                CoordinateConversionService.mapToContinent(null, FLOOR_DATA)
+                CoordinateConversionService.mapToContinent(runtimeInput<MapCoordinate>(null), FLOOR_DATA)
             ).toThrow();
         });
 
         test('throws on null mapFloorData', () => {
             expect(() =>
-                CoordinateConversionService.mapToContinent(new MapCoordinate(0, 0), null)
+                CoordinateConversionService.mapToContinent(new MapCoordinate(0, 0), runtimeInput<Parameters<typeof CoordinateConversionService.mapToContinent>[1]>(null))
             ).toThrow();
         });
 
@@ -108,9 +111,9 @@ describe('CoordinateConversionService — additional coverage', () => {
         test('throws on null scale', () => {
             expect(() =>
                 CoordinateConversionService.screenToMap(
-                    { x: 100, y: 100 },
+                    new ScreenCoordinate(100, 100),
                     { xZoom: 1, yZoom: 1, xPan: 0, yPan: 0 },
-                    null
+                    runtimeInput<Parameters<typeof CoordinateConversionService.screenToMap>[2]>(null)
                 )
             ).toThrow();
         });
@@ -120,9 +123,9 @@ describe('CoordinateConversionService — additional coverage', () => {
         test('throws on null scale', () => {
             expect(() =>
                 CoordinateConversionService.mapToScreen(
-                    { x: 100, y: 100 },
+                    new MapCoordinate(100, 100),
                     { xZoom: 1, yZoom: 1, xPan: 0, yPan: 0 },
-                    null
+                    runtimeInput<Parameters<typeof CoordinateConversionService.mapToScreen>[2]>(null)
                 )
             ).toThrow();
         });

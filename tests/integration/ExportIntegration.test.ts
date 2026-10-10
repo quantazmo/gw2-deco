@@ -2,6 +2,7 @@
  * Integration tests for the Export XML pipeline.
  * Tests the full chain: build state → ExportLayersHandler → XmlExportAdapter → parse XML output.
  */
+import { describe, test, expect } from 'vitest';
 import { ExportLayersHandler } from '../../src/application/handlers/ExportLayersHandler.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { Layer } from '../../src/domain/Layer.js';

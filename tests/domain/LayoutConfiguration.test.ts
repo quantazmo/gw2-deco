@@ -9,15 +9,37 @@ import {
     createSplitNode,
     findNode,
     removeNode,
-    replaceNode
+    replaceNode,
+    type DockLayoutNode
 } from '../../src/domain/DockLayoutConfiguration.js';
 import { PANEL_IDS } from '../../src/config/constants.js';
+import { describe, expect, test } from 'vitest';
+
+type FoundNode = NonNullable<ReturnType<typeof findNode>>;
+
+function requireFoundNode(result: FoundNode | null): FoundNode {
+    if (!result) throw new Error('Expected matching layout node');
+    return result;
+}
+
+function requireTree(tree: DockLayoutNode | null): DockLayoutNode {
+    if (!tree) throw new Error('Expected layout tree');
+    return tree;
+}
+
+function requirePanelNode(node: DockLayoutNode): asserts node is Extract<DockLayoutNode, { type: 'panel' }> {
+    if (node.type !== 'panel') throw new Error('Expected panel node');
+}
+
+function requireTabGroupNode(node: DockLayoutNode): asserts node is Extract<DockLayoutNode, { type: 'tabgroup' }> {
+    if (node.type !== 'tabgroup') throw new Error('Expected tab group node');
+}
 
 // ─────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────
 
-function collectPanelIds(node) {
+function collectPanelIds(node: DockLayoutNode | null): string[] {
     if (!node) return [];
     if (node.type === 'panel') return [node.panelId];
     if (node.type === 'tabgroup') return [...node.panels];
@@ -201,7 +223,7 @@ describe('LayoutConfiguration', () => {
     describe('validation - depth limit', () => {
         test('rejects tree with depth > 10', () => {
             // Build a tree 11 splits deep (depth > MAX_TREE_DEPTH=10)
-            let deepTree = createPanelNode(PANEL_IDS.MAP);
+            let deepTree: DockLayoutNode = createPanelNode(PANEL_IDS.MAP);
             for (let i = 0; i < 11; i++) {
                 deepTree = createSplitNode('vertical', 0.5, createPanelNode(PANEL_IDS.LAYERS), deepTree);
             }
@@ -224,15 +246,14 @@ describe('LayoutConfiguration', () => {
     describe('findNode()', () => {
         test('finds a PanelNode by panelId', () => {
             const config = DockLayoutConfiguration.createDefault();
-            const result = findNode(config.tree, node => node.type === 'panel' && node.panelId === PANEL_IDS.LAYERS);
-            expect(result).not.toBeNull();
+            const result = requireFoundNode(findNode(config.tree, node => node.type === 'panel' && node.panelId === PANEL_IDS.LAYERS));
+            requirePanelNode(result.node);
             expect(result.node.panelId).toBe(PANEL_IDS.LAYERS);
         });
 
         test('finds the root node when predicate matches root', () => {
             const tree = buildValidTree();
-            const result = findNode(tree, node => node.type === 'split');
-            expect(result).not.toBeNull();
+            const result = requireFoundNode(findNode(tree, node => node.type === 'split'));
             expect(result.path).toHaveLength(0);
         });
 
@@ -245,8 +266,7 @@ describe('LayoutConfiguration', () => {
         test('returns path to nested node', () => {
             const tree = buildValidTree();
             // LAYERS is at tree.second.first
-            const result = findNode(tree, node => node.type === 'panel' && node.panelId === PANEL_IDS.LAYERS);
-            expect(result).not.toBeNull();
+            const result = requireFoundNode(findNode(tree, node => node.type === 'panel' && node.panelId === PANEL_IDS.LAYERS));
             expect(result.path).toContain('second');
             expect(result.path).toContain('first');
         });
@@ -262,6 +282,7 @@ describe('LayoutConfiguration', () => {
                 createPanelNode(PANEL_IDS.LAYERS)
             );
             const newTree = removeNode(tree, PANEL_IDS.LAYERS);
+            requirePanelNode(newTree);
             expect(newTree.type).toBe('panel');
             expect(newTree.panelId).toBe(PANEL_IDS.MAP);
         });
@@ -279,8 +300,8 @@ describe('LayoutConfiguration', () => {
                 createTabGroupNode([PANEL_IDS.LAYERS, PANEL_IDS.DECORATION_LIST], 0)
             );
             const newTree = removeNode(tree, PANEL_IDS.DECORATION_LIST);
-            const found = findNode(newTree, n => n.type === 'panel' && n.panelId === PANEL_IDS.LAYERS);
-            expect(found).not.toBeNull();
+            const found = requireFoundNode(findNode(newTree, n => n.type === 'panel' && n.panelId === PANEL_IDS.LAYERS));
+            requirePanelNode(found.node);
             expect(found.node.type).toBe('panel');
         });
 
@@ -306,15 +327,16 @@ describe('LayoutConfiguration', () => {
                 n => n.type === 'panel' && n.panelId === PANEL_IDS.LAYERS,
                 tabGroup
             );
-            const found = findNode(newTree, n => n.type === 'tabgroup');
-            expect(found).not.toBeNull();
+            const found = requireFoundNode(findNode(newTree, n => n.type === 'tabgroup'));
+            requireTabGroupNode(found.node);
             expect(found.node.panels).toContain(PANEL_IDS.LAYERS);
         });
 
         test('replaces the root node when predicate matches root', () => {
             const tree = createPanelNode(PANEL_IDS.MAP);
             const replacement = createPanelNode(PANEL_IDS.LAYERS);
-            const newTree = replaceNode(tree, n => n.type === 'panel' && n.panelId === PANEL_IDS.MAP, replacement);
+            const newTree = requireTree(replaceNode(tree, n => n.type === 'panel' && n.panelId === PANEL_IDS.MAP, replacement));
+            requirePanelNode(newTree);
             expect(newTree.panelId).toBe(PANEL_IDS.LAYERS);
         });
 

@@ -2,6 +2,7 @@
  * Tests for src/ui/stores/ToolModeStore.js
  * Covers: getMode, setMode, subscribe, default mode is 'pan'
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { ToolModeStore } from '../../../src/ui/stores/ToolModeStore.js';
 
 describe('ToolModeStore', () => {

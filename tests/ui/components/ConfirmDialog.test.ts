@@ -3,6 +3,7 @@
  * Covers: show/resolve with confirm, show/resolve with cancel,
  * cancel-focused-by-default, accessibility attributes
  */
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { ConfirmDialog } from '../../../src/ui/components/ConfirmDialog.js';
 
 describe('ConfirmDialog', () => {

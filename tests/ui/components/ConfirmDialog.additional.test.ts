@@ -2,6 +2,7 @@
  * Additional tests for ConfirmDialog — targeting uncovered branches.
  * Uncovered lines: 38 (showModal fallback), 114 (close fallback), 128-129 (destroy)
  */
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ConfirmDialog } from '../../../src/ui/components/ConfirmDialog.js';
 
 describe('ConfirmDialog — additional branch coverage', () => {

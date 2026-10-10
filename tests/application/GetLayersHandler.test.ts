@@ -2,6 +2,7 @@
  * Tests for src/application/handlers/GetLayersHandler.js
  * Tests the application layer query handling for retrieving layers
  */
+import { describe, test, expect } from 'vitest';
 import { GetLayersHandler } from '../../src/application/handlers/GetLayersHandler.js';
 import { GetLayersQuery } from '../../src/application/queries/GetLayersQuery.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

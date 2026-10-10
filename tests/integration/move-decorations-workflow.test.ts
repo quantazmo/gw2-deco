@@ -3,6 +3,7 @@
  * Covers: move from list to layer, move from map to layer, context menu move,
  * Ctrl+N shortcut move, undo after move
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { SelectionStore } from '../../src/ui/stores/SelectionStore.js';
 import { EventBus } from '../../src/ui/EventBus.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

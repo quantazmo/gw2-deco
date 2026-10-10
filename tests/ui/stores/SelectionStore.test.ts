@@ -2,6 +2,7 @@
  * Tests for src/ui/stores/SelectionStore.js
  * Tests multi-select, toggle, range, clear, deselectByLayer, event publishing
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { SelectionStore } from '../../../src/ui/stores/SelectionStore.js';
 
 describe('SelectionStore', () => {

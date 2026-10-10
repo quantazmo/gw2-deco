@@ -3,6 +3,7 @@
  * Covers: execute() async method (layoutId+repository, xmlContent, no args error)
  *         handle() with layoutId+repository throws
  */
+import { describe, test, expect, vi } from 'vitest';
 import { LoadLayoutHandler } from '../../src/application/handlers/LoadLayoutHandler.js';
 import { XmlLayoutAdapter } from '../../src/infrastructure/XmlLayoutAdapter.js';
 

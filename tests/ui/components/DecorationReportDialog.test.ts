@@ -2,6 +2,7 @@
  * Tests for DecorationReportDialog component
  * Covers: dialog structure, visible-only layer filtering, decoration counts, OK button closes.
  */
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DecorationReportDialog } from '../../../src/ui/components/DecorationReportDialog.js';
 
 function makeLayer(id, name, isVisible, decorations) {

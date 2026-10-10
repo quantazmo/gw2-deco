@@ -3,6 +3,7 @@
  * Validates localStorage serialization, deserialization, error recovery, and version checks.
  */
 
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { PanelLayoutRepository } from '../../../src/infrastructure/repositories/PanelLayoutRepository.js';
 import { DockLayoutConfiguration, createPanelNode, createSplitNode, createTabGroupNode } from '../../../src/domain/DockLayoutConfiguration.js';
 import { LAYOUT } from '../../../src/config/constants.js';

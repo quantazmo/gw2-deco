@@ -6,6 +6,7 @@
  *   219-221 (ArrowLeft), 234-235 (Enter/Space on submenu item),
  *   280-287 (ArrowRight open submenu), 293-297 (ArrowLeft close submenu)
  */
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ContextMenu } from '../../../src/ui/components/ContextMenu.js';
 
 describe('ContextMenu — additional branch coverage', () => {

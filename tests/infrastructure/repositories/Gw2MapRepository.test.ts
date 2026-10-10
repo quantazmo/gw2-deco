@@ -2,6 +2,7 @@
  * Tests for Gw2MapRepository
  */
 
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Gw2MapRepository } from '../../../src/infrastructure/repositories/Gw2MapRepository.js';
 import { GW2Map } from '../../../src/domain/GW2Map.js';
 import { MapBoundary } from '../../../src/domain/MapBoundary.js';

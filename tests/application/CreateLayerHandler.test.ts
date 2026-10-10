@@ -2,6 +2,7 @@
  * Tests for src/application/handlers/CreateLayerHandler.js
  * Tests the application layer command handling for layer creation
  */
+import { describe, test, expect } from 'vitest';
 import { CreateLayerHandler } from '../../src/application/handlers/CreateLayerHandler.js';
 import { CreateLayerCommand } from '../../src/application/commands/CreateLayerCommand.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

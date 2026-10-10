@@ -2,6 +2,7 @@
  * Tests for src/ui/domHelpers.js
  * Pure DOM utility functions — all testable in jsdom
  */
+import { describe, test, expect } from 'vitest';
 import {
     createElement,
     addClass,

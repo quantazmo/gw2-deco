@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createZoomHandler } from '../../src/ui/ZoomHandler.js';
 
 function makeMockZoomStore(minZoom = 0.1, maxZoom = 10) {

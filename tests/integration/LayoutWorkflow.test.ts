@@ -2,6 +2,7 @@
  * Integration tests for LayoutWorkflow
  * Tests the complete workflow: Load layout → Create layer → Add decoration → Export
  */
+import { describe, test, expect } from 'vitest';
 import { LoadLayoutCommand } from '../../src/application/commands/LoadLayoutCommand.js';
 import { CreateLayerCommand } from '../../src/application/commands/CreateLayerCommand.js';
 import { AddDecorationCommand } from '../../src/application/commands/AddDecorationCommand.js';

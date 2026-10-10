@@ -3,6 +3,7 @@
  * Tests the full layout render cycle: LayoutStore → DockManager → DOM output.
  * Verifies tree re-render on store change, panel content mapping, and nested split rendering.
  */
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { DockManager } from '../../src/ui/components/DockManager.js';
 import { DockPanelLayoutStore } from '../../src/ui/stores/DockPanelLayoutStore.js';
 import {

@@ -10,6 +10,7 @@
  * - Backward compatibility without undoRedoManager
  * - Skip missing IDs gracefully
  */
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { DeleteDecorationsHandler } from '../../src/application/handlers/DeleteDecorationsHandler.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { Layer } from '../../src/domain/Layer.js';

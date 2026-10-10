@@ -2,11 +2,13 @@
  * Tests for src/domain/CoordinateConversionService.js
  * Tests coordinate system transformations between different spaces
  */
+import { describe, test, expect } from 'vitest';
 import { CoordinateConversionService } from '../../src/domain/CoordinateConversionService.js';
 import { ContinentCoordinate } from '../../src/domain/ContinentCoordinate.js';
 import { MapCoordinate } from '../../src/domain/MapCoordinate.js';
 import { ScreenCoordinate } from '../../src/domain/ScreenCoordinate.js';
 import { WorldCoordinate } from '../../src/domain/WorldCoordinate.js';
+import { runtimeInput } from './runtimeInput.js';
 
 describe('CoordinateConversionService', () => {
 
@@ -33,7 +35,7 @@ describe('CoordinateConversionService', () => {
         };
 
         expect(() => {
-            CoordinateConversionService.continentToMap(null, mapFloorData);
+            CoordinateConversionService.continentToMap(runtimeInput<ContinentCoordinate>(null), mapFloorData);
         }).toThrow();
     });
 
@@ -41,7 +43,7 @@ describe('CoordinateConversionService', () => {
         const continentCoord = new ContinentCoordinate(8192, 8192);
 
         expect(() => {
-            CoordinateConversionService.continentToMap(continentCoord, null);
+            CoordinateConversionService.continentToMap(continentCoord, runtimeInput<Parameters<typeof CoordinateConversionService.continentToMap>[1]>(null));
         }).toThrow();
     });
 
@@ -85,7 +87,7 @@ describe('CoordinateConversionService', () => {
         const scale = { x: 1, y: 1 };
 
         expect(() => {
-            CoordinateConversionService.mapToScreen(null, zoomState, scale);
+            CoordinateConversionService.mapToScreen(runtimeInput<MapCoordinate>(null), zoomState, scale);
         }).toThrow();
     });
 
@@ -94,7 +96,7 @@ describe('CoordinateConversionService', () => {
         const scale = { x: 1, y: 1 };
 
         expect(() => {
-            CoordinateConversionService.mapToScreen(mapCoord, null, scale);
+            CoordinateConversionService.mapToScreen(mapCoord, runtimeInput<Parameters<typeof CoordinateConversionService.mapToScreen>[1]>(null), scale);
         }).toThrow();
     });
 
@@ -103,11 +105,11 @@ describe('CoordinateConversionService', () => {
         const scale = { x: 1, y: 1 };
 
         expect(() => {
-            CoordinateConversionService.mapToScreen(mapCoord, { xZoom: null }, scale);
+            CoordinateConversionService.mapToScreen(mapCoord, runtimeInput<Parameters<typeof CoordinateConversionService.mapToScreen>[1]>({ xZoom: null }), scale);
         }).toThrow();
 
         expect(() => {
-            CoordinateConversionService.mapToScreen(mapCoord, { yZoom: null }, scale);
+            CoordinateConversionService.mapToScreen(mapCoord, runtimeInput<Parameters<typeof CoordinateConversionService.mapToScreen>[1]>({ yZoom: null }), scale);
         }).toThrow();
     });
 
@@ -138,7 +140,7 @@ describe('CoordinateConversionService', () => {
         const scale = { x: 1, y: 1 };
 
         expect(() => {
-            CoordinateConversionService.screenToMap(null, zoomState, scale);
+            CoordinateConversionService.screenToMap(runtimeInput<ScreenCoordinate>(null), zoomState, scale);
         }).toThrow();
     });
 
@@ -147,7 +149,7 @@ describe('CoordinateConversionService', () => {
         const scale = { x: 1, y: 1 };
 
         expect(() => {
-            CoordinateConversionService.screenToMap(screenCoord, null, scale);
+            CoordinateConversionService.screenToMap(screenCoord, runtimeInput<Parameters<typeof CoordinateConversionService.screenToMap>[1]>(null), scale);
         }).toThrow();
     });
 
@@ -156,11 +158,11 @@ describe('CoordinateConversionService', () => {
         const scale = { x: 1, y: 1 };
 
         expect(() => {
-            CoordinateConversionService.screenToMap(screenCoord, { xZoom: null }, scale);
+            CoordinateConversionService.screenToMap(screenCoord, runtimeInput<Parameters<typeof CoordinateConversionService.screenToMap>[1]>({ xZoom: null }), scale);
         }).toThrow();
 
         expect(() => {
-            CoordinateConversionService.screenToMap(screenCoord, { yZoom: null }, scale);
+            CoordinateConversionService.screenToMap(screenCoord, runtimeInput<Parameters<typeof CoordinateConversionService.screenToMap>[1]>({ yZoom: null }), scale);
         }).toThrow();
     });
 
@@ -181,7 +183,7 @@ describe('CoordinateConversionService', () => {
         };
 
         expect(() => {
-            CoordinateConversionService.worldToMap(null, mapFloorData);
+            CoordinateConversionService.worldToMap(runtimeInput<Parameters<typeof CoordinateConversionService.worldToMap>[0]>(null), mapFloorData);
         }).toThrow();
     });
 
@@ -189,7 +191,7 @@ describe('CoordinateConversionService', () => {
         const worldCoord = new WorldCoordinate(0, 0, 0, 0);
 
         expect(() => {
-            CoordinateConversionService.worldToMap(worldCoord, null);
+            CoordinateConversionService.worldToMap(worldCoord, runtimeInput<Parameters<typeof CoordinateConversionService.worldToMap>[1]>(null));
         }).toThrow();
     });
 

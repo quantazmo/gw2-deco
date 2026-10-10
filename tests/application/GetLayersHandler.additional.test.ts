@@ -2,6 +2,7 @@
  * Additional tests for src/application/handlers/GetLayersHandler.js
  * Covers: execute() method (not covered by existing tests which only use handle())
  */
+import { describe, test, expect } from 'vitest';
 import { GetLayersHandler } from '../../src/application/handlers/GetLayersHandler.js';
 import { GetLayersQuery } from '../../src/application/queries/GetLayersQuery.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

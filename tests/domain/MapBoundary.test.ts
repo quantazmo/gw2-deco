@@ -1,10 +1,19 @@
 /**
  * Tests for src/domain/MapBoundary.js
  */
+import { describe, test, expect } from 'vitest';
 import { MapBoundary } from '../../src/domain/MapBoundary.js';
 
 const triangle = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 5, y: 10 }];
 const square = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }];
+
+function constructWithUncheckedInput(points: unknown): MapBoundary {
+    return new MapBoundary(points as Array<{ x: number; y: number }>);
+}
+
+function containsUncheckedPoint(boundary: MapBoundary, point: unknown): boolean {
+    return boundary.contains(point as { x: number; y: number });
+}
 
 describe('MapBoundary', () => {
     describe('constructor / validate', () => {
@@ -19,7 +28,7 @@ describe('MapBoundary', () => {
         });
 
         test('throws for non-array', () => {
-            expect(() => new MapBoundary('bad')).toThrow();
+            expect(() => constructWithUncheckedInput('bad')).toThrow();
         });
 
         test('throws for fewer than 3 points', () => {
@@ -27,7 +36,7 @@ describe('MapBoundary', () => {
         });
 
         test('throws for non-numeric point coordinates', () => {
-            expect(() => new MapBoundary([
+            expect(() => constructWithUncheckedInput([
                 { x: 'a', y: 0 }, { x: 1, y: 1 }, { x: 2, y: 2 }
             ])).toThrow();
         });
@@ -52,7 +61,7 @@ describe('MapBoundary', () => {
         });
 
         test('throws for point without x/y', () => {
-            expect(() => boundary.contains({ z: 5 })).toThrow();
+            expect(() => containsUncheckedPoint(boundary, { z: 5 })).toThrow();
         });
     });
 

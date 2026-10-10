@@ -3,6 +3,7 @@
  * Covers: construction, show/cancel/save, pre-population, Escape handling,
  *         multiple shows, format pre-validation, API key validation (debounce, success, failure).
  */
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SettingsDialog } from '../../../src/ui/components/SettingsDialog.js';
 
 // Two real-format GW2 API keys used across validation tests.

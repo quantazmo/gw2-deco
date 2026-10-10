@@ -13,14 +13,17 @@
  *   226 – _validateTree: SplitNode invalid direction
  *   232 – _validateTree: unknown node type
  */
+import { describe, test, expect } from 'vitest';
 import {
     DockLayoutConfiguration,
     createPanelNode,
     createTabGroupNode,
     createSplitNode,
     removeNode,
+    type DockLayoutNode,
 } from '../../src/domain/DockLayoutConfiguration.js';
 import { PANEL_IDS } from '../../src/config/constants.js';
+import { runtimeInput } from './runtimeInput.js';
 
 describe('LayoutConfiguration — additional branch coverage', () => {
 
@@ -32,7 +35,7 @@ describe('LayoutConfiguration — additional branch coverage', () => {
             // When first child has an unknown type, _containsPanel returns false (line 95).
             // The second child is a panel that IS the panelId to remove.
             const tree = createSplitNode('vertical', 0.5,
-                { type: 'unknown', panelId: PANEL_IDS.MAP }, // triggers _containsPanel fallthrough
+                runtimeInput<DockLayoutNode>({ type: 'unknown', panelId: PANEL_IDS.MAP }), // triggers _containsPanel fallthrough
                 createPanelNode(PANEL_IDS.LAYERS)
             );
             const result = removeNode(tree, PANEL_IDS.LAYERS);
@@ -60,7 +63,7 @@ describe('LayoutConfiguration — additional branch coverage', () => {
     // ─────────────────────────────────────────────────────────────────────────
     describe('removeNode – unknown root node type', () => {
         test('returns node unchanged when root has an unknown type', () => {
-            const node = { type: 'unknown', foo: 'bar' };
+            const node = runtimeInput<DockLayoutNode>({ type: 'unknown', foo: 'bar' });
             const result = removeNode(node, PANEL_IDS.MAP);
             expect(result).toBe(node);
         });
@@ -84,7 +87,7 @@ describe('LayoutConfiguration — additional branch coverage', () => {
                     )
                 )
             };
-            const config = new DockLayoutConfiguration(tree);
+            const config = new DockLayoutConfiguration(runtimeInput<DockLayoutNode>(tree));
             const result = config.validate();
             expect(result.valid).toBe(false);
             expect(result.errors.some(e => e.includes('null') || e.includes('undefined'))).toBe(true);
@@ -162,11 +165,11 @@ describe('LayoutConfiguration — additional branch coverage', () => {
             const tree = createSplitNode('vertical', 0.75,
                 createPanelNode(PANEL_IDS.MAP),
                 createSplitNode('horizontal', 0.5,
-                    { type: 'tabgroup', panels: [PANEL_IDS.LAYERS, PANEL_IDS.DECORATION_LIST], activeIndex: 'zero' },
+                    runtimeInput<DockLayoutNode>({ type: 'tabgroup', panels: [PANEL_IDS.LAYERS, PANEL_IDS.DECORATION_LIST], activeIndex: 'zero' }),
                     createPanelNode(PANEL_IDS.DECORATION_LIST) // duplicate intentional — testing activeIndex error, not completeness
                 )
             );
-            const config = new DockLayoutConfiguration(tree);
+            const config = new DockLayoutConfiguration(runtimeInput<DockLayoutNode>(tree));
             const result = config.validate();
             expect(result.valid).toBe(false);
             expect(result.errors.some(e => e.includes('activeIndex'))).toBe(true);
@@ -188,7 +191,7 @@ describe('LayoutConfiguration — additional branch coverage', () => {
                     createPanelNode(PANEL_IDS.DECORATION_LIST)
                 )
             };
-            const config = new DockLayoutConfiguration(tree);
+            const config = new DockLayoutConfiguration(runtimeInput<DockLayoutNode>(tree));
             const result = config.validate();
             expect(result.valid).toBe(false);
             expect(result.errors.some(e => e.includes('direction') || e.includes('diagonal'))).toBe(true);
@@ -203,7 +206,7 @@ describe('LayoutConfiguration — additional branch coverage', () => {
             const tree = createSplitNode('vertical', 0.5,
                 createPanelNode(PANEL_IDS.MAP),
                 createSplitNode('horizontal', 0.5,
-                    { type: 'weird', panels: [] },   // triggers
+                    runtimeInput<DockLayoutNode>({ type: 'weird', panels: [] }),   // triggers
                     createSplitNode('horizontal', 0.5,
                         createPanelNode(PANEL_IDS.LAYERS),
                         createPanelNode(PANEL_IDS.DECORATION_LIST)
@@ -226,7 +229,7 @@ describe('LayoutConfiguration — additional branch coverage', () => {
             const tree = createSplitNode('vertical', 0.75,
                 createPanelNode(PANEL_IDS.MAP),
                 createSplitNode('horizontal', 0.5,
-                    { type: 'tabgroup', panels: null, activeIndex: 0 }, // null panels
+                    runtimeInput<DockLayoutNode>({ type: 'tabgroup', panels: null, activeIndex: 0 }), // null panels
                     createSplitNode('horizontal', 0.5,
                         createPanelNode(PANEL_IDS.LAYERS),
                         createPanelNode(PANEL_IDS.DECORATION_LIST)

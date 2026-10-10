@@ -2,10 +2,12 @@
  * Tests for src/domain/BoundaryCalculationService.js
  * Tests map boundary calculations and bounds operations
  */
+import { describe, test, expect } from 'vitest';
 import { BoundaryCalculationService } from '../../src/domain/BoundaryCalculationService.js';
 import { MapBoundary } from '../../src/domain/MapBoundary.js';
 import { Coordinate } from '../../src/domain/Coordinate.js';
 import { MapRect } from '../../src/domain/MapRect.js';
+import { runtimeInput } from './runtimeInput.js';
 
 describe('BoundaryCalculationService', () => {
 
@@ -46,13 +48,13 @@ describe('BoundaryCalculationService', () => {
 
     test('calculateBoundsFromBoundary should throw on null boundary', () => {
         expect(() => {
-            BoundaryCalculationService.calculateBoundsFromBoundary(null);
+            BoundaryCalculationService.calculateBoundsFromBoundary(runtimeInput<Parameters<typeof BoundaryCalculationService.calculateBoundsFromBoundary>[0]>(null));
         }).toThrow();
     });
 
     test('calculateBoundsFromBoundary should throw on invalid boundary', () => {
         expect(() => {
-            BoundaryCalculationService.calculateBoundsFromBoundary({ points: null });
+            BoundaryCalculationService.calculateBoundsFromBoundary(runtimeInput<Parameters<typeof BoundaryCalculationService.calculateBoundsFromBoundary>[0]>({ points: null }));
         }).toThrow();
     });
 
@@ -75,7 +77,7 @@ describe('BoundaryCalculationService', () => {
 
     test('calculateBoundsFromTiles should throw on null tiles', () => {
         expect(() => {
-            BoundaryCalculationService.calculateBoundsFromTiles(null);
+            BoundaryCalculationService.calculateBoundsFromTiles(runtimeInput<unknown[]>(null));
         }).toThrow();
     });
 
@@ -106,7 +108,7 @@ describe('BoundaryCalculationService', () => {
 
     test('expandBoundsToAspectRatio should throw on null bounds', () => {
         expect(() => {
-            BoundaryCalculationService.expandBoundsToAspectRatio(null, 1.5);
+            BoundaryCalculationService.expandBoundsToAspectRatio(runtimeInput<Parameters<typeof BoundaryCalculationService.expandBoundsToAspectRatio>[0]>(null), 1.5);
         }).toThrow();
     });
 
@@ -127,7 +129,7 @@ describe('BoundaryCalculationService', () => {
         }).toThrow();
 
         expect(() => {
-            BoundaryCalculationService.expandBoundsToAspectRatio(bounds, null);
+            BoundaryCalculationService.expandBoundsToAspectRatio(bounds, runtimeInput<number>(null));
         }).toThrow();
     });
 
@@ -159,7 +161,7 @@ describe('BoundaryCalculationService', () => {
         };
 
         expect(() => {
-            BoundaryCalculationService.centerBoundsInViewport(null, viewport);
+            BoundaryCalculationService.centerBoundsInViewport(runtimeInput<Parameters<typeof BoundaryCalculationService.centerBoundsInViewport>[0]>(null), viewport);
         }).toThrow();
     });
 
@@ -172,7 +174,7 @@ describe('BoundaryCalculationService', () => {
         };
 
         expect(() => {
-            BoundaryCalculationService.centerBoundsInViewport(bounds, null);
+            BoundaryCalculationService.centerBoundsInViewport(bounds, runtimeInput<Parameters<typeof BoundaryCalculationService.centerBoundsInViewport>[1]>(null));
         }).toThrow();
     });
 
@@ -185,11 +187,11 @@ describe('BoundaryCalculationService', () => {
         };
 
         expect(() => {
-            BoundaryCalculationService.centerBoundsInViewport(bounds, { width: 'invalid' });
+            BoundaryCalculationService.centerBoundsInViewport(bounds, runtimeInput<Parameters<typeof BoundaryCalculationService.centerBoundsInViewport>[1]>({ width: 'invalid' }));
         }).toThrow();
 
         expect(() => {
-            BoundaryCalculationService.centerBoundsInViewport(bounds, {});
+            BoundaryCalculationService.centerBoundsInViewport(bounds, runtimeInput<Parameters<typeof BoundaryCalculationService.centerBoundsInViewport>[1]>({}));
         }).toThrow();
     });
 

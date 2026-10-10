@@ -2,6 +2,7 @@
  * Tests for src/application/handlers/SetActiveLayerHandler.js
  * Tests the application layer command handling for setting active layer
  */
+import { describe, test, expect } from 'vitest';
 import { SetActiveLayerHandler } from '../../src/application/handlers/SetActiveLayerHandler.js';
 import { SetActiveLayerCommand } from '../../src/application/commands/SetActiveLayerCommand.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

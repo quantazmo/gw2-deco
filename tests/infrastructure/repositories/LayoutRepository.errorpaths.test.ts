@@ -2,6 +2,7 @@
  * Additional tests for LayoutRepository — targeting uncovered error paths.
  * Uncovered lines: 43 (save catch/warn), 82 (clear catch/warn)
  */
+import { describe, test, expect } from 'vitest';
 import { PanelLayoutRepository } from '../../../src/infrastructure/repositories/PanelLayoutRepository.js';
 import { DockLayoutConfiguration } from '../../../src/domain/DockLayoutConfiguration.js';
 

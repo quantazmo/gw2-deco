@@ -2,7 +2,9 @@
  * Additional tests for src/domain/ZoomCalculationService.js
  * Covers: calculateZoomToFitArea, calculateVisibleArea, invalid maxZoom
  */
+import { describe, test, expect } from 'vitest';
 import { ZoomCalculationService } from '../../src/domain/ZoomCalculationService.js';
+import { runtimeInput } from './runtimeInput.js';
 
 describe('ZoomCalculationService — additional coverage', () => {
 
@@ -75,18 +77,18 @@ describe('ZoomCalculationService — additional coverage', () => {
 
         test('throws on invalid area', () => {
             expect(() =>
-                ZoomCalculationService.calculateZoomToFitArea(null, { width: 500, height: 500 })
+                ZoomCalculationService.calculateZoomToFitArea(runtimeInput<Parameters<typeof ZoomCalculationService.calculateZoomToFitArea>[0]>(null), { width: 500, height: 500 })
             ).toThrow();
 
             expect(() =>
-                ZoomCalculationService.calculateZoomToFitArea({ height: 100 }, { width: 500, height: 500 })
+                ZoomCalculationService.calculateZoomToFitArea(runtimeInput<Parameters<typeof ZoomCalculationService.calculateZoomToFitArea>[0]>({ height: 100 }), { width: 500, height: 500 })
             ).toThrow();
         });
 
         test('throws on invalid viewportSize', () => {
             const area = { width: 100, height: 100, min: { x: 0, y: 0 } };
             expect(() =>
-                ZoomCalculationService.calculateZoomToFitArea(area, null)
+                ZoomCalculationService.calculateZoomToFitArea(area, runtimeInput<Parameters<typeof ZoomCalculationService.calculateZoomToFitArea>[1]>(null))
             ).toThrow();
         });
 
@@ -139,7 +141,7 @@ describe('ZoomCalculationService — additional coverage', () => {
 
         test('throws on invalid viewportSize', () => {
             expect(() =>
-                ZoomCalculationService.calculateVisibleArea(null, 1)
+                ZoomCalculationService.calculateVisibleArea(runtimeInput<Parameters<typeof ZoomCalculationService.calculateVisibleArea>[0]>(null), 1)
             ).toThrow();
         });
 

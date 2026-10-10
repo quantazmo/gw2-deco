@@ -5,6 +5,7 @@
  *   - Publishes layout:changed event (LayoutStore notify)
  *   - Clears localStorage entry via LayoutRepository
  */
+import { describe, test, it, expect, beforeEach, vi } from 'vitest';
 import { ResetLayoutHandler } from '../../src/application/handlers/ResetLayoutHandler.js';
 import { ResetLayoutCommand } from '../../src/application/commands/ResetLayoutCommand.js';
 import { DockPanelLayoutStore } from '../../src/ui/stores/DockPanelLayoutStore.js';

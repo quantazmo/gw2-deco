@@ -3,18 +3,22 @@
  * moveDecorations, removeDecorations, getDecorationLayer,
  * getAllVisibleDecorationIds, clearAllLayers
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { Layer } from '../../src/domain/Layer.js';
 import { Decoration } from '../../src/domain/Decoration.js';
 import { GW2Map } from '../../src/domain/GW2Map.js';
 import { WorldCoordinate } from '../../src/domain/WorldCoordinate.js';
+import { runtimeInput } from './runtimeInput.js';
 
 describe('HomesteadLayout Multi-Layer Methods', () => {
 
-    let layout;
-    let layer1, layer2, layer3;
+    let layout: HomesteadLayout;
+    let layer1: Layer;
+    let layer2: Layer;
+    let layer3: Layer;
 
-    function makeDecoration(id, name) {
+    function makeDecoration(id: string, name?: string): Decoration {
         return new Decoration(id, name || `Deco ${id}`, new WorldCoordinate(100, 200));
     }
 
@@ -94,7 +98,7 @@ describe('HomesteadLayout Multi-Layer Methods', () => {
         });
 
         test('should throw if decorationIds is not an array', () => {
-            expect(() => layout.moveDecorations('d1', 'layer-2'))
+            expect(() => layout.moveDecorations(runtimeInput<string[]>('d1'), 'layer-2'))
                 .toThrow('must be an array');
         });
 
@@ -115,11 +119,14 @@ describe('HomesteadLayout Multi-Layer Methods', () => {
     describe('removeDecorations', () => {
         test('should remove decorations from their layers', () => {
             const result = layout.removeDecorations(['d1', 'd3']);
+            const removedD1 = result.removed.get('d1');
+            const removedD3 = result.removed.get('d3');
+            if (!removedD1 || !removedD3) throw new Error('Expected removed decorations');
 
             expect(result.removed.size).toBe(2);
-            expect(result.removed.get('d1').sourceLayerId).toBe('layer-1');
-            expect(result.removed.get('d1').decoration.id).toBe('d1');
-            expect(result.removed.get('d3').sourceLayerId).toBe('layer-2');
+            expect(removedD1.sourceLayerId).toBe('layer-1');
+            expect(removedD1.decoration.id).toBe('d1');
+            expect(removedD3.sourceLayerId).toBe('layer-2');
             expect(layer1.getDecoration('d1')).toBeNull();
             expect(layer2.getDecoration('d3')).toBeNull();
         });
@@ -135,6 +142,7 @@ describe('HomesteadLayout Multi-Layer Methods', () => {
         test('should return full decoration data for undo', () => {
             const result = layout.removeDecorations(['d1']);
             const removedEntry = result.removed.get('d1');
+            if (!removedEntry) throw new Error('Expected removed decoration entry');
 
             expect(removedEntry.decoration.name).toBe('Torch');
             expect(removedEntry.decoration.position).toBeTruthy();
@@ -146,7 +154,7 @@ describe('HomesteadLayout Multi-Layer Methods', () => {
         });
 
         test('should throw if decorationIds is not an array', () => {
-            expect(() => layout.removeDecorations('d1'))
+            expect(() => layout.removeDecorations(runtimeInput<string[]>('d1')))
                 .toThrow('must be an array');
         });
 

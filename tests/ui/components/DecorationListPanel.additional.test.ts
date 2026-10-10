@@ -3,6 +3,7 @@
  * Covers: Array/Map decorations (lines 63-66), dragstart/contextmenu events (131,136), 
  * _handleDragStart (182+), _handleContextMenu (222+)
  */
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DecorationListPanel } from '../../../src/ui/components/DecorationListPanel.js';
 import { SelectionStore } from '../../../src/ui/stores/SelectionStore.js';
 import { EventBus } from '../../../src/ui/EventBus.js';

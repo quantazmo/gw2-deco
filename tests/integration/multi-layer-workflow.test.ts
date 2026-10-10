@@ -2,6 +2,7 @@
  * Integration tests for multi-layer loading workflow
  * Covers: load first layout, load second same-map layout, verify both layers' decorations exist
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { LoadAdditionalLayoutHandler } from '../../src/application/handlers/LoadAdditionalLayoutHandler.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { GW2Map } from '../../src/domain/GW2Map.js';

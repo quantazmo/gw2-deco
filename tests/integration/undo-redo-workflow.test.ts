@@ -3,6 +3,7 @@
  * Covers: move-then-undo, delete-layer-then-undo, delete-decorations-then-undo,
  * redo after undo, redo-cleared-on-new-action, undo-when-empty
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { UndoRedoManager } from '../../src/application/UndoRedoManager.js';
 import { UndoRecord } from '../../src/application/UndoRecord.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';

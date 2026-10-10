@@ -2,12 +2,14 @@
  * Tests for domain value objects:
  * LayerId, ZoomLevel, ScreenCoordinate, WorldCoordinate, MapCoordinate, ContinentCoordinate
  */
+import { describe, test, expect } from 'vitest';
 import { LayerId } from '../../src/domain/LayerId.js';
 import { ZoomLevel } from '../../src/domain/ZoomLevel.js';
 import { ScreenCoordinate } from '../../src/domain/ScreenCoordinate.js';
 import { WorldCoordinate } from '../../src/domain/WorldCoordinate.js';
 import { MapCoordinate } from '../../src/domain/MapCoordinate.js';
 import { ContinentCoordinate } from '../../src/domain/ContinentCoordinate.js';
+import { runtimeInput } from './runtimeInput.js';
 
 // ─── LayerId ──────────────────────────────────────────────────────────────────
 describe('LayerId', () => {
@@ -27,9 +29,9 @@ describe('LayerId', () => {
     });
 
     test('throws for non-string/number', () => {
-        expect(() => new LayerId(null)).toThrow();
-        expect(() => new LayerId({})).toThrow();
-        expect(() => new LayerId([])).toThrow();
+        expect(() => new LayerId(runtimeInput<string | number>(null))).toThrow();
+        expect(() => new LayerId(runtimeInput<string | number>({}))).toThrow();
+        expect(() => new LayerId(runtimeInput<string | number>([]))).toThrow();
     });
 
     test('throws for empty string', () => {
@@ -99,7 +101,7 @@ describe('ZoomLevel', () => {
     });
 
     test('throws for non-number scale', () => {
-        expect(() => new ZoomLevel('bad')).toThrow();
+        expect(() => new ZoomLevel(runtimeInput<number>('bad'))).toThrow();
     });
 
     test('throws for non-finite values', () => {
@@ -175,8 +177,8 @@ describe('ScreenCoordinate', () => {
     });
 
     test('throws for non-numbers', () => {
-        expect(() => new ScreenCoordinate('a', 0)).toThrow();
-        expect(() => new ScreenCoordinate(0, null)).toThrow();
+        expect(() => new ScreenCoordinate(runtimeInput<number>('a'), 0)).toThrow();
+        expect(() => new ScreenCoordinate(0, runtimeInput<number>(null))).toThrow();
     });
 
     test('throws for non-finite', () => {
@@ -192,7 +194,7 @@ describe('ScreenCoordinate', () => {
 
     test('distanceTo throws for wrong type', () => {
         const sc = new ScreenCoordinate(0, 0);
-        expect(() => sc.distanceTo({ x: 0, y: 0 })).toThrow();
+        expect(() => sc.distanceTo(runtimeInput<ScreenCoordinate>({ x: 0, y: 0 }))).toThrow();
     });
 
     test('equals', () => {
@@ -239,8 +241,8 @@ describe('WorldCoordinate', () => {
     });
 
     test('throws for non-numbers', () => {
-        expect(() => new WorldCoordinate('a', 0)).toThrow();
-        expect(() => new WorldCoordinate(0, 0, 'bad', 0)).toThrow();
+        expect(() => new WorldCoordinate(runtimeInput<number>('a'), 0)).toThrow();
+        expect(() => new WorldCoordinate(0, 0, runtimeInput<number>('bad'), 0)).toThrow();
     });
 
     test('throws for non-finite', () => {
@@ -256,7 +258,7 @@ describe('WorldCoordinate', () => {
 
     test('distanceTo throws for wrong type', () => {
         const wc = new WorldCoordinate(0, 0);
-        expect(() => wc.distanceTo({ x: 0, y: 0, z: 0 })).toThrow();
+        expect(() => wc.distanceTo(runtimeInput<WorldCoordinate>({ x: 0, y: 0, z: 0 }))).toThrow();
     });
 
     test('equals – all fields match', () => {
@@ -306,7 +308,7 @@ describe('MapCoordinate', () => {
     });
 
     test('throws for non-numbers', () => {
-        expect(() => new MapCoordinate('a', 0)).toThrow();
+        expect(() => new MapCoordinate(runtimeInput<number>('a'), 0)).toThrow();
     });
 
     test('throws for non-finite', () => {
@@ -320,7 +322,7 @@ describe('MapCoordinate', () => {
     });
 
     test('distanceTo throws for wrong type', () => {
-        expect(() => new MapCoordinate(0, 0).distanceTo({ x: 0, y: 0 })).toThrow();
+        expect(() => new MapCoordinate(0, 0).distanceTo(runtimeInput<MapCoordinate>({ x: 0, y: 0 }))).toThrow();
     });
 
     test('equals', () => {
@@ -359,7 +361,7 @@ describe('ContinentCoordinate', () => {
     });
 
     test('throws for non-numbers', () => {
-        expect(() => new ContinentCoordinate('a', 0)).toThrow();
+        expect(() => new ContinentCoordinate(runtimeInput<number>('a'), 0)).toThrow();
     });
 
     test('throws for non-finite', () => {
@@ -373,7 +375,7 @@ describe('ContinentCoordinate', () => {
     });
 
     test('distanceTo throws for wrong type', () => {
-        expect(() => new ContinentCoordinate(0, 0).distanceTo({ x: 0, y: 0 })).toThrow();
+        expect(() => new ContinentCoordinate(0, 0).distanceTo(runtimeInput<ContinentCoordinate>({ x: 0, y: 0 }))).toThrow();
     });
 
     test('equals', () => {

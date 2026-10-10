@@ -1,6 +1,7 @@
 /**
  * Tests for all application command classes
  */
+import { describe, test, expect } from 'vitest';
 import { AddDecorationCommand } from '../../src/application/commands/AddDecorationCommand.js';
 import { DeleteDecorationCommand } from '../../src/application/commands/DeleteDecorationCommand.js';
 import { DeleteDecorationsCommand } from '../../src/application/commands/DeleteDecorationsCommand.js';

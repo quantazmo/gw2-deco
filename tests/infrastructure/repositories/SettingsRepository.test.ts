@@ -3,6 +3,7 @@
  * Validates localStorage serialization, deserialization, error recovery, and version checks.
  */
 
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SettingsRepository } from '../../../src/infrastructure/repositories/SettingsRepository.js';
 import { SETTINGS } from '../../../src/config/constants.js';
 import { setupLocalStorageMock } from '../mocks/localStorageMock.js';

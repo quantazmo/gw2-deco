@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ToolPanel } from '../../../src/ui/components/ToolPanel.js';
 
 describe('ToolPanel', () => {

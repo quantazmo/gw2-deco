@@ -7,6 +7,7 @@
  * 3. API fetch (cold)
  */
 
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Gw2ApiAdapter } from '../../../src/infrastructure/adapters/Gw2ApiAdapter.js';
 import { LocalStorageCacheAdapter } from '../../../src/infrastructure/adapters/LocalStorageCacheAdapter.js';
 import { Gw2MapRepository } from '../../../src/infrastructure/repositories/Gw2MapRepository.js';

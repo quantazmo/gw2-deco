@@ -2,6 +2,7 @@
  * Tests for LoadAdditionalLayoutHandler
  * Covers: same-map layer addition, different-map confirmation return, first-load behavior
  */
+import { describe, test, expect, beforeEach } from 'vitest';
 import { LoadAdditionalLayoutHandler } from '../../src/application/handlers/LoadAdditionalLayoutHandler.js';
 import { HomesteadLayout } from '../../src/domain/HomesteadLayout.js';
 import { GW2Map } from '../../src/domain/GW2Map.js';
