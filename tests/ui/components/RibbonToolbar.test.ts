@@ -9,7 +9,9 @@ import { RibbonToolbar } from '../../../src/ui/components/RibbonToolbar.js';
 vi.mock('../../../src/ui/components/LoadFromUrlDialog.js', () => {
     const mockShow = vi.fn();
     return {
-        LoadFromUrlDialog: vi.fn().mockImplementation(() => ({ show: mockShow })),
+        LoadFromUrlDialog: vi.fn(function () {
+            return { show: mockShow };
+        }),
         _mockShow: mockShow,
     };
 });
