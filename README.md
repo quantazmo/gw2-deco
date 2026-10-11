@@ -2,6 +2,7 @@
 
 [![Deploy to GitHub Pages](https://github.com/quantazmo/gw2-deco/actions/workflows/publish.yaml/badge.svg)](https://github.com/quantazmo/gw2-deco/actions/workflows/publish.yaml)
 [![Unit Tests](https://github.com/quantazmo/gw2-deco/actions/workflows/unit-tests.yaml/badge.svg)](https://github.com/quantazmo/gw2-deco/actions/workflows/unit-tests.yaml)
+[![Playwright Tests](https://github.com/quantazmo/gw2-deco/actions/workflows/playwright-tests.yaml/badge.svg)](https://github.com/quantazmo/gw2-deco/actions/workflows/playwright-tests.yaml)
 
 This website is a browser-based tool for loading, editing, and exporting homestead and guild hall decoration layouts for the Guild Wars 2 video game.
 
