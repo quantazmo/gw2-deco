@@ -140,6 +140,7 @@ export async function initializeApplication(): Promise<ApplicationContext> {
         appStore: appStoreInstance,
         zoomStore: zoomStoreInstance,
         selectionStore,
+        contextMenu: new ContextMenu(),
         eventBus,
         homesteadLayout,
         xmlAdapter

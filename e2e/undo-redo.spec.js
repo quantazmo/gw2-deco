@@ -1,5 +1,5 @@
 /**
- * E2E Tests: US8 — Undo and Redo All Decoration Actions
+ * E2E Tests: Undo and Redo All Decoration Actions
  *
  * Covers:
  * - Move decorations between layers then Ctrl+Z → decorations return
@@ -44,7 +44,7 @@ async function loadTwoLayers(page) {
     await expect(page.locator('#layers-list .layer-item')).toHaveCount(2, { timeout: 10_000 });
 }
 
-test.describe('US8: Undo and Redo All Decoration Actions', () => {
+test.describe('Undo and Redo All Decoration Actions', () => {
 
     test('Ctrl+Z when no undo actions is a no-op with no errors', async ({ page }) => {
         await loadLayout(page);

@@ -1,5 +1,5 @@
 /**
- * E2E Tests: US6 — Move Selected Decorations to Another Layer
+ * E2E Tests: Move Decorations to Another Layer
  *
  * Covers:
  * - Select decorations in Layer 1 and drag to Layer 2 in Layer Panel → decorations moved
@@ -31,7 +31,7 @@ async function loadTwoLayers(page) {
     await expect(page.locator('#layers-list .layer-item')).toHaveCount(2, { timeout: 10_000 });
 }
 
-test.describe('US6: Move Selected Decorations', () => {
+test.describe('Move Decorations', () => {
 
     test('select decorations and drag to another layer in Layer Panel', async ({ page }) => {
         await loadTwoLayers(page);

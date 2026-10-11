@@ -1,5 +1,5 @@
 /**
- * E2E Tests: US3 — Toggle Layer Visibility
+ * E2E Tests: Toggle Layer Visibility
  *
  * Covers:
  * - Load two layers → toggle Layer 1 visibility off → Layer 1 decorations hidden on map while Layer 2 remains visible
@@ -29,7 +29,7 @@ async function loadLayout(page) {
     await expect(page.locator('#layers-list .layer-item').first()).toBeVisible({ timeout: 10_000 });
 }
 
-test.describe('US3: Toggle Layer Visibility', () => {
+test.describe('Toggle Layer Visibility', () => {
 
     test('toggling visibility hides layer decorations on map', async ({ page }) => {
         await loadLayout(page);

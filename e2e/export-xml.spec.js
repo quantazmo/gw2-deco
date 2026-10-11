@@ -1,10 +1,10 @@
 /**
- * E2E Tests: US12 — Export Decorations to XML
+ * E2E Tests: Export Decorations to XML
  *
  * Covers:
- * US1 — Export button opens dialog pre-checked by layer visibility; confirm downloads XML
- * US2 — Export dialog shows decoration counts; layers can be individually toggled
- * US3 — Cancel button closes dialog without downloading
+ * - Export button opens dialog pre-checked by layer visibility; confirm downloads XML
+ * - Export dialog shows decoration counts; layers can be individually toggled
+ * - Cancel or Escape closes the dialog without downloading
  */
 import { test, expect } from './fixtures.js';
 import path from 'path';
@@ -22,9 +22,9 @@ async function loadLayout(page) {
     await expect(page.locator('#layers-list .layer-item').first()).toBeVisible({ timeout: 10_000 });
 }
 
-test.describe('US12: Export Decorations to XML', () => {
+test.describe('Export Decorations to XML', () => {
 
-    test('US1 — Export button is disabled before layout loads and enabled after', async ({ page }) => {
+    test('export button is disabled before layout loads and enabled after', async ({ page }) => {
         await page.goto('/');
         await page.waitForSelector('body[data-app-ready]', { state: 'attached', timeout: 15_000 });
 
@@ -39,7 +39,7 @@ test.describe('US12: Export Decorations to XML', () => {
         await expect(page.locator('#export-btn')).toBeEnabled({ timeout: 5_000 });
     });
 
-    test('US1 — Export button opens the Export dialog', async ({ page }) => {
+    test('export button opens the export dialog', async ({ page }) => {
         await loadLayout(page);
 
         // Open export dialog
@@ -49,7 +49,7 @@ test.describe('US12: Export Decorations to XML', () => {
         await expect(page.locator('dialog.export-dialog')).toBeVisible({ timeout: 5_000 });
     });
 
-    test('US2 — Dialog pre-checks layers matching their visibility', async ({ page }) => {
+    test('dialog pre-checks layers matching their visibility', async ({ page }) => {
         await loadLayout(page);
 
         // Open export dialog
@@ -69,7 +69,7 @@ test.describe('US12: Export Decorations to XML', () => {
         await expect(page.locator('dialog.export-dialog')).not.toBeVisible({ timeout: 3_000 });
     });
 
-    test('US2 — Dialog shows decoration count per layer', async ({ page }) => {
+    test('dialog shows decoration count per layer', async ({ page }) => {
         await loadLayout(page);
 
         await page.locator('#export-btn').click();
@@ -89,7 +89,7 @@ test.describe('US12: Export Decorations to XML', () => {
         await page.locator('dialog.export-dialog .export-dialog__cancel').click();
     });
 
-    test('US2 — Confirm is disabled when all layers are unchecked', async ({ page }) => {
+    test('confirm is disabled when all layers are unchecked', async ({ page }) => {
         await loadLayout(page);
 
         await page.locator('#export-btn').click();
@@ -112,7 +112,7 @@ test.describe('US12: Export Decorations to XML', () => {
         await page.locator('dialog.export-dialog .export-dialog__cancel').click();
     });
 
-    test('US1 — Confirming export triggers a file download', async ({ page }) => {
+    test('confirming export triggers a file download', async ({ page }) => {
         // Disable showSaveFilePicker so the handler falls back to the anchor-click
         // download path, which triggers Playwright's 'download' event.
         await page.addInitScript(() => { delete window.showSaveFilePicker; });
@@ -129,7 +129,7 @@ test.describe('US12: Export Decorations to XML', () => {
         expect(download.suggestedFilename()).toMatch(/\.xml$/);
     });
 
-    test('US3 — Cancel button closes dialog without downloading', async ({ page }) => {
+    test('cancel button closes dialog without downloading', async ({ page }) => {
         await loadLayout(page);
 
         let downloadFired = false;
@@ -147,7 +147,7 @@ test.describe('US12: Export Decorations to XML', () => {
         expect(downloadFired).toBe(false);
     });
 
-    test('US3 — Escape key closes dialog without downloading', async ({ page }) => {
+    test('escape key closes dialog without downloading', async ({ page }) => {
         await loadLayout(page);
 
         let downloadFired = false;

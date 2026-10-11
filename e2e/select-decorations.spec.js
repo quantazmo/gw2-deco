@@ -1,5 +1,5 @@
 /**
- * E2E Tests: US5 — Select Decorations from Map or Decoration List
+ * E2E Tests: Select Decorations from Map or Decoration List
  *
  * Covers:
  * - Click decoration circle on map → visual highlight and selected in decoration list
@@ -24,7 +24,7 @@ async function loadLayout(page) {
     await expect(page.locator('#layers-list .layer-item').first()).toBeVisible({ timeout: 10_000 });
 }
 
-test.describe('US5: Select Decorations', () => {
+test.describe('Select Decorations', () => {
 
     test('clicking a decoration circle on map highlights it', async ({ page }) => {
         await loadLayout(page);

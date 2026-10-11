@@ -1,5 +1,5 @@
 /**
- * E2E Tests: US9 — Create New Empty Layer
+ * E2E Tests: Create New Empty Layer
  *
  * Covers:
  * - Click "New Layer" button in Layer Panel → new empty layer appears with auto-generated name
@@ -28,7 +28,7 @@ async function loadLayout(page) {
     await expect(page.locator('#layers-list .layer-item').first()).toBeVisible({ timeout: 10_000 });
 }
 
-test.describe('US9: Create New Empty Layer', () => {
+test.describe('Create New Empty Layer', () => {
 
     test('clicking "New Layer" button creates an empty layer with auto-generated name', async ({ page }) => {
         await loadLayout(page);

@@ -1,5 +1,5 @@
 /**
- * E2E Tests: US11 — Fit Default Zoom to Map Display Area (T115)
+ * E2E Tests: Fit Default Zoom to Map Display Area (T115)
  *
  * Covers:
  * - Load layout with side panels open → map boundary fits within map container
@@ -55,7 +55,7 @@ async function getMapAndContainerBounds(page) {
     });
 }
 
-test.describe('US11: Fit Default Zoom to Map Display Area', () => {
+test.describe('Fit Default Zoom to Map Display Area', () => {
 
     test('map SVG is rendered inside the chart container after layout load', async ({ page }) => {
         await loadLayout(page);

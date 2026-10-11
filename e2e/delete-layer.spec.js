@@ -1,5 +1,5 @@
 /**
- * E2E Tests: US4 — Delete Layer
+ * E2E Tests: Delete Layer
  *
  * Covers:
  * - Load two layers → delete Layer 1 → removed from Layer Panel and decorations removed from map
@@ -42,7 +42,7 @@ async function loadTwoLayers(page) {
     await expect(page.locator('#layers-list .layer-item')).toHaveCount(2, { timeout: 10_000 });
 }
 
-test.describe('US4: Delete Layer', () => {
+test.describe('Delete Layer', () => {
 
     test('deleting a layer removes it from Layer Panel and map', async ({ page }) => {
         await loadTwoLayers(page);

@@ -1,5 +1,5 @@
 /**
- * E2E Tests: US2 — Switch Maps with Confirmation Dialog
+ * E2E Tests: Switch Maps with Confirmation Dialog
  *
  * Covers:
  * - Load layout for Map A then load layout for Map B → confirmation dialog appears with correct map names
@@ -30,7 +30,7 @@ async function loadFirstLayout(page) {
     await expect(page.locator('#layers-list .layer-item').first()).toBeVisible({ timeout: 10_000 });
 }
 
-test.describe('US2: Switch Maps with Confirmation Dialog', () => {
+test.describe('Switch Maps with Confirmation Dialog', () => {
 
     test('shows confirmation dialog when loading layout for a different map', async ({ page }) => {
         await loadFirstLayout(page);

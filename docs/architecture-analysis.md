@@ -778,17 +778,17 @@ test('CreateLayerHandler creates layer in layout', () => {
 
 | Spec | Feature |
 |---|---|
-| `main-us2-switch-maps.spec.js` | Map switching |
-| `main-us3-layer-visibility.spec.js` | Layer visibility toggles |
-| `main-us4-delete-layer.spec.js` | Layer deletion |
-| `main-us5-select-decorations.spec.js` | Decoration selection |
-| `main-us6-move-decorations.spec.js` | Decoration movement |
-| `main-us7-delete-decorations.spec.js` | Decoration deletion |
-| `main-us8-undo-redo.spec.js` | Undo/redo |
-| `main-us9-create-layer.spec.js` | Layer creation |
-| `main-us10-tool-modes.spec.js` | Tool mode switching |
-| `main-us11-zoom-fit.spec.js` | Zoom-to-fit |
-| `main-us12-export-xml.spec.js` | XML export |
+| `switch-maps.spec.js` | Map switching |
+| `layer-visibility.spec.js` | Layer visibility toggles |
+| `delete-layer.spec.js` | Layer deletion |
+| `select-decorations.spec.js` | Decoration selection |
+| `move-decorations.spec.js` | Decoration movement |
+| `delete-decorations.spec.js` | Decoration deletion |
+| `undo-redo.spec.js` | Undo/redo |
+| `create-layer.spec.js` | Layer creation |
+| `tool-modes.spec.js` | Tool mode switching |
+| `zoom-fit.spec.js` | Zoom-to-fit |
+| `export-xml.spec.js` | XML export |
 
 ---
 

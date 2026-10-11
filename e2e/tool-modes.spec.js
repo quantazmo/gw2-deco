@@ -1,5 +1,5 @@
 /**
- * E2E Tests: US10 — Ribbon Tool Modes: Map Pan and Multi Select
+ * E2E Tests: Ribbon Tool Modes: Map Pan and Multi Select
  *
  * Covers:
  * - Ribbon toolbar shows "Map Pan" and "Multi Select" buttons with Map Pan active by default
@@ -23,7 +23,7 @@ async function loadLayout(page) {
     await expect(page.locator('#layers-list .layer-item').first()).toBeVisible({ timeout: 10_000 });
 }
 
-test.describe('US10: Tool Modes', () => {
+test.describe('Tool Modes', () => {
 
     test('ribbon toolbar has Map Pan and Multi Select buttons', async ({ page }) => {
         await page.goto('/');

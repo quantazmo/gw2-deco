@@ -1,5 +1,5 @@
 /**
- * E2E Tests: US7 — Delete Selected Decorations
+ * E2E Tests: Delete Selected Decorations
  *
  * Covers:
  * - Select 2 decorations on map → press Delete key → both removed from map and decoration list
@@ -22,7 +22,7 @@ async function loadLayout(page) {
     await expect(page.locator('#layers-list .layer-item').first()).toBeVisible({ timeout: 10_000 });
 }
 
-test.describe('US7: Delete Selected Decorations', () => {
+test.describe('Delete Selected Decorations', () => {
 
     test('select decorations on map and press Delete → removed from map', async ({ page }) => {
         await loadLayout(page);

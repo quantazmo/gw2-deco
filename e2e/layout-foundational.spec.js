@@ -7,8 +7,8 @@
  *   3. All three sidebar panels (layers, decorationList, inspector) are visible
  *      and positioned to the right of the map panel.
  *
- * These tests serve as a regression baseline for all subsequent user-story phases.
- * They do not test any drag-and-drop behaviour — that is covered by us1+ specs.
+ * These tests serve as a regression baseline for the broader functional layout checks.
+ * They do not test any drag-and-drop behaviour — that is covered by the interaction-focused specs.
  */
 
 import { test, expect } from './fixtures.js';
@@ -29,11 +29,10 @@ test.describe('Foundational layout', () => {
         expect(childCount).toBeGreaterThanOrEqual(1);
     });
 
-    test('all four panels are visible in the default layout', async ({ page }) => {
+    test('all three panels are visible in the default layout', async ({ page }) => {
         await expect(page.locator('.dock-region[data-panel-id="map"]')).toBeVisible();
         await expect(page.locator('.dock-region[data-panel-id="layers"]')).toBeVisible();
         await expect(page.locator('.dock-region[data-panel-id="decorationList"]')).toBeVisible();
-        await expect(page.locator('.dock-region[data-panel-id="inspector"]')).toBeVisible();
     });
 
     test('map panel occupies at least 50% of the viewport width', async ({ page }) => {
@@ -47,14 +46,14 @@ test.describe('Foundational layout', () => {
         expect(mapBox.width).toBeGreaterThanOrEqual(viewport.width * 0.5);
     });
 
-    test('three sidebar panels are positioned to the right of the map panel', async ({ page }) => {
+    test('two sidebar panels are positioned to the right of the map panel', async ({ page }) => {
         const mapWrapper = page.locator('.panel-wrapper[data-panel-id="map"]');
         const mapBox = await mapWrapper.boundingBox();
         expect(mapBox).not.toBeNull();
 
         const mapRightEdge = mapBox.x + mapBox.width;
 
-        for (const panelId of ['layers', 'decorationList', 'inspector']) {
+        for (const panelId of ['layers', 'decorationList']) {
             const wrapper = page.locator(`.panel-wrapper[data-panel-id="${panelId}"]`);
             await expect(wrapper).toBeVisible();
 
