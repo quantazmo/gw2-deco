@@ -4,6 +4,8 @@
 [![Unit Tests](https://github.com/quantazmo/gw2-deco/actions/workflows/unit-tests.yaml/badge.svg)](https://github.com/quantazmo/gw2-deco/actions/workflows/unit-tests.yaml)
 [![Playwright Tests](https://github.com/quantazmo/gw2-deco/actions/workflows/playwright-tests.yaml/badge.svg)](https://github.com/quantazmo/gw2-deco/actions/workflows/playwright-tests.yaml)
 
+https://quantazmo.github.io/gw2-deco/
+
 This website is a browser-based tool for loading, editing, and exporting homestead and guild hall decoration layouts for the Guild Wars 2 video game.
 
 ## Project Summary
@@ -87,5 +89,5 @@ npx playwright test
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 or later.
+This project is licensed under the MIT License.
 See [LICENSE](LICENSE).
