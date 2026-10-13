@@ -171,6 +171,36 @@ describe('MapViewer', () => {
         });
     });
 
+    describe('selection shortcut hint', () => {
+        it('shows shortcut guidance only while select mode is active', () => {
+            const panel = document.createElement('div');
+            const svg = makeSvg();
+            panel.appendChild(svg);
+            const viewer = new MapViewer(svg, makeZoomStore(), makeAppStore(), makeSelectionStore());
+            let mode = 'select';
+            const listeners = [];
+            const toolModeStore = {
+                getMode: () => mode,
+                subscribe: (listener) => listeners.push(listener),
+            };
+
+            viewer.setToolModeStore(toolModeStore);
+
+            const hint = panel.querySelector('.selection-shortcut-hint');
+            expect(hint.hidden).toBe(false);
+            expect(hint.textContent).toContain('Add to selection');
+            expect(hint.textContent).toContain('Remove from selection');
+
+            mode = 'pan';
+            listeners.forEach(listener => listener(mode));
+            expect(hint.hidden).toBe(true);
+
+            mode = 'select';
+            listeners.forEach(listener => listener(mode));
+            expect(hint.hidden).toBe(false);
+        });
+    });
+
     describe('selected decoration z-order', () => {
         function makeLayer(decorations) {
             return { id: 'layer-1', isVisible: true, color: '#00d4ff', decorations };

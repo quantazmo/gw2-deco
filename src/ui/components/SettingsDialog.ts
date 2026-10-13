@@ -26,6 +26,7 @@ type SettingsResult = { apiKey: string; theme: ThemePreference };
 
 export class SettingsDialog {
     private _id: string;
+    private _onResetLayout: () => void;
     private _resolve: ((result: SettingsResult | null) => void) | null = null;
     private _validateTimer: ReturnType<typeof setTimeout> | null = null;
     private _currentValidationKey: string | null = null;
@@ -35,9 +36,10 @@ export class SettingsDialog {
     private _cancelBtn!: HTMLButtonElement;
     private _saveBtn!: HTMLButtonElement;
 
-    constructor() {
+    constructor(onResetLayout: () => void = () => { }) {
         _instanceCount++;
         this._id = `settings-dialog-${_instanceCount}`;
+        this._onResetLayout = onResetLayout;
         this._resolve = null;
         this._validateTimer = null;
         this._currentValidationKey = null;
@@ -146,7 +148,7 @@ export class SettingsDialog {
 
         const themeLabel = document.createElement('label');
         themeLabel.classList.add('settings-dialog__label');
-        themeLabel.textContent = 'color Theme';
+        themeLabel.textContent = 'Color Theme';
         themeGroup.appendChild(themeLabel);
 
         const themeOptions = document.createElement('div');
@@ -185,6 +187,13 @@ export class SettingsDialog {
 
         themeGroup.appendChild(themeOptions);
         formEl.appendChild(themeGroup);
+
+        const resetLayoutBtn = document.createElement('button');
+        resetLayoutBtn.type = 'button';
+        resetLayoutBtn.classList.add('settings-dialog__reset');
+        resetLayoutBtn.textContent = 'Reset Layout';
+        resetLayoutBtn.addEventListener('click', () => this._onResetLayout());
+        formEl.appendChild(resetLayoutBtn);
 
         // Actions
         const actionsEl = document.createElement('div');

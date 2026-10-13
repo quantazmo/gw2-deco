@@ -93,6 +93,7 @@ class MapViewer {
     private _selectionRect: SelectionRectangle | null;
     private _containerGroup: SVGGElement | null;
     private _selectionIndicator: HTMLDivElement | null = null;
+    private _selectionShortcutHint: HTMLDivElement | null = null;
     private _indicatorMouseX = 0;
     private _indicatorMouseY = 0;
     private _indicatorCtrl = false;
@@ -811,11 +812,29 @@ class MapViewer {
         this._toolModeStore = toolModeStore;
         this._selectionRect = new SelectionRectangle(this.svgElement);
 
-        // Update SVG cursor when mode changes
-        toolModeStore.subscribe((mode) => {
+        const shortcutHint = document.createElement('div');
+        shortcutHint.className = 'selection-shortcut-hint';
+        shortcutHint.setAttribute('role', 'note');
+        shortcutHint.setAttribute('aria-label', 'Selection shortcuts');
+        shortcutHint.hidden = true;
+
+        const addHint = document.createElement('span');
+        addHint.innerHTML = '<kbd>Ctrl</kbd> / <kbd>Cmd</kbd> Add to selection';
+        const removeHint = document.createElement('span');
+        removeHint.innerHTML = '<kbd>Shift</kbd> Remove from selection';
+        shortcutHint.append(addHint, removeHint);
+        this.svgElement.parentElement?.appendChild(shortcutHint);
+        this._selectionShortcutHint = shortcutHint;
+
+        const updateToolMode = (mode: string) => {
             this.svgElement.style.cursor = mode === 'select' ? 'crosshair' : 'grab';
+            if (this._selectionShortcutHint) {
+                this._selectionShortcutHint.hidden = mode !== 'select';
+            }
             this._updateSelectionIndicator();
-        });
+        };
+        updateToolMode(toolModeStore.getMode());
+        toolModeStore.subscribe(updateToolMode);
 
         this._initSelectionModeIndicator();
     }

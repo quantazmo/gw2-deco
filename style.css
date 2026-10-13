@@ -1767,7 +1767,8 @@ button:active {
 }
 
 .settings-dialog__cancel,
-.settings-dialog__save {
+.settings-dialog__save,
+.settings-dialog__reset {
   padding: 8px 20px;
   border: 1px solid var(--btn-sec-border);
   border-radius: 4px;
@@ -2360,6 +2361,40 @@ button:active {
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
   pointer-events: none;
+}
+
+/* ── Selection Shortcut Hint ───────────────────────────────────────── */
+.selection-shortcut-hint {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 7px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.selection-shortcut-hint[hidden] {
+  display: none;
+}
+
+.selection-shortcut-hint kbd {
+  padding: 1px 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--header-bg);
+  font: inherit;
+  font-weight: 600;
 }
 
 /* ── Selection Mode Indicator ───────────────────────────────────────── */

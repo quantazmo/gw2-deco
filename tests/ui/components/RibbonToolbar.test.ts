@@ -89,7 +89,7 @@ describe('RibbonToolbar', () => {
         const toolbar = new RibbonToolbar(appService, appStore, zoomStore);
         const el = toolbar.getElement();
         const groups = el.querySelectorAll('.ribbon-group');
-        expect(groups.length).toBe(7); // File, View, Edit, Layout, Tools, Report, Links
+        expect(groups.length).toBe(6); // File, View, Edit, Tools, Report, Links
         const githubLink = el.querySelector('[data-action="ribbon-github"]');
         expect(githubLink.getAttribute('href')).toBe('https://github.com/quantazmo/gw2-deco');
         expect(githubLink.getAttribute('aria-label')).toBe('View on GitHub');
@@ -272,14 +272,6 @@ describe('RibbonToolbar', () => {
         expect(eventBus.publish).toHaveBeenCalledWith('redo:requested');
     });
 
-    test('Reset Layout button calls appService.execute (line 258)', () => {
-        const toolbar = new RibbonToolbar(appService, appStore, zoomStore);
-        toolbar.getElement().querySelector('[data-action="reset-layout"]').click();
-        expect(appService.execute).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'ResetLayoutCommand' })
-        );
-    });
-
     test('Tool Pan button calls toolModeStore.setMode("pan") (lines 261-264)', () => {
         const toolModeStore = makeToolModeStore('select');
         const toolbar = new RibbonToolbar(appService, appStore, zoomStore, null, null, toolModeStore);
@@ -425,7 +417,7 @@ describe('RibbonToolbar', () => {
         const toolbar = new RibbonToolbar(appService, appStore, zoomStore);
         const el = toolbar.getElement();
         const groups = el.querySelectorAll('.ribbon-group');
-        expect(groups.length).toBe(7); // File, View, Edit, Layout, Tools, Report, GitHub
+        expect(groups.length).toBe(6); // File, View, Edit, Tools, Report, GitHub
     });
 
     test('ribbon toolbar contains a Report group', () => {

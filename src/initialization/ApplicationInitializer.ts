@@ -477,7 +477,9 @@ export async function initializeApplication(): Promise<ApplicationContext> {
     // Create SettingsRepository and SettingsDialog, wire ribbon:settings-requested event
     console.log('[ApplicationInitializer]   ↳ Creating SettingsRepository and SettingsDialog...');
     const settingsRepository = new SettingsRepository();
-    const settingsDialog = new SettingsDialog();
+    const settingsDialog = new SettingsDialog(() => {
+        appService.execute({ type: 'ResetLayoutCommand', payload: {} });
+    });
     const themeManager = new ThemeManager();
     context.settingsRepository = settingsRepository;
     context.settingsDialog = settingsDialog;

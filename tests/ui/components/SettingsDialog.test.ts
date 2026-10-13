@@ -7,7 +7,7 @@ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SettingsDialog } from '../../../src/ui/components/SettingsDialog.js';
 
 // Two real-format GW2 API keys used across validation tests.
-const VALID_KEY   = '3C6E7201-72FD-5942-9391-52A666D3AAA0D1223AAA-CF73-4408-9182-903AB441A2DE';
+const VALID_KEY = '3C6E7201-72FD-5942-9391-52A666D3AAA0D1223AAA-CF73-4408-9182-903AB441A2DE';
 const VALID_KEY_2 = '3C6E7201-72FD-5942-9391-52A666D3AAA0D1223AAA-CF73-4408-9182-903AB441A2DF';
 
 describe('SettingsDialog', () => {
@@ -64,6 +64,10 @@ describe('SettingsDialog', () => {
 
         test('contains a Cancel button', () => {
             expect(document.querySelector('.settings-dialog__cancel')).not.toBeNull();
+        });
+
+        test('contains a Reset Layout button', () => {
+            expect(document.querySelector('.settings-dialog__reset')?.textContent).toBe('Reset Layout');
         });
     });
 
@@ -158,6 +162,22 @@ describe('SettingsDialog', () => {
             document.querySelector('.settings-dialog__save').click();
             const result = await promise;
             expect(result).toEqual({ apiKey: 'original-key', theme: 'system' });
+        });
+    });
+
+    describe('reset layout', () => {
+        test('calls the reset callback without closing the dialog', () => {
+            const onResetLayout = vi.fn();
+            const dialogWithReset = new SettingsDialog(onResetLayout);
+            const promise = dialogWithReset.show({ apiKey: '' });
+            const resetDialog = document.querySelectorAll('dialog.settings-dialog').item(1);
+
+            resetDialog.querySelector('.settings-dialog__reset').click();
+
+            expect(onResetLayout).toHaveBeenCalledTimes(1);
+            expect(resetDialog.hasAttribute('open')).toBe(true);
+            resetDialog.querySelector('.settings-dialog__cancel').click();
+            return promise;
         });
     });
 
@@ -337,7 +357,7 @@ describe('SettingsDialog', () => {
 
         test('validation icon shows pending spinner while validating', async () => {
             // fetch never resolves during this test
-            global.fetch = vi.fn(() => new Promise(() => {}));
+            global.fetch = vi.fn(() => new Promise(() => { }));
             const promise = dialog.show({ apiKey: '' });
 
             const input = document.querySelector('.settings-dialog__input');
