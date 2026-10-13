@@ -2,7 +2,23 @@ name: Unit Tests
 
 on:
   push:
+    paths:
+      - '.github/workflows/unit-tests.yaml'
+      - 'src/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'vitest.config.ts'
   pull_request:
+    paths:
+      - '.github/workflows/unit-tests.yaml'
+      - 'src/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'vitest.config.ts'
 
 permissions:
   contents: read
