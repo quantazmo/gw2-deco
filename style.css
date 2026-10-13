@@ -1117,6 +1117,10 @@ button:active {
   border-right: none;
 }
 
+.ribbon-group[data-group="links"] {
+  margin-left: auto;
+}
+
 /* 60px command button row at the top of each group */
 .ribbon-button-row {
   display: flex;

@@ -89,7 +89,11 @@ describe('RibbonToolbar', () => {
         const toolbar = new RibbonToolbar(appService, appStore, zoomStore);
         const el = toolbar.getElement();
         const groups = el.querySelectorAll('.ribbon-group');
-        expect(groups.length).toBe(6); // File, View, Edit, Layout, Tools, Report
+        expect(groups.length).toBe(7); // File, View, Edit, Layout, Tools, Report, Links
+        const githubLink = el.querySelector('[data-action="ribbon-github"]');
+        expect(githubLink.getAttribute('href')).toBe('https://github.com/quantazmo/gw2-deco');
+        expect(githubLink.getAttribute('aria-label')).toBe('View on GitHub');
+        expect(githubLink.parentElement.parentElement).toBe(groups[groups.length - 1]);
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -417,11 +421,11 @@ describe('RibbonToolbar', () => {
     // Report group
     // ─────────────────────────────────────────────────────────────────────────
 
-    test('built toolbar now contains 6 groups including Report', () => {
+    test('built toolbar contains 7 groups including GitHub', () => {
         const toolbar = new RibbonToolbar(appService, appStore, zoomStore);
         const el = toolbar.getElement();
         const groups = el.querySelectorAll('.ribbon-group');
-        expect(groups.length).toBe(6); // File, View, Edit, Layout, Tools, Report
+        expect(groups.length).toBe(7); // File, View, Edit, Layout, Tools, Report, GitHub
     });
 
     test('ribbon toolbar contains a Report group', () => {
